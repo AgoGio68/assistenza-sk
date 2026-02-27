@@ -4,8 +4,9 @@ import {
     onAuthStateChanged,
     signOut
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { getToken } from 'firebase/messaging';
+import { auth, db, messaging } from '../firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -55,7 +56,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Subscribe ai cambiamenti del profilo in tempo reale
                 userProfileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
                     if (docSnap.exists()) {
-                        setUserProfile(docSnap.data() as UserProfile);
+                        const data = docSnap.data() as UserProfile;
+                        setUserProfile(data);
+
+                        // Richiedi notifiche push per admin/superadmin approvati
+                        if ((data.role === 'admin' || data.role === 'superadmin') && data.status === 'approved' && messaging) {
+                            Notification.requestPermission().then((permission) => {
+                                if (permission === 'granted') {
+                                    getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
+                                        .then((token) => {
+                                            if (token && token !== data.fcmToken) {
+                                                console.log("Nuovo token FCM generato e salvato.");
+                                                updateDoc(userDocRef, { fcmToken: token });
+                                            }
+                                        }).catch(console.error);
+                                }
+                            });
+                        }
                     }
                     setLoading(false); // <--- Imposto loading=false SOLO DOPO aver caricato il profilo
                 });

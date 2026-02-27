@@ -8,6 +8,7 @@ export interface UserProfile {
     role: UserRole;
     status: UserStatus;
     createdAt: number;
+    fcmToken?: string;
 }
 
 export type UrgencyLevel = 'urgente' | 'non_urgente';

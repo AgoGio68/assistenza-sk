@@ -22,7 +22,7 @@ export const Navigation: React.FC = () => {
         }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{appName}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.1.0</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.2.0</span>
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
