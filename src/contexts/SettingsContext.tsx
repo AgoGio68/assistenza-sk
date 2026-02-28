@@ -12,6 +12,8 @@ export interface GlobalSettings {
     layoutMode: 'default' | 'compact';
     applyCompactToAll: boolean;
     allowUserTicketCreation: boolean;
+    // New v1.8 Settings
+    enablePhotos: boolean;
 }
 
 const defaultSettings: GlobalSettings = {
@@ -22,7 +24,8 @@ const defaultSettings: GlobalSettings = {
     visibilityMode: 'all',
     layoutMode: 'default',
     applyCompactToAll: false,
-    allowUserTicketCreation: true
+    allowUserTicketCreation: true,
+    enablePhotos: false
 };
 
 interface SettingsContextType {

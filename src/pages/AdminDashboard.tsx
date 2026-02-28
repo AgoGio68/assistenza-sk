@@ -5,6 +5,7 @@ import { UserProfile, Company, Ticket } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { Users, Building2, Ticket as TicketIcon, Settings as SettingsIcon, Download, Search, PieChart } from 'lucide-react';
+import { VoiceDictationModal } from '../components/VoiceDictationModal';
 
 export const AdminDashboard: React.FC = () => {
     const { isSuperadmin, currentUser } = useAuth();
@@ -30,6 +31,11 @@ export const AdminDashboard: React.FC = () => {
     const [loadingTickets, setLoadingTickets] = useState(false);
     const [ticketSortMode, setTicketSortMode] = useState<'chronological' | 'closed_bottom'>('closed_bottom');
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+    // Dictation Modal state for Admins
+    const [isDictationModalOpen, setIsDictationModalOpen] = useState(false);
+    const [dictationTargetId, setDictationTargetId] = useState<string | null>(null);
+    const [dictationInitialText, setDictationInitialText] = useState('');
 
     // Filters and Search
     const [searchQuery, setSearchQuery] = useState('');
@@ -222,6 +228,33 @@ export const AdminDashboard: React.FC = () => {
             alert("Impostazioni salvate con successo!");
         } catch (error) {
             alert("Errore durante il salvataggio delle impostazioni.");
+        }
+    };
+
+    const handleSaveDictation = async (newNotes: string) => {
+        if (!dictationTargetId) return;
+
+        try {
+            const ticketRef = doc(db, 'tickets', dictationTargetId);
+            await updateDoc(ticketRef, {
+                notes: newNotes,
+                updatedAt: Date.now()
+            });
+
+            // Aggiorna lo stato locale del ticket selezionato
+            if (selectedTicket && selectedTicket.id === dictationTargetId) {
+                setSelectedTicket({ ...selectedTicket, notes: newNotes });
+            }
+
+            // Aggiorna nella lista
+            setTickets(tickets.map(t => t.id === dictationTargetId ? { ...t, notes: newNotes } : t));
+        } catch (err) {
+            console.error(err);
+            alert('Errore salvataggio note');
+        } finally {
+            setIsDictationModalOpen(false);
+            setDictationTargetId(null);
+            setDictationInitialText('');
         }
     };
 
@@ -519,6 +552,17 @@ export const AdminDashboard: React.FC = () => {
                                 <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                     <strong style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Descrizione Originale del Problema:</strong>
                                     <div style={{ whiteSpace: 'pre-wrap' }}>{selectedTicket.description}</div>
+
+                                    {selectedTicket.photoUrls && selectedTicket.photoUrls.length > 0 && (
+                                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                                            <strong style={{ width: '100%', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>FOTO ALLEGATE:</strong>
+                                            {selectedTicket.photoUrls.map((url, i) => (
+                                                <a key={i} href={url} target="_blank" rel="noreferrer" title="Clicca per ingrandire" style={{ display: 'block', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                                    <img src={url} alt={`Allegato ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {selectedTicket.notes && (
@@ -533,13 +577,34 @@ export const AdminDashboard: React.FC = () => {
                                 )}
                             </div>
 
-                            <button onClick={() => setSelectedTicket(null)} className="btn" style={{ width: '100%', backgroundColor: '#e2e8f0', color: 'var(--text-primary)' }}>
-                                Chiudi
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                <button
+                                    onClick={() => {
+                                        setDictationTargetId(selectedTicket.id!);
+                                        setDictationInitialText(selectedTicket.notes || '');
+                                        setIsDictationModalOpen(true);
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ flex: 1 }}
+                                >
+                                    Modifica Appunti
+                                </button>
+                                <button onClick={() => setSelectedTicket(null)} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0', color: 'var(--text-primary)' }}>
+                                    Chiudi Finestra
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )
             }
+
+            <VoiceDictationModal
+                isOpen={isDictationModalOpen}
+                onClose={() => setIsDictationModalOpen(false)}
+                onSave={handleSaveDictation}
+                initialText={dictationInitialText}
+                title="Modifica Note Intervento (Admin)"
+            />
 
             {
                 activeTab === 'users' && (
@@ -786,9 +851,38 @@ export const AdminDashboard: React.FC = () => {
                                     <label htmlFor="applyCompactToAll" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>Applica vista compatta anche agli utenti (non solo Admin)</label>
                                 </div>
                             )}
-
                         </div>
-                        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+
+                        <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '1rem 0' }} />
+                        <h4 style={{ marginBottom: '1rem', color: '#0369a1' }}>Funzionalità Extra: Caricamento Fotografie</h4>
+                        <div style={{ backgroundColor: '#f0f9ff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                <input
+                                    type="checkbox"
+                                    id="enablePhotos"
+                                    checked={localSettings.enablePhotos || false}
+                                    onChange={e => setLocalSettings(prev => ({ ...prev, enablePhotos: e.target.checked }))}
+                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="enablePhotos" style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#0369a1', cursor: 'pointer' }}>
+                                    Abilita l'upload di fotografie nei ticket
+                                </label>
+                            </div>
+
+                            {localSettings.enablePhotos && (
+                                <div style={{ backgroundColor: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                                    <strong style={{ display: 'block', color: '#b91c1c', marginBottom: '0.5rem' }}>⚠️ ATTENZIONE: Costi Firebase Storage</strong>
+                                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#7f1d1d' }}>
+                                        Hai attivato il caricamento delle immagini. Firebase offre <strong>5 GB di spazio di archiviazione gratuito</strong> (Piano Spark).
+                                        Superata questa soglia, se non si passa a un piano a pagamento (Blaze), il caricamento verrà bloccato da Firebase.
+                                        <br /><br />
+                                        <em>Nota: Le immagini vengono compresse automaticamente in formato webP/JPEG ridotto prima dell'invio per massimizzare la resa dei 5 GB.</em>
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '1.5rem' }}>
                             <SettingsIcon size={18} /> Salva e Applica Globalmente
                         </button>
                     </form>

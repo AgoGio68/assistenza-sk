@@ -29,6 +29,7 @@ export interface Ticket {
     closedBy?: string | null;
     closedAt?: number | null;
     notes?: string;
+    photoUrls?: string[];
 }
 
 export interface Company {

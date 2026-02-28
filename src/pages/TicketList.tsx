@@ -400,6 +400,17 @@ export const TicketList: React.FC = () => {
                         <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', marginBottom: '1.5rem' }}>
                             <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Descrizione Problema:</p>
                             <p>{selectedTicket.description}</p>
+
+                            {selectedTicket.photoUrls && selectedTicket.photoUrls.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                                    <p style={{ width: '100%', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>FOTO ALLEGATE:</p>
+                                    {selectedTicket.photoUrls.map((url, i) => (
+                                        <a key={i} href={url} target="_blank" rel="noreferrer" title="Clicca per ingrandire" style={{ display: 'block', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                            <img src={url} alt={`Allegato ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {selectedTicket.notes && (
@@ -415,9 +426,13 @@ export const TicketList: React.FC = () => {
                                     Prendi in Carico
                                 </button>
                             )}
+                            {(isAdmin || selectedTicket.assignedTo === currentUser?.uid) && (
+                                <button onClick={() => handleUpdateNotes(selectedTicket.id!, selectedTicket.notes)} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0', minWidth: '150px' }}>
+                                    {isAdmin && selectedTicket.assignedTo !== currentUser?.uid ? 'Modifica Note (Admin)' : 'Appunti'}
+                                </button>
+                            )}
                             {selectedTicket.assignedTo === currentUser?.uid && (
                                 <>
-                                    <button onClick={() => handleUpdateNotes(selectedTicket.id!, selectedTicket.notes)} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0' }}>Appunti</button>
                                     <button onClick={() => handleRelease(selectedTicket.id!)} className="btn" style={{ flex: 1, backgroundColor: '#fca5a5' }}>Rilascia</button>
                                     <button onClick={() => handleCloseTicket(selectedTicket.id!, selectedTicket.notes)} className="btn btn-success" style={{ width: '100%', marginTop: '0.5rem' }}>Chiudi Definitivamente</button>
                                 </>

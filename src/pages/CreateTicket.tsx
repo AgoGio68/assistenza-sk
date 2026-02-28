@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, getDocs, limit } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 import { UrgencyLevel, Ticket, Company } from '../types';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Camera, X } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -19,6 +21,8 @@ export const CreateTicket: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<Company[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [photos, setPhotos] = useState<File[]>([]);
+    const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
     useEffect(() => {
         // Blocca accesso se non admin e creazione disabilitata
@@ -63,6 +67,18 @@ export const CreateTicket: React.FC = () => {
         setShowSuggestions(false);
     };
 
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const selectedFiles = Array.from(e.target.files);
+            // Limit to max 3 photos per ticket maybe? Or let them upload what they want
+            setPhotos(prev => [...prev, ...selectedFiles].slice(0, 3)); // Max 3 photos for safety
+        }
+    };
+
+    const removePhoto = (index: number) => {
+        setPhotos(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!urgency) {
@@ -73,6 +89,37 @@ export const CreateTicket: React.FC = () => {
         setLoading(true);
 
         try {
+            // Pre-generate document ID so we can use it for storage path
+            const newTicketRef = doc(collection(db, 'tickets'));
+            const ticketId = newTicketRef.id;
+
+            let uploadedPhotoUrls: string[] = [];
+
+            if (photos.length > 0 && settings.enablePhotos) {
+                setUploadProgress("Compressione e caricamento foto...");
+                for (let i = 0; i < photos.length; i++) {
+                    const file = photos[i];
+                    try {
+                        // Comprimi immagine prima dell'upload (max 1MB, let's say 800px max width)
+                        const options = {
+                            maxSizeMB: 0.5,
+                            maxWidthOrHeight: 1024,
+                            useWebWorker: true
+                        };
+                        const compressedFile = await imageCompression(file, options);
+
+                        // Upload
+                        const storageRef = ref(storage, `tickets/${ticketId}/photo_${Date.now()}_${i}.jpg`);
+                        await uploadBytes(storageRef, compressedFile);
+                        const downloadUrl = await getDownloadURL(storageRef);
+                        uploadedPhotoUrls.push(downloadUrl);
+                    } catch (uploadError) {
+                        console.error("Errore upload foto:", uploadError);
+                        // Continuiamo con la creazione del ticket anche se una foto fallisce
+                    }
+                }
+            }
+
             const newTicket: Ticket = {
                 urgency,
                 companyName,
@@ -80,19 +127,19 @@ export const CreateTicket: React.FC = () => {
                 phone,
                 description,
                 status: 'aperto',
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                ...(uploadedPhotoUrls.length > 0 && { photoUrls: uploadedPhotoUrls })
             };
 
-            await addDoc(collection(db, 'tickets'), newTicket);
+            await setDoc(newTicketRef, newTicket);
 
-            // Optionally save/update the company for autocomplete
-            // Per semplicità qui potremmo fare una cloud function, ma per ora aggiorniamo lato client se non esiste
             navigate('/');
         } catch (err) {
             console.error(err);
             alert("Errore durante il salvataggio");
         } finally {
             setLoading(false);
+            setUploadProgress(null);
         }
     };
 
@@ -202,13 +249,42 @@ export const CreateTicket: React.FC = () => {
                     />
                 </div>
 
+                {settings.enablePhotos && (
+                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            <Camera size={18} /> Aggiungi Fotografie (Max 3)
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                            {photos.map((photo, idx) => (
+                                <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                    <img src={URL.createObjectURL(photo)} alt={`Upload ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <button
+                                        type="button"
+                                        onClick={() => removePhoto(idx)}
+                                        style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', padding: '2px', cursor: 'pointer' }}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            {photos.length < 3 && (
+                                <label style={{ width: '80px', height: '80px', borderRadius: '8px', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: 'white', color: '#94a3b8' }}>
+                                    <Camera size={24} />
+                                    <input type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} />
+                                </label>
+                            )}
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Le immagini verranno compresse automaticamente prima dell'invio per risparmiare traffico dati.</p>
+                    </div>
+                )}
+
                 <button
                     type="submit"
                     className="btn btn-primary btn-large"
                     disabled={loading || !urgency}
                     style={{ marginTop: '1rem' }}
                 >
-                    {loading ? 'Invio in corso...' : 'INVIA ASSISTENZA'}
+                    {loading ? (uploadProgress || 'Invio in corso...') : 'INVIA ASSISTENZA'}
                 </button>
             </form>
         </div>

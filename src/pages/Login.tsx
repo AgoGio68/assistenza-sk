@@ -15,6 +15,7 @@ export const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
+    const [viewMode, setViewMode] = useState<'guide' | 'changelog'>('guide');
 
     const navigate = useNavigate();
     const { settings } = useSettings();
@@ -47,7 +48,7 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 1.5.3
+                    Versione 1.6.1
                 </div>
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
                     {isLogin ? 'Accedi al sistema' : 'Registrazione'}
@@ -103,7 +104,7 @@ export const Login: React.FC = () => {
                     <br />
                     <button
                         type="button"
-                        onClick={() => setShowGuide(true)}
+                        onClick={() => { setShowGuide(true); setViewMode('guide'); }}
                         style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
                     >
                         <Info size={16} /> Guida e Versioni
@@ -111,14 +112,14 @@ export const Login: React.FC = () => {
                 </div>
             </div>
 
-            {/* Modale Guida Temporanea */}
+            {/* Modale Guida e Versioni */}
             {showGuide && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
                     display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
                 }}>
-                    <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}>
+                    <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}>
                         <button
                             onClick={() => setShowGuide(false)}
                             style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
@@ -126,73 +127,121 @@ export const Login: React.FC = () => {
                             <X size={24} />
                         </button>
 
-                        <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)' }}>Guida Modifiche ed Evoluzione</h3>
+                        {viewMode === 'guide' ? (
+                            <>
+                                <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center', fontSize: '1.5rem' }}>Guida all'Utilizzo Professionale</h3>
 
-                        <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.2 (Permessi Granulari)</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li><strong>Ticket Delegation:</strong> Ora gli Admin possono abilitare la creazione ticket per singoli utenti specifici dal pannello gestione utenti.</li>
-                            </ul>
+                                <div style={{ marginBottom: '2rem', fontSize: '1rem', lineHeight: '1.6' }}>
+                                    <section style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>1. Panoramica del Sistema</h4>
+                                        <p style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                                            ASSISTENZA SK è una piattaforma integrata per la gestione delle richieste di supporto tecnico e operativo. Il sistema garantisce tracciabilità, rapidità di intervento e comunicazione fluida tra reparti.
+                                        </p>
+                                    </section>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.1 (Personalizzazione Avanzata)</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li><strong>Riassegnazione:</strong> Nuovo sistema per spostare ticket tra colleghi con obbligo di motivazione e tracciabilità.</li>
-                                <li><strong>CSV Pro:</strong> Correzione codifica per Excel (caratteri accentati ora visibili).</li>
-                                <li><strong>Visibilità:</strong> Opzione Admin per restringere la vista degli utenti ai soli ticket assegnati.</li>
-                                <li><strong>Layout Compatto:</strong> Nuova modalità "Griglia" per gestire grandi volumi di lavoro su PC/Tablet.</li>
-                                <li><strong>Permessi:</strong> Controllo inserimento nuovi ticket delegabile o ristretto agli Admin.</li>
-                            </ul>
+                                    <section style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>2. Ciclo di Vita del Ticket</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                                            <li><strong>Apertura:</strong> Inserimento della richiesta con descrizione dettagliata e livello di urgenza.</li>
+                                            <li><strong>Presa in Carico:</strong> Un operatore accetta il ticket, diventandone il responsabile unico.</li>
+                                            <li><strong>Esecuzione:</strong> Comunicazione tecnica tramite note e aggiornamenti di stato.</li>
+                                            <li><strong>Chiusura:</strong> Risoluzione definitiva con archiviazione nella timeline storica.</li>
+                                        </ul>
+                                    </section>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.0 (Global Settings)</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li><strong>Global Settings:</strong> Modifica Colori Globali e Logo in tempo reale (Solo SuperAdmin).</li>
-                                <li><strong>Ottimizzazione:</strong> Schermo intero sfruttato senza limiti laterali, Navigazione descrittiva.</li>
-                                <li><strong>Ricerca & Analitiche:</strong> Dashboard con barra di ricerca, filtri e grafici visuali.</li>
-                            </ul>
+                                    <section style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>3. Funzioni Avanzate</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                                            <li><strong>Dettatura Vocale:</strong> Utilizza l'icona del microfono per inserire note velocemente senza digitare.</li>
+                                            <li><strong>Riassegnazione:</strong> Possibilità di trasferire ticket complessi a colleghi specifici.</li>
+                                            <li><strong>Notifiche Real-time:</strong> Ricezione istantanea di avvisi sonori e visivi per nuove attività.</li>
+                                        </ul>
+                                    </section>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.4.1</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li><strong>Grafica:</strong> Separazione netta dei ticket in list e check visibilità a sinistra per il mobile. Admin Dashboard più professionale e tabellare.</li>
-                                <li><strong>Ordinamento:</strong> La Admin Dashboard ha ora un toggle per scegliere se vedere la timeline rigida cronologica o i chiusi in fondo.</li>
-                                <li><strong>Dettatura Vocale (Voice):</strong> Ora puoi dettare vocalmente gli appunti e le note di chiusura dei ticket grazie all'icona a forma di microfono.</li>
-                            </ul>
+                                    <section>
+                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>4. Sicurezza e Modalità Kiosk</h4>
+                                        <p style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                                            Il sistema integra una protezione avanzata per terminali pubblici (Kiosk Mode), prevenendo uscite non autorizzate senza autorizzazione da parte dei responsabili.
+                                        </p>
+                                    </section>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.4.0</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li><strong>Priorità:</strong> I ticket che prendi in carico sono sempre i primi della lista.</li>
-                                <li><strong>Assegnatari:</strong> Opzione per nascondere o visualizzare l'identità di chi ha preso in carico altri ticket.</li>
-                                <li><strong>Tempistiche:</strong> Admin Dashboard mostra data apertura, presa in carico, chiusura e tempo trascorso.</li>
-                            </ul>
+                                <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.1 (Photo Sync & Note Admin)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li><strong>Upload Foto:</strong> Aggiunta la possibilità di inserire fino a 3 foto durante la creazione dei ticket con compressione intelligente.</li>
+                                        <li><strong>Poteri Admin:</strong> Gli amministratori possono ora modificare le note/appunti di qualsiasi ticket in qualsiasi momento (anche non assegnato a loro).</li>
+                                        <li><strong>Storage Alert:</strong> Inserito modulo SuperAdmin per alert limiti Firebase Storage (5GB Gratuiti).</li>
+                                    </ul>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.3.0</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li><strong>Conferma:</strong> Richiesta conferma "Sei sicuro?" prima di prendere in carico.</li>
-                                <li><strong>Rilascio:</strong> Tasto "Rilascia" per depennare un'assegnazione erronea e rimetterla visibile a tutti.</li>
-                                <li><strong>Dettagli Ticket:</strong> Visibilità totale note e descrizione anche sui ticket presi in carico da se stessi.</li>
-                                <li><strong>Admin:</strong> Eliminazione definitiva utenti dal database per Superadmin.</li>
-                                <li><strong>Setup Nome:</strong> Possibilità di cambiare il proprio nome in tempo reale cliccando sul tetto dell'app in alto a destra.</li>
-                            </ul>
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.0 (Security & Licensing)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li><strong>Licensing System:</strong> Nuovo blocco di attivazione basato su Codice Richiesta unico per ogni Istanza Firebase.</li>
+                                        <li><strong>Code Obfuscation:</strong> Implementato sistema di protezione del codice sorgente (JS Obfuscator) per prevenire il reverse engineering.</li>
+                                        <li><strong>Provisioning Autonomo:</strong> Script automatico per la creazione istantanea dell'account SuperAdmin e configurazione iniziale del Database.</li>
+                                    </ul>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.2.0</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li>Notifiche Push (audio e background screen) attivate.</li>
-                            </ul>
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.4 (UI & Mobile optimization)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li><strong>Mobile Lock:</strong> Impedito lo zoom involontario su dispositivi mobile per un'esperienza più vicina a un'app nativa.</li>
+                                        <li><strong>Documentation:</strong> Ristrutturazione completa della guida utente e sezione changelog dedicata.</li>
+                                        <li><strong>UX Professional:</strong> Migliorata la leggibilità dei pannelli informativi alla login.</li>
+                                    </ul>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.1.0</h4>
-                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                <li>UI fissa (non più popup disordinati). Login stilizzato.</li>
-                                <li>Possibilità modifica dati Aziende nel pannello Admin.</li>
-                            </ul>
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.3 (Bug Fix & stability)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li>Ottimizzazione caricamento iniziale e correzioni minori al layout.</li>
+                                    </ul>
 
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.0.0</h4>
-                            <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-primary)' }}>
-                                <li>Inizializzazione con Firebase, multi-ruolo, inserzione e presa in carico ticket.</li>
-                            </ul>
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.2 (Permessi Granulari)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li><strong>Ticket Delegation:</strong> Ora gli Admin possono abilitare la creazione ticket per singoli utenti specifici dal pannello gestione utenti.</li>
+                                    </ul>
+
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.1 (Personalizzazione Avanzata)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li><strong>Riassegnazione:</strong> Nuovo sistema per spostare ticket tra colleghi con obbligo di motivazione e tracciabilità.</li>
+                                        <li><strong>CSV Pro:</strong> Correzione codifica per Excel (caratteri accentati ora visibili).</li>
+                                        <li><strong>Visibilità:</strong> Opzione Admin per restringere la vista degli utenti ai soli ticket assegnati.</li>
+                                        <li><strong>Layout Compatto:</strong> Nuova modalità "Griglia" per gestire grandi volumi di lavoro su PC/Tablet.</li>
+                                    </ul>
+
+                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.0 (Global Settings)</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                        <li><strong>Global Settings:</strong> Modifica Colori Globali e Logo in tempo reale (Solo SuperAdmin).</li>
+                                        <li><strong>Ottimizzazione:</strong> Schermo intero sfruttato senza limiti laterali.</li>
+                                        <li><strong>Ricerca & Analitiche:</strong> Dashboard con barra di ricerca, filtri e grafici visuali.</li>
+                                    </ul>
+
+                                    <div style={{ textAlign: 'center', fontStyle: 'italic', color: 'var(--text-secondary)', marginTop: '1rem' }}>
+                                        Vedere versioni precedenti nel database di assistenza SK.
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
+                            <button onClick={() => setShowGuide(false)} className="btn btn-primary" style={{ width: '100%' }}>
+                                Chiudi
+                            </button>
+
+                            <button
+                                onClick={() => setViewMode(viewMode === 'guide' ? 'changelog' : 'guide')}
+                                className="btn"
+                                style={{
+                                    width: '100%',
+                                    backgroundColor: 'transparent',
+                                    border: '1px solid var(--primary-color)',
+                                    color: 'var(--primary-color)'
+                                }}
+                            >
+                                {viewMode === 'guide' ? 'Visualizza Changelog' : 'Torna alla Guida'}
+                            </button>
                         </div>
-
-                        <button onClick={() => setShowGuide(false)} className="btn btn-primary" style={{ width: '100%' }}>
-                            Chiudi
-                        </button>
                     </div>
                 </div>
             )}
