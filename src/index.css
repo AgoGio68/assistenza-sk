@@ -34,6 +34,15 @@
   padding: 0;
 }
 
+html,
+body {
+  overscroll-behavior: none;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-color);
@@ -45,7 +54,8 @@ body {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  position: relative;
 }
 
 .app-header {
@@ -71,6 +81,10 @@ body {
   max-width: 1000px;
   margin: 0 auto;
   width: 100%;
+  /* Rendo scrollabile solo il contenuto e non la base PWA */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Glassmorphism utility classes */
@@ -132,8 +146,11 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  height: 100%;
   padding: 1rem;
+  overflow-y: auto;
+  /* Consente scroll verticale qui se il device è piccolissimo */
+  -webkit-overflow-scrolling: touch;
 }
 
 .auth-card {
