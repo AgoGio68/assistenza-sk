@@ -8,6 +8,7 @@ export interface UserProfile {
     role: UserRole;
     status: UserStatus;
     createdAt: number;
+    canCreateTickets?: boolean;
     fcmToken?: string;
 }
 

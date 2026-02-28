@@ -144,6 +144,17 @@ export const AdminDashboard: React.FC = () => {
         }
     };
 
+    const toggleTicketPermission = async (uid: string, currentVal: boolean = false) => {
+        if (!isSuperadmin) return;
+        try {
+            const newVal = !currentVal;
+            await updateDoc(doc(db, 'users', uid), { canCreateTickets: newVal });
+            setUsers(users.map(u => u.uid === uid ? { ...u, canCreateTickets: newVal } : u));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const removeUser = async (uid: string) => {
         if (!isSuperadmin) return;
         try {
@@ -541,6 +552,7 @@ export const AdminDashboard: React.FC = () => {
                                     <th style={{ padding: '0.75rem 0' }}>Nome</th>
                                     <th>Email</th>
                                     <th>Ruolo</th>
+                                    <th>Permessi</th>
                                     <th>Stato</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -553,6 +565,17 @@ export const AdminDashboard: React.FC = () => {
                                         <td style={{ padding: '0.75rem 0' }}>{user.displayName}</td>
                                         <td>{user.email}</td>
                                         <td>{user.role}</td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!user.canCreateTickets}
+                                                    onChange={() => toggleTicketPermission(user.uid, user.canCreateTickets)}
+                                                    disabled={user.role === 'admin' || user.role === 'superadmin'} // Gli admin possono sempre creare
+                                                />
+                                                <span style={{ fontSize: '0.8rem' }}>Crea Ticket</span>
+                                            </div>
+                                        </td>
                                         <td>
                                             <span style={{
                                                 padding: '0.25rem 0.5rem',
@@ -764,15 +787,6 @@ export const AdminDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <input
-                                    type="checkbox"
-                                    id="allowUserTicketCreation"
-                                    checked={localSettings.allowUserTicketCreation}
-                                    onChange={e => setLocalSettings(prev => ({ ...prev, allowUserTicketCreation: e.target.checked }))}
-                                />
-                                <label htmlFor="allowUserTicketCreation" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>Permetti agli utenti non-Admin di inserire nuovi ticket</label>
-                            </div>
                         </div>
                         <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
                             <SettingsIcon size={18} /> Salva e Applica Globalmente

@@ -47,7 +47,7 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 1.5.1
+                    Versione 1.5.3
                 </div>
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
                     {isLogin ? 'Accedi al sistema' : 'Registrazione'}
@@ -129,6 +129,11 @@ export const Login: React.FC = () => {
                         <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)' }}>Guida Modifiche ed Evoluzione</h3>
 
                         <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.2 (Permessi Granulari)</h4>
+                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                <li><strong>Ticket Delegation:</strong> Ora gli Admin possono abilitare la creazione ticket per singoli utenti specifici dal pannello gestione utenti.</li>
+                            </ul>
+
                             <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.1 (Personalizzazione Avanzata)</h4>
                             <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
                                 <li><strong>Riassegnazione:</strong> Nuovo sistema per spostare ticket tra colleghi con obbligo di motivazione e tracciabilità.</li>
