@@ -6,6 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { LogIn, UserPlus, Info, X } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 export const Login: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -16,6 +17,7 @@ export const Login: React.FC = () => {
     const [showGuide, setShowGuide] = useState(false);
 
     const navigate = useNavigate();
+    const { settings } = useSettings();
 
     const appName = import.meta.env.VITE_APP_NAME || 'ASSISTENZA SK';
 
@@ -42,8 +44,11 @@ export const Login: React.FC = () => {
     return (
         <div className="auth-wrapper">
             <div className="glass-panel auth-card">
-                <img src="/logo-sk.jpg" alt="ASSISTENZA SK Logo" className="auth-logo" />
-                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 700 }}>{appName}</h2>
+                <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
+                <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    Versione 1.5.1
+                </div>
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
                     {isLogin ? 'Accedi al sistema' : 'Registrazione'}
                 </h3>
@@ -124,7 +129,37 @@ export const Login: React.FC = () => {
                         <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)' }}>Guida Modifiche ed Evoluzione</h3>
 
                         <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.3.0 (Nuova Release)</h4>
+                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.1 (Personalizzazione Avanzata)</h4>
+                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                <li><strong>Riassegnazione:</strong> Nuovo sistema per spostare ticket tra colleghi con obbligo di motivazione e tracciabilità.</li>
+                                <li><strong>CSV Pro:</strong> Correzione codifica per Excel (caratteri accentati ora visibili).</li>
+                                <li><strong>Visibilità:</strong> Opzione Admin per restringere la vista degli utenti ai soli ticket assegnati.</li>
+                                <li><strong>Layout Compatto:</strong> Nuova modalità "Griglia" per gestire grandi volumi di lavoro su PC/Tablet.</li>
+                                <li><strong>Permessi:</strong> Controllo inserimento nuovi ticket delegabile o ristretto agli Admin.</li>
+                            </ul>
+
+                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.0 (Global Settings)</h4>
+                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                <li><strong>Global Settings:</strong> Modifica Colori Globali e Logo in tempo reale (Solo SuperAdmin).</li>
+                                <li><strong>Ottimizzazione:</strong> Schermo intero sfruttato senza limiti laterali, Navigazione descrittiva.</li>
+                                <li><strong>Ricerca & Analitiche:</strong> Dashboard con barra di ricerca, filtri e grafici visuali.</li>
+                            </ul>
+
+                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.4.1</h4>
+                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                <li><strong>Grafica:</strong> Separazione netta dei ticket in list e check visibilità a sinistra per il mobile. Admin Dashboard più professionale e tabellare.</li>
+                                <li><strong>Ordinamento:</strong> La Admin Dashboard ha ora un toggle per scegliere se vedere la timeline rigida cronologica o i chiusi in fondo.</li>
+                                <li><strong>Dettatura Vocale (Voice):</strong> Ora puoi dettare vocalmente gli appunti e le note di chiusura dei ticket grazie all'icona a forma di microfono.</li>
+                            </ul>
+
+                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.4.0</h4>
+                            <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                                <li><strong>Priorità:</strong> I ticket che prendi in carico sono sempre i primi della lista.</li>
+                                <li><strong>Assegnatari:</strong> Opzione per nascondere o visualizzare l'identità di chi ha preso in carico altri ticket.</li>
+                                <li><strong>Tempistiche:</strong> Admin Dashboard mostra data apertura, presa in carico, chiusura e tempo trascorso.</li>
+                            </ul>
+
+                            <h4 style={{ color: 'var(--secondary-color)' }}>v1.3.0</h4>
                             <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
                                 <li><strong>Conferma:</strong> Richiesta conferma "Sei sicuro?" prima di prendere in carico.</li>
                                 <li><strong>Rilascio:</strong> Tasto "Rilascia" per depennare un'assegnazione erronea e rimetterla visibile a tutti.</li>

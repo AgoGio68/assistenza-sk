@@ -78,9 +78,9 @@ body {
 .app-content {
   flex: 1;
   padding: 1rem;
-  max-width: 1000px;
-  margin: 0 auto;
+  /* max-width rimosso per supportare layout full-screen (v1.5) */
   width: 100%;
+  margin: 0 auto;
   /* Rendo scrollabile solo il contenuto e non la base PWA */
   overflow-y: auto;
   overflow-x: hidden;
@@ -170,6 +170,10 @@ body {
 
 /* Ottimizzazioni Mobile (Full Width, non flottante) */
 @media (max-width: 640px) {
+  .hide-mobile {
+    display: none;
+  }
+
   .app-content {
     padding: 0;
   }

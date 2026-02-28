@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { UrgencyLevel, Ticket, Company } from '../types';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 export const CreateTicket: React.FC = () => {
     const navigate = useNavigate();
+    const { isAdmin } = useAuth();
+    const { settings } = useSettings();
     const [urgency, setUrgency] = useState<UrgencyLevel | null>(null);
     const [companyName, setCompanyName] = useState('');
     const [contactName, setContactName] = useState('');
@@ -15,6 +19,13 @@ export const CreateTicket: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<Company[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+
+    useEffect(() => {
+        // Blocca accesso se non admin e creazione disabilitata
+        if (!isAdmin && !settings.allowUserTicketCreation) {
+            navigate('/');
+        }
+    }, [isAdmin, settings.allowUserTicketCreation, navigate]);
 
     // Simple debounce for company search
     useEffect(() => {

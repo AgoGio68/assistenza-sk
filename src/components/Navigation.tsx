@@ -2,10 +2,12 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Home, PlusCircle, Settings, LogOut } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 export const Navigation: React.FC = () => {
     const { logout, isAdmin, userProfile, updateDisplayName } = useAuth();
-    const appName = import.meta.env.VITE_APP_NAME || 'ASSISTENZA SK';
+    const { settings } = useSettings();
+    const appName = settings.appName || 'ASSISTENZA SK';
 
     const handleNameChange = async () => {
         const newName = window.prompt("Come vuoi essere chiamato?", userProfile?.displayName || '');
@@ -37,38 +39,48 @@ export const Navigation: React.FC = () => {
                         {userProfile?.displayName || userProfile?.email || appName}
                     </span>
                 </button>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.3.0 - {appName}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.5.1 - {appName}</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <NavLink
                     to="/"
-                    style={({ isActive }) => ({ color: isActive ? 'var(--secondary-color)' : 'var(--text-secondary)' })}
+                    className="btn"
+                    style={({ isActive }) => ({ padding: '0.5rem 0.75rem', backgroundColor: isActive ? 'var(--secondary-color)' : 'transparent', color: isActive ? 'white' : 'var(--text-secondary)' })}
+                    title="Torna alla Home"
                 >
-                    <Home size={24} />
+                    <Home size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Home</span>
                 </NavLink>
 
-                <NavLink
-                    to="/create"
-                    style={({ isActive }) => ({ color: isActive ? 'var(--secondary-color)' : 'var(--text-secondary)' })}
-                >
-                    <PlusCircle size={24} />
-                </NavLink>
+                {(isAdmin || settings.allowUserTicketCreation) && (
+                    <NavLink
+                        to="/create"
+                        className="btn"
+                        style={({ isActive }) => ({ padding: '0.5rem 0.75rem', backgroundColor: isActive ? 'var(--secondary-color)' : 'transparent', color: isActive ? 'white' : 'var(--text-secondary)' })}
+                        title="Apri un nuovo Ticket di Assistenza"
+                    >
+                        <PlusCircle size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Nuova Assistenza</span>
+                    </NavLink>
+                )}
 
                 {isAdmin && (
                     <NavLink
                         to="/admin"
-                        style={({ isActive }) => ({ color: isActive ? 'var(--secondary-color)' : 'var(--text-secondary)' })}
+                        className="btn"
+                        style={({ isActive }) => ({ padding: '0.5rem 0.75rem', backgroundColor: isActive ? 'var(--secondary-color)' : 'transparent', color: isActive ? 'white' : 'var(--text-secondary)' })}
+                        title="Gestione globale Amministratori"
                     >
-                        <Settings size={24} />
+                        <Settings size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Pannello Admin</span>
                     </NavLink>
                 )}
 
                 <button
                     onClick={() => logout()}
-                    style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex' }}
+                    className="btn"
+                    style={{ padding: '0.5rem 0.75rem', background: 'transparent', color: 'var(--danger-color)' }}
+                    title="Esci dall'applicazione"
                 >
-                    <LogOut size={24} />
+                    <LogOut size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Esci</span>
                 </button>
             </div>
         </nav>
