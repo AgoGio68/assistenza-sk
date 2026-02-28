@@ -17,6 +17,7 @@ interface AuthContextType {
     isSuperadmin: boolean;
     isAdmin: boolean;
     isApproved: boolean;
+    updateDisplayName: (newName: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -98,6 +99,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isAdmin = userProfile?.role === 'admin' || isSuperadmin;
     const isApproved = userProfile?.status === 'approved' || isSuperadmin;
 
+    const updateDisplayName = async (newName: string) => {
+        if (!currentUser) return;
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { displayName: newName });
+    };
+
     // Debug log to trace what AuthContext thinks the user status is
     useEffect(() => {
         if (userProfile) {
@@ -112,7 +119,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         isSuperadmin,
         isAdmin,
-        isApproved
+        isApproved,
+        updateDisplayName
     };
 
     return (

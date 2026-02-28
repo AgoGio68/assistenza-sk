@@ -10,8 +10,7 @@ export const TicketList: React.FC = () => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Per semplicità non usiamo notifiche push in background, ma notifichiamo a schermo intero o tramite alert (se l'utente è sul ticket list)
-    const [prevTicketCount, setPrevTicketCount] = useState<number | null>(null);
+    // Notifiche gestite tramite Cloud Functions e Service Worker (FCM) 
     const [userNames, setUserNames] = useState<Record<string, string>>({});
 
     useEffect(() => {
@@ -46,16 +45,6 @@ export const TicketList: React.FC = () => {
             // Ordiniamo lato client per evitare l'errore di Indice Composto mancante su Firebase
             fetchedTickets.sort((a, b) => b.createdAt - a.createdAt);
 
-            // Sound / alert in-app
-            if (prevTicketCount !== null && fetchedTickets.length > prevTicketCount) {
-                // Find the newest open ticket
-                const newest = fetchedTickets.find(t => t.status === 'aperto');
-                if (newest) {
-                    alert(`NUOVA ASSISTENZA: ${newest.companyName} - ${newest.urgency.toUpperCase()}`);
-                }
-            }
-
-            setPrevTicketCount(fetchedTickets.length);
             setTickets(fetchedTickets);
             setLoading(false);
         }, (error) => {
@@ -64,9 +53,10 @@ export const TicketList: React.FC = () => {
         });
 
         return () => unsubscribe();
-    }, [currentUser, prevTicketCount]);
+    }, [currentUser]);
 
     const handleTakeCharge = async (ticketId: string) => {
+        if (!window.confirm("Sei sicuro di voler PRENDERE IN CARICO questa assistenza?")) return;
         try {
             const ticketRef = doc(db, 'tickets', ticketId);
             await updateDoc(ticketRef, {
@@ -80,9 +70,40 @@ export const TicketList: React.FC = () => {
         }
     };
 
-    const handleCloseTicket = async (ticketId: string) => {
+    const handleRelease = async (ticketId: string) => {
+        if (!window.confirm("Vuoi davvero RILASCIARE questo ticket e rimetterlo a disposizione di tutti?")) return;
         try {
-            const notes = window.prompt("Vuoi aggiungere delle note per questa assistenza? (Opzionale)");
+            const ticketRef = doc(db, 'tickets', ticketId);
+            await updateDoc(ticketRef, {
+                status: 'aperto',
+                assignedTo: null,
+                updatedAt: Date.now()
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Errore rilascio ticket');
+        }
+    };
+
+    const handleUpdateNotes = async (ticketId: string, currentNotes: string = '') => {
+        const newNotes = window.prompt("Scrivi o modifica gli appunti dell'intervento:", currentNotes);
+        if (newNotes === null) return; // User cancelled
+
+        try {
+            const ticketRef = doc(db, 'tickets', ticketId);
+            await updateDoc(ticketRef, {
+                notes: newNotes,
+                updatedAt: Date.now()
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Errore salvataggio appunti');
+        }
+    };
+
+    const handleCloseTicket = async (ticketId: string, currentNotes: string = '') => {
+        try {
+            const notes = window.prompt("Appunti finali per la chiusura (Opzionale):", currentNotes);
             if (notes === null) return; // user cancelled
 
             const ticketRef = doc(db, 'tickets', ticketId);
@@ -151,6 +172,11 @@ export const TicketList: React.FC = () => {
                             <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
                                 <div><strong>Ref:</strong> {ticket.contactName} - {ticket.phone}</div>
                                 <div style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>{ticket.description}</div>
+                                {ticket.notes && (
+                                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '4px', fontSize: '0.875rem', borderLeft: '3px solid #f59e0b' }}>
+                                        <strong>Appunti:</strong> {ticket.notes}
+                                    </div>
+                                )}
                             </div>
 
 
@@ -177,13 +203,31 @@ export const TicketList: React.FC = () => {
                                     )}
 
                                     {isTakenByMe && (
-                                        <button
-                                            onClick={() => handleCloseTicket(ticket.id!)}
-                                            className="btn btn-success"
-                                            style={{ flex: 1, padding: '0.75rem' }}
-                                        >
-                                            <Check size={18} /> Chiudi
-                                        </button>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={() => handleUpdateNotes(ticket.id!, ticket.notes)}
+                                                    className="btn"
+                                                    style={{ flex: 1, padding: '0.75rem', backgroundColor: '#e2e8f0', color: '#1e293b' }}
+                                                >
+                                                    Appunti
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRelease(ticket.id!)}
+                                                    className="btn"
+                                                    style={{ flex: 1, padding: '0.75rem', backgroundColor: '#fca5a5', color: '#991b1b' }}
+                                                >
+                                                    Rilascia
+                                                </button>
+                                            </div>
+                                            <button
+                                                onClick={() => handleCloseTicket(ticket.id!, ticket.notes)}
+                                                className="btn btn-success"
+                                                style={{ width: '100%', padding: '0.75rem' }}
+                                            >
+                                                <Check size={18} /> Chiudi Definitivamente
+                                            </button>
+                                        </div>
                                     )}
 
                                     {/* Fallback per Admin per riassegnare - semplificato per ora */}

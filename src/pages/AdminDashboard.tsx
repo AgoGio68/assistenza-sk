@@ -86,6 +86,17 @@ export const AdminDashboard: React.FC = () => {
         }
     };
 
+    const removeUser = async (uid: string) => {
+        if (!isSuperadmin) return;
+        try {
+            await deleteDoc(doc(db, 'users', uid));
+            setUsers(users.filter(u => u.uid !== uid));
+        } catch (err) {
+            console.error(err);
+            alert("Errore durante l'eliminazione dell'utente.");
+        }
+    };
+
     const addCompany = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newCompany.name.trim()) return;
@@ -275,17 +286,27 @@ export const AdminDashboard: React.FC = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        {isSuperadmin && user.role !== 'superadmin' && (
-                                            <select
-                                                value={user.status}
-                                                onChange={(e) => updateUserStatus(user.uid, e.target.value as any)}
-                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                            >
-                                                <option value="pending">In attesa</option>
-                                                <option value="approved">Approvato</option>
-                                                <option value="rejected">Bloccato</option>
-                                            </select>
-                                        )}
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                            {isSuperadmin && user.role !== 'superadmin' && (
+                                                <select
+                                                    value={user.status}
+                                                    onChange={(e) => updateUserStatus(user.uid, e.target.value as any)}
+                                                    style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                                >
+                                                    <option value="pending">In attesa</option>
+                                                    <option value="approved">Approvato</option>
+                                                    <option value="rejected">Bloccato</option>
+                                                </select>
+                                            )}
+                                            {isSuperadmin && user.role !== 'superadmin' && (
+                                                <button
+                                                    onClick={() => { if (window.confirm(`Sei sicuro di voler ELIMINARE DEFINITIVAMENTE l'utente ${user.displayName || user.email}?`)) removeUser(user.uid) }}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.875rem' }}
+                                                >
+                                                    Elimina
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

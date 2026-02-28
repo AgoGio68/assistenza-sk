@@ -4,8 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { Home, PlusCircle, Settings, LogOut } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
-    const { logout, isAdmin } = useAuth();
+    const { logout, isAdmin, userProfile, updateDisplayName } = useAuth();
     const appName = import.meta.env.VITE_APP_NAME || 'ASSISTENZA SK';
+
+    const handleNameChange = async () => {
+        const newName = window.prompt("Come vuoi essere chiamato?", userProfile?.displayName || '');
+        if (newName && newName.trim() !== '') {
+            await updateDisplayName(newName.trim());
+        }
+    };
 
     return (
         <nav className="glass-panel" style={{
@@ -21,8 +28,16 @@ export const Navigation: React.FC = () => {
             borderTop: 'none'
         }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{appName}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.2.0</span>
+                <button
+                    onClick={handleNameChange}
+                    style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                    title="Clicca per cambiare il tuo nome"
+                >
+                    <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
+                        {userProfile?.displayName || userProfile?.email || appName}
+                    </span>
+                </button>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.3.0 - {appName}</span>
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
