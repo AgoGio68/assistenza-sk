@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuale Utente Ufficiale - Assistenza SK v1.7.8</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #3b82f6;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #1e293b;
+            --text-light: #64748b;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .header {
+            background-color: var(--primary);
+            color: white;
+            padding: 3rem 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            margin: 1rem 0 0;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-top: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.75rem;
+        }
+
+        .sidebar a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            display: block;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover {
+            background-color: #f8fafc;
+            color: var(--secondary);
+            padding-left: 0.75rem;
+        }
+
+        /* Main Content */
+        .content {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 3rem;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h3 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            margin-top: 2rem;
+        }
+
+        p {
+            margin: 1rem 0;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            vertical-align: middle;
+        }
+
+        .badge-user {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-admin {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-super {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .feature-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .feature-box ul {
+            padding-left: 1.5rem;
+            margin: 0;
+        }
+
+        .feature-box li {
+            margin-bottom: 0.5rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+
+        .image-placeholder {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justifyContent: center;
+            color: #94a3b8;
+            font-style: italic;
+            margin: 1rem 0;
+            border: 2px dashed #cbd5e1;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Manuale Utente Ufficiale</h1>
+        <p>Applicazione Assistenza SK • Versione 1.7.8</p>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h3>Indice</h3>
+            <ul>
+                <li><a href="#introduzione">Introduzione</a></li>
+                <li><a href="#accesso">Accesso e Registrazione</a></li>
+                <li><a href="#profilo">Gestione Profilo</a></li>
+                <li><a href="#gestione-ticket">Gestione Ticket</a></li>
+                <li><a href="#dashboard-admin">Dashboard Admin</a></li>
+                <li><a href="#configurazione-super">SuperAdmin & Setup</a></li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <section id="introduzione">
+                <h2>Introduzione</h2>
+                <p>Benvenuti nel manuale ufficiale di <strong>Assistenza SK</strong>. Questo sistema è stato progettato
+                    per centralizzare la gestione dei ticket di assistenza tecnica, monitorare le tempistiche di
+                    intervento e gestire il parco installato dei clienti.</p>
+                <div class="alert alert-info">
+                    <strong>Nota:</strong> L'interfaccia è completamente <em>responsive</em>, ottimizzata per l'uso da
+                    smartphone durante gli interventi in campo.
+                </div>
+            </section>
+
+            <section id="accesso">
+                <h2>Accesso e Registrazione <span class="role-badge badge-user">Tutti</span></h2>
+                <p>Per utilizzare il sistema è necessario un account autorizzato.</p>
+                <h3>1. Registrazione</h3>
+                <p>I nuovi utenti possono registrarsi inserendo Email e Password. Al termine, il sistema genererà un
+                    <strong>Codice di Richiesta</strong>.</p>
+                <div class="alert alert-warning">
+                    <strong>Attenzione:</strong> Dopo la registrazione, l'account rimane in stato "Pendiente". È
+                    necessario inviare il Codice di Richiesta a un amministratore per l'attivazione.
+                </div>
+                <h3>2. Login</h3>
+                <p>Una volta approvato l'account, è possibile accedere normalmente. In caso di configurazione Telegram
+                    attiva, è possibile scaricare l'app per ricevere notifiche in tempo reale.</p>
+            </section>
+
+            <section id="profilo">
+                <h2>Il Tuo Profilo <span class="role-badge badge-user">Tutti</span></h2>
+                <p>Ogni utente ha accesso alla propria area personale cliccando sul proprio nome in alto a sinistra.</p>
+                <div class="feature-box">
+                    <ul>
+                        <li><strong>Nome Visualizzato:</strong> Puoi modificare il nome con cui appari nel sistema.</li>
+                        <li><strong>Statistiche Personali:</strong> Visualizza il conteggio dei ticket chiusi e il tempo
+                            totale di intervento da te accumulato.</li>
+                        <li><strong>Ruolo:</strong> Verifica il tuo livello di permessi (Utente, Admin, SuperAdmin).
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="gestione-ticket">
+                <h2>Gestione Ticket <span class="role-badge badge-user">Tecnici</span></h2>
+                <p>Il cuore del sistema. Gestisci il flusso di lavoro dalla chiamata alla chiusura.</p>
+
+                <h3>1. Creazione Ticket</h3>
+                <p>Inserisci i dati del cliente. Il sistema supporta l'<strong>autocompletamento</strong>: iniziando a
+                    scrivere il nome dell'azienda, verranno suggeriti i dati salvati in precedenza.</p>
+                <ul>
+                    <li><strong>Urgenza:</strong> Scegli tra NORMALE o URGENTE (colore rosso fisso).</li>
+                    <li><strong>Descrizione:</strong> Dettaglio del problema segnalato.</li>
+                    <li><strong>Allegati:</strong> Se abilitato, puoi caricare fino a 3 foto direttamente dalla
+                        fotocamera dello smartphone.</li>
+                </ul>
+
+                <h3>2. Presa in Carico</h3>
+                <p>Dalla lista Home, clicca su "Prendi in Carico" per assegnarti il ticket. Il sistema chiederà una
+                    conferma per evitare errori.</p>
+
+                <h3>3. Chiusura Ticket</h3>
+                <p>Al termine dell'intervento, clicca su "Chiudi Ticket". Dovrai inserire:</p>
+                <ul>
+                    <li><strong>Note Finali:</strong> Cosa è stato fatto (puoi usare la <strong>dettatura
+                            vocale</strong>).</li>
+                    <li><strong>Durata:</strong> Inserisci Ore e Minuti effettivamente impiegati.</li>
+                </ul>
+            </section>
+
+            <section id="dashboard-admin">
+                <h2>Pannello Amministratore <span class="role-badge badge-admin">Admin</span></h2>
+                <p>Accessibile tramite il pulsante "Pannello Admin", permette il controllo totale del sistema.</p>
+
+                <div class="feature-box">
+                    <h3>Monitoraggio e Statistiche</h3>
+                    <p>La dashboard mostra in tempo reale:</p>
+                    <ul>
+                        <li>Numero di ticket Aperti e Chiusi.</li>
+                        <li><strong>Tempo Totale Interventi:</strong> Somma dinamica delle ore di lavoro basate sui
+                            filtri impostati.</li>
+                    </ul>
+                </div>
+
+                <h3>Export Dati (CSV)</h3>
+                <p>È possibile scaricare un report CSV completo. Dalla versione 1.7.8 il report è ottimizzato:</p>
+                <ul>
+                    <li>Tutti i testi sono in <strong>MAIUSCOLO</strong> per uniformità professionale.</li>
+                    <li>La durata è unificata nel formato <strong>HH:MM</strong> in un'unica colonna.</li>
+                    <li>Compatibile con Excel (gestione automatica dei caratteri speciali e virgole).</li>
+                </ul>
+
+                <h3>Anagrafiche Aziende</h3>
+                <p>Gli amministratori possono gestire l'elenco delle aziende "frequenti" per rendere la creazione dei
+                    ticket istantanea per i tecnici.</p>
+            </section>
+
+            <section id="configurazione-super">
+                <h2>Manutenzione & SuperAdmin <span class="role-badge badge-super">SuperAdmin</span></h2>
+                <p>Il SuperAdmin gestisce le fondamenta dell'applicazione.</p>
+
+                <h3>1. Gestione Utenti</h3>
+                <p>Approva i nuovi iscritti, promuovi utenti ad Admin o elimina account non più necessari.</p>
+
+                <h3>2. Impostazioni Globali</h3>
+                <p>Dalla scheda Impostazioni è possibile personalizzare:</p>
+                <ul>
+                    <li><strong>Branding:</strong> Nome app, Logo personalizzato (URL), Colori primari e secondari.</li>
+                    <li><strong>Permessi:</strong> Abilitazione creazione ticket per utenti base.</li>
+                    <li><strong>Algoritmi di Vista:</strong> Modalità compatta (griglia) o estesa (lista) per la
+                        gestione ticket.</li>
+                    <li><strong>Storage:</strong> Abilitazione o disabilitazione dell'upload fotografico (con avviso
+                        limiti Firebase).</li>
+                </ul>
+            </section>
+
+            <footer
+                style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-light); font-size: 0.8rem;">
+                <p>© 2026 Assistenza SK • Sistema Gestionale Tecnico • Versione 1.7.8</p>
+            </footer>
+        </div>
+    </div>
+
+</body>
+
+</html>
