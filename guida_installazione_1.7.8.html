@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MANUALE TECNICO RILASCIO E ATTIVAZIONE - Assistenza SK v1.6.0</title>
+    <title>MANUALE TECNICO RILASCIO E ATTIVAZIONE - Assistenza SK v1.7.8</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -234,7 +234,8 @@
 
             <h3><span class="step-number">1</span> Configurazione dell'Ambiente per il nuovo Cliente</h3>
             <p>Assicurati di avere i parametri del nuovo progetto Firebase del cliente (es:
-                <em>progetto-pippo-123</em>).</p>
+                <em>progetto-pippo-123</em>).
+            </p>
             <span class="file-path">File da modificare: .env</span>
             <div class="code-container">
                 VITE_FIREBASE_API_KEY=AIzaSyA...<br>
@@ -265,7 +266,8 @@
                 firebase deploy
             </div>
             <p>A questo punto, aprendo il sito del cliente, l'app funzionerà ma mostrerà la schermata di blocco
-                <strong>"Sblocco Sistema Richiesto"</strong>.</p>
+                <strong>"Sblocco Sistema Richiesto"</strong>.
+            </p>
         </div>
 
         <!-- FASE 2: SETUP DB -->
@@ -281,7 +283,8 @@
                 <li>Seleziona la scheda <strong>Account di servizio</strong>.</li>
                 <li>Fai clic sul pulsante blu <strong>"Genera nuova chiave privata"</strong> in basso.</li>
                 <li>Verrà scaricato un file <code>.json</code> (es:
-                    <em>progetto-pippo-firebase-adminsdk-xxxxx.json</em>).</li>
+                    <em>progetto-pippo-firebase-adminsdk-xxxxx.json</em>).
+                </li>
                 <li>Rinomina questo file esattamente in <span class="highlight">serviceAccountKey.json</span>.</li>
             </ul>
 
@@ -302,7 +305,8 @@
             <h3><span class="step-number">7</span> Generazione Richiesta (Lato Cliente)</h3>
             <p>Il cliente apre l'indirizzo dell'app (es: <em>https://pippo.web.app</em>).</p>
             <p>Visualizzerà nel riquadro grigio il <strong>"CODICE RICHIESTA"</strong> (es:
-                <code>A1B2-C3D4-E5F6-G7H8</code>).</p>
+                <code>A1B2-C3D4-E5F6-G7H8</code>).
+            </p>
             <p>Il cliente ti comunica questo codice.</p>
 
             <div class="danger-box">
@@ -322,7 +326,8 @@
             <p>Invia il Codice di Sblocco al cliente. Il cliente lo inserisce nel campo "Codice di Sblocco" dell'app e
                 preme <strong>"Sblocca Sistema"</strong>.</p>
             <p><strong>RISULTATO:</strong> L'app si sblocca istantaneamente. Il cliente può ora accedere con
-                <em>admin@admin.it</em> e password <em>admin</em> per iniziare a lavorare.</p>
+                <em>admin@admin.it</em> e password <em>admin</em> per iniziare a lavorare.
+            </p>
         </div>
 
         <!-- FOOTER -->
