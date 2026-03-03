@@ -129,46 +129,74 @@ export const Login: React.FC = () => {
 
                         {viewMode === 'guide' ? (
                             <>
-                                <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center', fontSize: '1.5rem' }}>Guida all'Utilizzo Professionale</h3>
-
-                                <div style={{ marginBottom: '2rem', fontSize: '1rem', lineHeight: '1.6' }}>
-                                    <section style={{ marginBottom: '1.5rem' }}>
-                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>1. Panoramica del Sistema</h4>
-                                        <p style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>
-                                            ASSISTENZA SK è una piattaforma integrata per la gestione delle richieste di supporto tecnico e operativo. Il sistema garantisce tracciabilità, rapidità di intervento e comunicazione fluida tra reparti.
-                                        </p>
-                                    </section>
-
-                                    <section style={{ marginBottom: '1.5rem' }}>
-                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>2. Ciclo di Vita del Ticket</h4>
-                                        <ul style={{ paddingLeft: '1.2rem', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
-                                            <li><strong>Apertura:</strong> Inserimento della richiesta con descrizione dettagliata e livello di urgenza.</li>
-                                            <li><strong>Presa in Carico:</strong> Un operatore accetta il ticket, diventandone il responsabile unico.</li>
-                                            <li><strong>Esecuzione:</strong> Comunicazione tecnica tramite note e aggiornamenti di stato.</li>
-                                            <li><strong>Chiusura:</strong> Risoluzione definitiva con archiviazione nella timeline storica.</li>
-                                        </ul>
-                                    </section>
-
-                                    <section style={{ marginBottom: '1.5rem' }}>
-                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>3. Funzioni Avanzate</h4>
-                                        <ul style={{ paddingLeft: '1.2rem', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
-                                            <li><strong>Dettatura Vocale:</strong> Utilizza l'icona del microfono per inserire note velocemente senza digitare.</li>
-                                            <li><strong>Riassegnazione:</strong> Possibilità di trasferire ticket complessi a colleghi specifici.</li>
-                                            <li><strong>Notifiche Real-time:</strong> Ricezione istantanea di avvisi sonori e visivi per nuove attività.</li>
-                                        </ul>
-                                    </section>
-
-                                    <section>
-                                        <h4 style={{ color: 'var(--secondary-color)', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>4. Sicurezza e Modalità Kiosk</h4>
-                                        <p style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>
-                                            Il sistema integra una protezione avanzata per terminali pubblici (Kiosk Mode), prevenendo uscite non autorizzate senza autorizzazione da parte dei responsabili.
-                                        </p>
-                                    </section>
-                                </div>
+                                <section style={{ textAlign: 'center', marginTop: '2rem' }}>
+                                    <a
+                                        href="/manuale.html"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-primary"
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            padding: '1rem 2rem',
+                                            textDecoration: 'none',
+                                            fontSize: '1.1rem',
+                                            fontWeight: 600,
+                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)'
+                                        }}
+                                    >
+                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.7.8
+                                    </a>
+                                    <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                        Guida professionale dettagliata per Utenti, Admin e Superadmin.
+                                    </p>
+                                </section>
                             </>
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.8 - Formattazione Report</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Report CSV: unificata colonna durata (formato HH:mm).</li>
+                                        <li>Report CSV: testi convertiti automaticamente in tutto MAIUSCOLO.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.7 - Correzioni Report</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Corretto bug nell'export CSV che disallineava le colonne.</li>
+                                        <li>Migliorata la compatibilità del report con Microsoft Excel.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.6 - Report e Profilo</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Nuova Pagina Profilo con statistiche personali e gestione nome.</li>
+                                        <li>Export CSV potenziato con durata interventi e nomi completi.</li>
+                                        <li>Statistiche tempo totale interventi nella dashboard amministratore.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.5 - Dettagli Admin</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Aggiunti nomi e date completa (apertura/chiusura) nei dettagli ticket admin.</li>
+                                        <li>Migliorata la visibilità del flusso di gestione del ticket.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.4 - Durata Intervento</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Aggiunta possibilità di inserire la durata dell'intervento alla chiusura.</li>
+                                        <li>Visualizzazione durata nel Pannello Admin.</li>
+                                    </ul>
+                                </div>
+
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.3 - Diagnostica</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
