@@ -25,11 +25,16 @@ export interface Ticket {
     status: TicketStatus;
     createdAt: number;
     updatedAt?: number;
+    createdBy?: string;      // uid del creatore
+    creatorName?: string;    // nome del creatore (per denormalizzazione/cache)
     assignedTo?: string | null; // uid del collega che l'ha preso in carico
+    assigneeName?: string | null; // nome del collega (per denormalizzazione/cache)
     closedBy?: string | null;
     closedAt?: number | null;
     notes?: string;
     photoUrls?: string[];
+    durationHours?: number;
+    durationMinutes?: number;
 }
 
 export interface Company {

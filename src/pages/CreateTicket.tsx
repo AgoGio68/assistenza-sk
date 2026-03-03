@@ -11,7 +11,7 @@ import { useSettings } from '../contexts/SettingsContext';
 
 export const CreateTicket: React.FC = () => {
     const navigate = useNavigate();
-    const { isAdmin } = useAuth();
+    const { isAdmin, userProfile } = useAuth();
     const { settings } = useSettings();
     const [urgency, setUrgency] = useState<UrgencyLevel | null>(null);
     const [companyName, setCompanyName] = useState('');
@@ -121,14 +121,16 @@ export const CreateTicket: React.FC = () => {
             }
 
             const newTicket: Ticket = {
-                urgency,
-                companyName,
-                contactName,
-                phone,
-                description,
+                urgency: urgency,
+                companyName: companyName.trim(),
+                contactName: contactName.trim(),
+                phone: phone.trim(),
+                description: description.trim(),
                 status: 'aperto',
                 createdAt: Date.now(),
-                ...(uploadedPhotoUrls.length > 0 && { photoUrls: uploadedPhotoUrls })
+                ...(uploadedPhotoUrls.length > 0 && { photoUrls: uploadedPhotoUrls }),
+                createdBy: userProfile?.uid,
+                creatorName: userProfile?.displayName || userProfile?.email || 'Anonimo'
             };
 
             await setDoc(newTicketRef, newTicket);

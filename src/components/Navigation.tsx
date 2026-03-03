@@ -1,20 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, PlusCircle, Settings, LogOut } from 'lucide-react';
+import { Home, PlusCircle, Settings, LogOut, User } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export const Navigation: React.FC = () => {
-    const { logout, isAdmin, userProfile, updateDisplayName } = useAuth();
+    const { logout, isAdmin, userProfile } = useAuth();
     const { settings } = useSettings();
     const appName = settings.appName || 'ASSISTENZA SK';
-
-    const handleNameChange = async () => {
-        const newName = window.prompt("Come vuoi essere chiamato?", userProfile?.displayName || '');
-        if (newName && newName.trim() !== '') {
-            await updateDisplayName(newName.trim());
-        }
-    };
 
     return (
         <nav className="glass-panel" style={{
@@ -30,19 +23,28 @@ export const Navigation: React.FC = () => {
             borderTop: 'none'
         }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <button
-                    onClick={handleNameChange}
-                    style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
-                    title="Clicca per cambiare il tuo nome"
+                <NavLink
+                    to="/profile"
+                    style={{ textDecoration: 'none', textAlign: 'left' }}
+                    title="Il tuo profilo e statistiche"
                 >
-                    <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--primary-color)', display: 'block' }}>
                         {userProfile?.displayName || userProfile?.email || appName}
                     </span>
-                </button>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.5.1 - {appName}</span>
+                </NavLink>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.7.6 - {appName}</span>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <NavLink
+                    to="/profile"
+                    className="btn"
+                    style={({ isActive }) => ({ padding: '0.5rem 0.75rem', backgroundColor: isActive ? 'var(--secondary-color)' : 'transparent', color: isActive ? 'white' : 'var(--text-secondary)' })}
+                    title="Vedi Profilo e Statistiche"
+                >
+                    <User size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Profilo</span>
+                </NavLink>
+
                 <NavLink
                     to="/"
                     className="btn"

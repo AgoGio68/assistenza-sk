@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Ticket } from '../types';
+import { Ticket, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { Check, UserPlus, X, Send } from 'lucide-react';
+import { Check, UserPlus, X, Send, Calendar, Link as LinkIcon } from 'lucide-react';
 import { VoiceDictationModal } from '../components/VoiceDictationModal';
 import { useSettings } from '../contexts/SettingsContext';
+import { getCreatorName, getAssigneeName } from '../utils/nameUtils';
+import { createGoogleCalendarEvent, formatTicketToEvent } from '../utils/calendarUtils';
+import { CloseTicketModal } from '../components/CloseTicketModal';
 
 export const TicketList: React.FC = () => {
-    const { currentUser, isAdmin } = useAuth();
+    const { currentUser, isSuperadmin, isAdmin, userProfile, connectGoogle, googleToken, disconnectGoogle } = useAuth();
     const { settings } = useSettings();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
-    const [allUsers, setAllUsers] = useState<{ uid: string, displayName: string }[]>([]);
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
 
     // Notifiche gestite tramite Cloud Functions e Service Worker (FCM) 
     const [userNames, setUserNames] = useState<Record<string, string>>({});
@@ -28,24 +31,35 @@ export const TicketList: React.FC = () => {
     const [reassignTo, setReassignTo] = useState('');
     const [reassignReason, setReassignReason] = useState('');
 
+    // Take Charge / Calendar State
+    const [takeChargeTicket, setTakeChargeTicket] = useState<Ticket | null>(null);
+    const [scheduledDateTime, setScheduledDateTime] = useState('');
+    const [syncToCalendar, setSyncToCalendar] = useState(false);
+    const [calendarLoading, setCalendarLoading] = useState(false);
+
     useEffect(() => {
-        // Fetch users to map uid -> displayName
-        import('firebase/firestore').then(({ getDocs, collection }) => {
-            getDocs(collection(db, 'users')).then(snapshot => {
-                const namesMap: Record<string, string> = {};
-                const usersList: { uid: string, displayName: string }[] = [];
-                snapshot.forEach(doc => {
-                    const userData = doc.data();
-                    const name = userData.displayName || userData.email || 'Utente Sconosciuto';
-                    namesMap[userData.uid] = name;
-                    if (userData.status === 'approved') {
-                        usersList.push({ uid: userData.uid, displayName: name });
-                    }
-                });
-                setUserNames(namesMap);
-                setAllUsers(usersList);
+        // Fetch users to map uid -> displayName in real-time
+        const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+            const namesMap: Record<string, string> = {};
+            const usersList: UserProfile[] = [];
+
+            snapshot.forEach(doc => {
+                const userData = doc.data() as UserProfile;
+                const uid = doc.id;
+                userData.uid = uid; // Ensure uid is present
+                const name = userData.displayName || userData.email || 'Utente Sconosciuto';
+
+                namesMap[uid] = name;
+                if (userData.status === 'approved') {
+                    usersList.push(userData);
+                }
             });
+
+            setUserNames(namesMap);
+            setAllUsers(usersList);
         });
+
+        return () => unsubscribe();
     }, []);
 
     useEffect(() => {
@@ -91,18 +105,51 @@ export const TicketList: React.FC = () => {
         return () => unsubscribe();
     }, [currentUser]);
 
-    const handleTakeCharge = async (ticketId: string) => {
-        if (!window.confirm("Sei sicuro di voler PRENDERE IN CARICO questa assistenza?")) return;
+    const handleTakeCharge = (ticket: Ticket) => {
+        setTakeChargeTicket(ticket);
+        setSyncToCalendar(!!googleToken);
+        setScheduledDateTime('');
+    };
+
+    const handleConfirmTakeCharge = async () => {
+        if (!takeChargeTicket) return;
+
         try {
-            const ticketRef = doc(db, 'tickets', ticketId);
+            setCalendarLoading(true);
+            const ticketRef = doc(db, 'tickets', takeChargeTicket.id!);
+
+            // 1. Update Firestore
             await updateDoc(ticketRef, {
                 status: 'preso_in_carico',
                 assignedTo: currentUser?.uid,
+                assigneeName: userProfile?.displayName || userProfile?.email || 'Collega',
                 updatedAt: Date.now()
             });
+
+            // 2. Optional Calendar Sync
+            if (syncToCalendar && googleToken && scheduledDateTime) {
+                const event = formatTicketToEvent(
+                    takeChargeTicket.companyName,
+                    takeChargeTicket.description,
+                    new Date(scheduledDateTime),
+                    window.location.origin // Link alla web app
+                );
+
+                try {
+                    await createGoogleCalendarEvent(googleToken, event);
+                    alert('Evento creato in Google Calendar!');
+                } catch (calErr: any) {
+                    console.error("Calendar Sync Failed:", calErr);
+                    alert(`Intervento preso in carico, ma la sincronizzazione del calendario è fallita: ${calErr.message || "Errore sconosciuto"}`);
+                }
+            }
+
+            setTakeChargeTicket(null);
         } catch (err) {
             console.error(err);
             alert('Errore presa in carico');
+        } finally {
+            setCalendarLoading(false);
         }
     };
 
@@ -171,14 +218,6 @@ export const TicketList: React.FC = () => {
                     notes: newNotes,
                     updatedAt: Date.now()
                 });
-            } else if (dictationTarget.action === 'close') {
-                await updateDoc(ticketRef, {
-                    status: 'chiuso',
-                    closedBy: currentUser?.uid,
-                    closedAt: Date.now(),
-                    notes: newNotes,
-                    updatedAt: Date.now()
-                });
             }
         } catch (err) {
             console.error(err);
@@ -186,6 +225,41 @@ export const TicketList: React.FC = () => {
         } finally {
             setIsDictationModalOpen(false);
             setDictationTarget(null);
+        }
+    };
+
+    const handleSaveClosure = async (hours: number, minutes: number, newNotes: string) => {
+        if (!dictationTarget || dictationTarget.action !== 'close') return;
+
+        try {
+            const ticketRef = doc(db, 'tickets', dictationTarget.id);
+            await updateDoc(ticketRef, {
+                status: 'chiuso',
+                closedBy: currentUser?.uid,
+                closedAt: Date.now(),
+                notes: newNotes,
+                durationHours: hours,
+                durationMinutes: minutes,
+                updatedAt: Date.now()
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Errore durante la chiusura del ticket');
+        } finally {
+            setIsDictationModalOpen(false);
+            setDictationTarget(null);
+        }
+    };
+
+    const handleDeleteTicket = async (ticketId: string) => {
+        if (!window.confirm('Sei sicuro di voler ELIMINARE DEFINITIVAMENTE questo ticket? L\'azione è irreversibile.')) return;
+        try {
+            await deleteDoc(doc(db, 'tickets', ticketId));
+            setSelectedTicket(null);
+            // Non serve setTickets perché onSnapshot aggiornerà la lista automaticamente
+        } catch (err) {
+            console.error(err);
+            alert("Errore durante l'eliminazione del ticket.");
         }
     };
 
@@ -201,6 +275,24 @@ export const TicketList: React.FC = () => {
             <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 Assistenze Attive
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {isSuperadmin && (
+                        <button
+                            onClick={() => googleToken ? disconnectGoogle() : connectGoogle()}
+                            className="btn"
+                            style={{
+                                fontSize: '0.75rem',
+                                padding: '0.3rem 0.6rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                backgroundColor: googleToken ? '#dcfce7' : '#f1f5f9',
+                                color: googleToken ? '#166534' : 'var(--text-secondary)'
+                            }}
+                        >
+                            <Calendar size={14} />
+                            {googleToken ? 'Calendario Collegato' : 'Collega Google'}
+                        </button>
+                    )}
                     {isCompact && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Vista Compatta Attiva</span>}
                     <span style={{ fontSize: '0.875rem', background: 'var(--secondary-color)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem' }}>
                         {tickets.length}
@@ -234,7 +326,7 @@ export const TicketList: React.FC = () => {
                     const isUrgent = ticket.urgency === 'urgente';
                     const isTakenByMe = ticket.assignedTo === currentUser?.uid;
                     const isTakenByOthers = ticket.status === 'preso_in_carico' && !isTakenByMe;
-                    const assigneeName = ticket.assignedTo ? (userNames[ticket.assignedTo] || ticket.assignedTo) : '';
+                    const assigneeName = ticket.assignedTo ? (userNames[ticket.assignedTo] || 'Sconosciuto') : '';
 
                     if (isCompact) {
                         return (
@@ -263,7 +355,17 @@ export const TicketList: React.FC = () => {
                                         {ticket.companyName}
                                     </div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                                        {ticket.contactName}
+                                        <div style={{ marginBottom: '0.25rem' }}>
+                                            Creato da: <strong>{getCreatorName(ticket, allUsers)}</strong>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem' }}>
+                                            In carico a: <strong>{getAssigneeName(ticket, allUsers)}</strong>
+                                        </div>
+                                        {ticket.updatedAt && (
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                                Aggiornato: {new Date(ticket.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        )}
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                         {ticket.description}
@@ -293,7 +395,10 @@ export const TicketList: React.FC = () => {
                                 marginBottom: '0.5rem'
                             }}
                         >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                                Creato da: <strong>{getCreatorName(ticket, allUsers)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.125rem', color: isUrgent ? 'var(--danger-color)' : 'var(--text-primary)' }}>
                                     {ticket.companyName}
                                 </div>
@@ -303,7 +408,7 @@ export const TicketList: React.FC = () => {
                             </div>
 
                             <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-                                <div><strong>Ref:</strong> {ticket.contactName} - {ticket.phone}</div>
+                                <div><strong>Ref:</strong> {ticket.contactName}{ticket.phone && ticket.phone.trim() !== '' && ticket.phone.trim() !== '()' ? ` - ${ticket.phone.trim()}` : ''}</div>
                                 <div style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>{ticket.description}</div>
                                 {ticket.notes && (
                                     <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '4px', fontSize: '0.875rem', borderLeft: '3px solid #f59e0b', whiteSpace: 'pre-wrap' }}>
@@ -327,7 +432,7 @@ export const TicketList: React.FC = () => {
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     {ticket.status === 'aperto' && (
                                         <button
-                                            onClick={() => handleTakeCharge(ticket.id!)}
+                                            onClick={() => handleTakeCharge(ticket)}
                                             className="btn btn-primary"
                                             style={{ flex: 1, padding: '0.75rem' }}
                                         >
@@ -393,8 +498,9 @@ export const TicketList: React.FC = () => {
 
                         <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                             <p><strong>Aperto il:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
-                            <p><strong>Referente:</strong> {selectedTicket.contactName} ({selectedTicket.phone})</p>
-                            {selectedTicket.assignedTo && <p><strong>In carico a:</strong> {userNames[selectedTicket.assignedTo] || selectedTicket.assignedTo}</p>}
+                            <p><strong>Creato da:</strong> {getCreatorName(selectedTicket, allUsers)}</p>
+                            <p><strong>Referente:</strong> {selectedTicket.contactName}{selectedTicket.phone && selectedTicket.phone.trim() !== '' && selectedTicket.phone.trim() !== '()' ? ` (${selectedTicket.phone.trim()})` : ''}</p>
+                            <p><strong>In carico a:</strong> {getAssigneeName(selectedTicket, allUsers)}</p>
                         </div>
 
                         <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', marginBottom: '1.5rem' }}>
@@ -422,7 +528,7 @@ export const TicketList: React.FC = () => {
 
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             {selectedTicket.status === 'aperto' && (
-                                <button onClick={() => { handleTakeCharge(selectedTicket.id!); setSelectedTicket(null); }} className="btn btn-primary" style={{ flex: 1 }}>
+                                <button onClick={() => { handleTakeCharge(selectedTicket); setSelectedTicket(null); }} className="btn btn-primary" style={{ flex: 1 }}>
                                     Prendi in Carico
                                 </button>
                             )}
@@ -436,6 +542,11 @@ export const TicketList: React.FC = () => {
                                     <button onClick={() => handleRelease(selectedTicket.id!)} className="btn" style={{ flex: 1, backgroundColor: '#fca5a5' }}>Rilascia</button>
                                     <button onClick={() => handleCloseTicket(selectedTicket.id!, selectedTicket.notes)} className="btn btn-success" style={{ width: '100%', marginTop: '0.5rem' }}>Chiudi Definitivamente</button>
                                 </>
+                            )}
+                            {isAdmin && (
+                                <button onClick={() => handleDeleteTicket(selectedTicket.id!)} className="btn" style={{ flex: 1, backgroundColor: '#fee2e2', color: 'var(--danger-color)', border: '1px solid #fca5a5', minWidth: '150px' }}>
+                                    Elimina Ticket
+                                </button>
                             )}
                             {isAdmin && selectedTicket.status === 'preso_in_carico' && selectedTicket.assignedTo !== currentUser?.uid && (
                                 <button onClick={() => setReassignTarget({ ticketId: selectedTicket.id!, oldAssigneeName: userNames[selectedTicket.assignedTo!] || selectedTicket.assignedTo! })} className="btn" style={{ flex: 1, border: '1px solid var(--primary-color)' }}>Riassegna</button>
@@ -485,12 +596,87 @@ export const TicketList: React.FC = () => {
                 </div>
             )}
 
+            {/* Modal Presa in Carico / Calendario */}
+            {takeChargeTicket && (
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '2rem' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>Prendi in Carico</h3>
+                        <p style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            Stai prendendo in carico l'assistenza per <strong>{takeChargeTicket.companyName}</strong>.
+                        </p>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Pianifica data e ora (opzionale)</label>
+                            <input
+                                type="datetime-local"
+                                value={scheduledDateTime}
+                                onChange={e => setScheduledDateTime(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            />
+                        </div>
+
+                        {isSuperadmin && scheduledDateTime && (
+                            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                <input
+                                    type="checkbox"
+                                    id="syncToCalendar"
+                                    checked={syncToCalendar}
+                                    onChange={e => setSyncToCalendar(e.target.checked)}
+                                    disabled={!googleToken}
+                                    style={{ width: '18px', height: '18px' }}
+                                />
+                                <label htmlFor="syncToCalendar" style={{ fontSize: '0.875rem', cursor: googleToken ? 'pointer' : 'default' }}>
+                                    Crea evento su Google Calendar
+                                    {!googleToken && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--danger-color)' }}>Collega il tuo account Google per attivare questa opzione.</span>}
+                                </label>
+                            </div>
+                        )}
+
+                        {isSuperadmin && !googleToken && scheduledDateTime && (
+                            <button
+                                onClick={() => connectGoogle()}
+                                className="btn"
+                                style={{ width: '100%', marginBottom: '1rem', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                            >
+                                <LinkIcon size={18} /> Collega Google ora
+                            </button>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => setTakeChargeTicket(null)}
+                                className="btn"
+                                disabled={calendarLoading}
+                                style={{ flex: 1, backgroundColor: '#e2e8f0' }}
+                            >
+                                Annulla
+                            </button>
+                            <button
+                                onClick={handleConfirmTakeCharge}
+                                className="btn btn-primary"
+                                disabled={calendarLoading}
+                                style={{ flex: 1 }}
+                            >
+                                {calendarLoading ? 'Salvataggio...' : 'Conferma'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <VoiceDictationModal
-                isOpen={isDictationModalOpen}
-                onClose={() => setIsDictationModalOpen(false)}
+                isOpen={isDictationModalOpen && dictationTarget?.action === 'update'}
+                onClose={() => { setIsDictationModalOpen(false); setDictationTarget(null); }}
                 onSave={handleSaveDictation}
                 initialText={dictationTarget?.notes || ''}
-                title={dictationTarget?.action === 'close' ? 'Appunti finali per la chiusura' : 'Aggiungi Note Intervento (Microfono)'}
+                title="Modifica Note"
+            />
+
+            <CloseTicketModal
+                isOpen={isDictationModalOpen && dictationTarget?.action === 'close'}
+                onClose={() => { setIsDictationModalOpen(false); setDictationTarget(null); }}
+                onSave={handleSaveClosure}
+                initialNotes={dictationTarget?.notes || ''}
             />
         </div>
     );

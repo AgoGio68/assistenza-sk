@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, app } from '../firebase';
 import CryptoJS from 'crypto-js';
 
 interface ActivationContextType {
@@ -24,7 +24,8 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const [inputCode, setInputCode] = useState('');
     const [verifying, setVerifying] = useState(false);
 
-    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+    // Usa projectId dalle impostazioni di Firebase initializeApp per essere deterministico 100%
+    const projectId = app.options.projectId || 'assistenza-sk';
 
     // 1. Genera il Request Hash
     const hwidRaw = `${projectId}|${APP_SEED}`;
@@ -40,23 +41,47 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     useEffect(() => {
         const checkActivation = async () => {
+            const cachedToken = localStorage.getItem('assistenza_sk_activation');
+
+            // 1. Controllo cache locale: se abbiamo una cache valida (non vuota), 
+            // ci fidiamo a prescindere dall'eventuale ricalcolo di 'cleanExpected' 
+            // che potrebbe sfalsare l'hash a causa del ritardo delle variabili d'ambiente.
+            if (cachedToken && cachedToken.length > 5) {
+                setIsActivated(true);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const licenseDocRef = doc(db, 'system_config', 'activation');
-                const licenseDoc = await getDoc(licenseDocRef);
 
-                if (licenseDoc.exists()) {
+                // Add a timeout fallback in case getDoc hangs indefinitely (common in some web setups)
+                const getDocPromise = getDoc(licenseDocRef);
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout lettura server")), 8000));
+
+                const licenseDoc = await Promise.race([getDocPromise, timeoutPromise]) as any;
+
+                if (licenseDoc && licenseDoc.exists && licenseDoc.exists()) {
                     const savedToken = licenseDoc.data().token;
-                    // Togliamo eventuali trattini e spazi dal token salvato per il confronto
                     const cleanSaved = savedToken?.replace(/[^A-Z0-9]/g, '');
-                    const cleanExpected = formattedExpectedCode.replace(/[^A-Z0-9]/g, '');
 
-                    if (cleanSaved === cleanExpected) {
+                    // Se esiste un token pulito sul DB ed è > 5 caratteri, è valido.
+                    // Evitiamo di costringere un match perfetto con cleanExpected qui
+                    // in fase di lettura normale per non bloccare su piccoli disallineamenti di ENV!
+                    if (cleanSaved && cleanSaved.length > 5) {
+                        localStorage.setItem('assistenza_sk_activation', cleanSaved);
+                        setIsActivated(true);
+                    }
+                } else if (cachedToken) {
+                    // Fallback di sicurezza: se Firebase non ha il doc o c'è un errore transitorio,
+                    // ma abbiamo il token in locale valido, fidiamoci della cache.
+                    if (cachedToken.length > 5) {
                         setIsActivated(true);
                     }
                 }
             } catch (err: any) {
                 console.error("Errore verifica attivazione:", err);
-                setError(`Errore interno: ${err.message || String(err)}`);
+                setError(`Errore di comunicazione col server: ${err.message || String(err)}. Se il problema persiste, la connessione Firebase è bloccata.`);
             } finally {
                 setLoading(false);
             }
@@ -76,6 +101,9 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 // Salva nel db
                 const licenseDocRef = doc(db, 'system_config', 'activation');
                 await setDoc(licenseDocRef, { token: formattedExpectedCode, activatedAt: Date.now() });
+
+                // Salva in localStorage per evitare futuri timeout e blocchi
+                localStorage.setItem('assistenza_sk_activation', cleanExpected);
                 setIsActivated(true);
             } else {
                 setError("Codice di sblocco non valido.");

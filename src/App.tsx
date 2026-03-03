@@ -10,6 +10,7 @@ import { Navigation } from './components/Navigation';
 import { CreateTicket } from './pages/CreateTicket';
 import { TicketList } from './pages/TicketList';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { Profile } from './pages/Profile';
 
 // Placeholders for main pages
 
@@ -34,6 +35,7 @@ function App() {
                                 }>
                                     <Route path="/" element={<TicketList />} />
                                     <Route path="/create" element={<CreateTicket />} />
+                                    <Route path="/profile" element={<Profile />} />
                                 </Route>
                             </Route>
 

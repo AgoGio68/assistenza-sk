@@ -2,7 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
     User as FirebaseUser,
     onAuthStateChanged,
-    signOut
+    signOut,
+    GoogleAuthProvider,
+    linkWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
@@ -18,6 +20,9 @@ interface AuthContextType {
     isAdmin: boolean;
     isApproved: boolean;
     updateDisplayName: (newName: string) => Promise<void>;
+    connectGoogle: () => Promise<string | null>;
+    disconnectGoogle: () => void;
+    googleToken: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -105,12 +110,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateDoc(userDocRef, { displayName: newName });
     };
 
-    // Debug log to trace what AuthContext thinks the user status is
-    useEffect(() => {
-        if (userProfile) {
-            console.log("Current User Profile State:", userProfile);
+    const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_calendar_token'));
+
+    const connectGoogle = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            provider.addScope('https://www.googleapis.com/auth/calendar.events');
+
+            if (!currentUser) {
+                alert("Devi essere loggato per collegare Google.");
+                return null;
+            }
+
+            // Usiamo linkWithPopup invece di signInWithPopup per evitare conflitti di account
+            // e per mantenere la sessione Email/Password corrente.
+            const result = await linkWithPopup(currentUser, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential?.accessToken;
+
+            if (token) {
+                setGoogleToken(token);
+                localStorage.setItem('google_calendar_token', token);
+                return token;
+            }
+            return null;
+        } catch (error: any) {
+            console.error("Error connecting to Google:", error);
+            alert("Errore durante il collegamento a Google: " + (error.message || "Verifica la console del browser."));
+            return null;
         }
-    }, [userProfile]);
+    };
+
+    const disconnectGoogle = () => {
+        setGoogleToken(null);
+        localStorage.removeItem('google_calendar_token');
+    };
 
     const value = {
         currentUser,
@@ -120,7 +154,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSuperadmin,
         isAdmin,
         isApproved,
-        updateDisplayName
+        updateDisplayName,
+        connectGoogle,
+        disconnectGoogle,
+        googleToken
     };
 
     return (
