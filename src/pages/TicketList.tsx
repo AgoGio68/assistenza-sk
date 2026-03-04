@@ -232,7 +232,12 @@ export const TicketList: React.FC = () => {
         if (!dictationTarget || dictationTarget.action !== 'close') return;
 
         try {
-            const ticketRef = doc(db, 'tickets', dictationTarget.id);
+            const ticketId = dictationTarget.id;
+            // Ottimizzazione v1.7.9: Rimuovi subito dalla lista locale
+            setTickets(prev => prev.filter(t => t.id !== ticketId));
+            setSelectedTicket(null); // Chiudi anche il dettaglio se aperto
+
+            const ticketRef = doc(db, 'tickets', ticketId);
             await updateDoc(ticketRef, {
                 status: 'chiuso',
                 closedBy: currentUser?.uid,
@@ -245,6 +250,7 @@ export const TicketList: React.FC = () => {
         } catch (err) {
             console.error(err);
             alert('Errore durante la chiusura del ticket');
+            // Re-fetch or rely on next snapshot if error occurs
         } finally {
             setIsDictationModalOpen(false);
             setDictationTarget(null);

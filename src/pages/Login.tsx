@@ -48,8 +48,9 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 1.7.8
+                    Versione 1.8.0
                 </div>
+
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
                     {isLogin ? 'Accedi al sistema' : 'Registrazione'}
                 </h3>
@@ -129,33 +130,54 @@ export const Login: React.FC = () => {
 
                         {viewMode === 'guide' ? (
                             <>
-                                <section style={{ textAlign: 'center', marginTop: '2rem' }}>
+                                <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
                                     <a
-                                        href="/manuale.html"
+                                        href="/manuale.html?v=1.8.0"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-primary"
                                         style={{
                                             display: 'inline-flex',
                                             alignItems: 'center',
+                                            justifyContent: 'center',
                                             gap: '0.5rem',
                                             padding: '1rem 2rem',
                                             textDecoration: 'none',
                                             fontSize: '1.1rem',
                                             fontWeight: 600,
-                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)'
+                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)',
+                                            width: 'auto',
+                                            maxWidth: '90%'
                                         }}
                                     >
-                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.7.8
+                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.8.0
                                     </a>
-                                    <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
                                         Guida professionale dettagliata per Utenti, Admin e Superadmin.
                                     </p>
                                 </section>
+
                             </>
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.8.0 - Milestone Stable</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Versione stabile di riferimento per nuove funzionalità.</li>
+                                        <li>Include tutte le ottimizzazioni UX e bugfix della serie 1.7.x.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.9 - UX & Persistenza</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Chiusura ticket istantanea nella lista (UI ottimistica).</li>
+                                        <li>Salvataggio automatico dei dati azienda per i nuovi ticket.</li>
+                                        <li>Migliorata la centratura della guida su dispositivi mobili.</li>
+                                    </ul>
+                                </div>
+
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.8 - Formattazione Report</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>

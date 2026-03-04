@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manuale Utente Ufficiale - Assistenza SK v1.7.8</title>
+    <title>Manuale Utente Ufficiale - Assistenza SK v1.8.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -37,16 +37,17 @@
         .header {
             background-color: var(--primary);
             color: white;
-            padding: 3rem 1rem;
+            padding: 3rem 1.5rem;
             text-align: center;
             box-shadow: var(--shadow);
         }
 
         .header h1 {
             margin: 0;
-            font-size: 2.2rem;
+            font-size: 2rem;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+            line-height: 1.2;
         }
 
         .header p {
@@ -225,10 +226,24 @@
         @media (max-width: 850px) {
             .container {
                 grid-template-columns: 1fr;
+                margin-top: 0;
+                gap: 0;
+                padding: 0;
             }
 
             .sidebar {
                 display: none;
+            }
+
+            .content {
+                padding: 2rem 1.5rem;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            .header h1 {
+                font-size: 1.6rem;
             }
         }
     </style>
@@ -238,7 +253,8 @@
 
     <div class="header">
         <h1>Manuale Utente Ufficiale</h1>
-        <p>Applicazione Assistenza SK • Versione 1.7.8</p>
+        <p>Applicazione Assistenza SK • Versione 1.8.0</p>
+
     </div>
 
     <div class="container">
@@ -337,7 +353,8 @@
                 </div>
 
                 <h3>Export Dati (CSV)</h3>
-                <p>È possibile scaricare un report CSV completo. Dalla versione 1.7.8 il report è ottimizzato:</p>
+                <p>È possibile scaricare un report CSV completo. Dalla versione 1.8.0 il report è ottimizzato:</p>
+
                 <ul>
                     <li>Tutti i testi sono in <strong>MAIUSCOLO</strong> per uniformità professionale.</li>
                     <li>La durata è unificata nel formato <strong>HH:MM</strong> in un'unica colonna.</li>
@@ -370,7 +387,8 @@
 
             <footer
                 style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-light); font-size: 0.8rem;">
-                <p>© 2026 Assistenza SK • Sistema Gestionale Tecnico • Versione 1.7.8</p>
+                <p>© 2026 Assistenza SK • Sistema Gestionale Tecnico • Versione 1.8.0</p>
+
             </footer>
         </div>
     </div>

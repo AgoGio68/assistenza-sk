@@ -29,6 +29,15 @@ export const CreateTicket: React.FC = () => {
         if (!isAdmin && !settings.allowUserTicketCreation) {
             navigate('/');
         }
+
+        // Carica dati persistenti v1.7.9
+        const savedCompany = localStorage.getItem('last_company_name');
+        const savedContact = localStorage.getItem('last_contact_name');
+        const savedPhone = localStorage.getItem('last_phone');
+
+        if (savedCompany) setCompanyName(savedCompany);
+        if (savedContact) setContactName(savedContact);
+        if (savedPhone) setPhone(savedPhone);
     }, [isAdmin, settings.allowUserTicketCreation, navigate]);
 
     // Simple debounce for company search
@@ -134,6 +143,11 @@ export const CreateTicket: React.FC = () => {
             };
 
             await setDoc(newTicketRef, newTicket);
+
+            // Persistenza dati v1.7.9
+            localStorage.setItem('last_company_name', companyName.trim());
+            localStorage.setItem('last_contact_name', contactName.trim());
+            localStorage.setItem('last_phone', phone.trim());
 
             navigate('/');
         } catch (err) {
