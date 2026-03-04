@@ -55,7 +55,7 @@ export const Navigation: React.FC = () => {
                     <Home size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Home</span>
                 </NavLink>
 
-                {settings.enableInstallations && (
+                {(settings.enableInstallations || isAdmin) && (
                     <NavLink
                         to="/installations"
                         className="btn"
