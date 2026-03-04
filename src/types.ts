@@ -46,6 +46,7 @@ export interface Company {
 }
 
 export interface Installation {
+    rowId: string; // Unique row identifier from sheet or index
     orderNumber: string;
     client: string;
     machine: string;
@@ -62,6 +63,6 @@ export interface Installation {
     tested?: boolean; // Green state: "collaudata"
     scheduledTime?: string; // HH:mm
     scheduledDate?: string; // Overrides delivery
-    applications?: { name: string; checked: boolean }[];
+    applications?: { name: string; checked: boolean; qty?: string }[];
     localOverrides?: Partial<Installation>;
 }

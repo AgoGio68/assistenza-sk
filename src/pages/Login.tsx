@@ -48,7 +48,7 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 1.9.3
+                    Versione 1.9.9
                 </div>
 
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
@@ -132,7 +132,7 @@ export const Login: React.FC = () => {
                             <>
                                 <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
                                     <a
-                                        href="/manuale.html?v=1.9.3"
+                                        href={`/manuale.html?v=1.9.9&t=${Date.now()}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-primary"
@@ -150,7 +150,7 @@ export const Login: React.FC = () => {
                                             maxWidth: '90%'
                                         }}
                                     >
-                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.9.3
+                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.9.9
                                     </a>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
                                         Guida professionale dettagliata per Utenti, Admin e Superadmin.
@@ -161,6 +161,58 @@ export const Login: React.FC = () => {
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.9 - Prefisso Compilabile e App Avanzate</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Il Prefisso Matricola ora entra direttamente nel campo allo scatto del focus.</li>
+                                        <li>Possibilità di eliminare singolarmente le applicazioni aggiunte al volo.</li>
+                                        <li>Comparsa di un campo "Quantità" automatico se l'applicazione contiene la parola "Canali".</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.8 - Mobile Ready & Prefissi</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Risolto il problema di visualizzazione (overflow) su cellulari in modalità verticale.</li>
+                                        <li>Aggiunta la possibilità per l'Admin di impostare un Prefisso Matricola fisso.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.7 - Cache Force Update</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Implementato sistema di aggiornamento forzato della cache (Cache-Busting).</li>
+                                        <li>Riorganizzazione finale del layout modal per massima usabilità.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.6 - Ottimizzazione Layout</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Riorganizzato layout modal: stati di collaudo e fatturazione spostati in basso.</li>
+                                        <li>Checklist applicazioni spostata in primo piano sopra le note.</li>
+                                        <li>Corretto allineamento campi "Dati Macchina" per evitare sovrapposizioni.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.5 - Layout Professionale</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Restyling completo del modal dettaglio: più spazio per le note e design premium.</li>
+                                        <li>Risolto bug dei duplicati tramite identificazione univoca delle righe (rowId).</li>
+                                        <li>Migliorata la logica di ricerca e filtraggio clienti.</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.4 - Risoluzione Duplicati</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Corretto bug critico che causava la visualizzazione di schede duplicate per ordini multi-macchina.</li>
+                                        <li>Implementata chiave univoca composta (Ordine + Matricola + Modello) per ogni singola riga.</li>
+                                        <li>Migliorata la stabilità del rendering della lista installazioni.</li>
+                                    </ul>
+                                </div>
+
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.3 - Fix Duplicati e Persistenza</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>

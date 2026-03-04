@@ -2,10 +2,6 @@ import { Installation } from '../types';
 
 export const fetchInstallations = async (sheetUrl: string): Promise<Installation[]> => {
     try {
-        // Convert regular Google Sheet URL to CSV export URL
-        // From: https://docs.google.com/spreadsheets/d/ID/edit...
-        // To: https://docs.google.com/spreadsheets/d/ID/export?format=csv
-
         const sheetIdMatch = sheetUrl.match(/\/d\/([^/]+)/);
         if (!sheetIdMatch) throw new Error("Invalid Google Sheet URL");
 
@@ -24,15 +20,12 @@ export const fetchInstallations = async (sheetUrl: string): Promise<Installation
 };
 
 const parseCSV = (csvText: string): Installation[] => {
-    // Basic CSV parser for Google Sheets export
     const lines = csvText.split(/\r?\n/);
     if (lines.length < 2) return [];
 
-    // Skip header row
     const dataLines = lines.slice(1);
 
-    return dataLines.map(line => {
-        // Handle quoted fields with commas
+    return dataLines.map((line, index) => {
         const parts: string[] = [];
         let current = '';
         let inQuotes = false;
@@ -50,9 +43,8 @@ const parseCSV = (csvText: string): Installation[] => {
         }
         parts.push(current.trim());
 
-        // Map to Installation interface
-        // A: OrderNum, B: Client, C: Machine, D: Site, E: Delivery, F: Model, G: Serial, H: InstallDate, I: Comments
         return {
+            rowId: `row-${index}`,
             orderNumber: parts[0] || '',
             client: parts[1] || '',
             machine: parts[2] || '',
@@ -63,5 +55,5 @@ const parseCSV = (csvText: string): Installation[] => {
             installDate: parts[7] || '',
             comments: parts[8] || ''
         };
-    }).filter(inst => inst.client !== ''); // Filter out empty rows
+    }).filter(inst => inst.client !== '');
 };

@@ -17,6 +17,7 @@ export interface GlobalSettings {
     // New v1.9 Settings
     enableInstallations: boolean;
     installationsSheetUrl: string;
+    serialPrefix: string;
 }
 
 const defaultSettings: GlobalSettings = {
@@ -30,7 +31,8 @@ const defaultSettings: GlobalSettings = {
     allowUserTicketCreation: true,
     enablePhotos: false,
     enableInstallations: false,
-    installationsSheetUrl: ''
+    installationsSheetUrl: '',
+    serialPrefix: ''
 };
 
 interface SettingsContextType {

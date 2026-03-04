@@ -141,6 +141,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     Assicurati che il foglio sia condiviso con "Chiunque abbia il link può visualizzare".
                                 </p>
                             </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#065f46' }}>Prefisso Matricola (Opzionale)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Es. SK-, MAC-, ecc."
+                                    value={localSettings.serialPrefix || ''}
+                                    onChange={e => setLocalSettings((prev: any) => ({ ...prev, serialPrefix: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #6ee7b7' }}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: '#065f46', marginTop: '0.5rem' }}>
+                                    Questo testo verrà mostrato in modo fisso davanti al campo matricola nel dettaglio installazione.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
