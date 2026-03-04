@@ -3,7 +3,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchInstallations } from '../services/InstallationService';
 import { Installation } from '../types';
-import { Truck, Calendar, Box, Info, AlertTriangle, RefreshCw, X, Save, MessageSquare } from 'lucide-react';
+import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
