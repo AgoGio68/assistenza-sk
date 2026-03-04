@@ -32,7 +32,7 @@ export const Navigation: React.FC = () => {
                         {userProfile?.displayName || userProfile?.email || appName}
                     </span>
                 </NavLink>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.9.0 - {appName}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>v1.9.1 - {appName}</span>
 
             </div>
 
