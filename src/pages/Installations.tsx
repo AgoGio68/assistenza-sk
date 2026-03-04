@@ -3,8 +3,8 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchInstallations } from '../services/InstallationService';
 import { Installation } from '../types';
-import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare, Trash2, CheckCircle2, Clock, DollarSign, ListChecks, ArrowDownWideArrow } from 'lucide-react';
-import { doc, getDoc, setDoc, collection, onSnapshot } from 'firebase/firestore';
+import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare, Trash2, CheckCircle2, DollarSign, ListChecks, ArrowDownWideNarrow } from 'lucide-react';
+import { setDoc, collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export const Installations: React.FC = () => {
@@ -191,7 +191,7 @@ export const Installations: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        <ArrowDownWideArrow size={18} />
+                        <ArrowDownWideNarrow size={18} />
                         <span>Fine lista collaudate:</span>
                         <input
                             type="checkbox"
@@ -228,7 +228,7 @@ export const Installations: React.FC = () => {
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-                    {sortedInstallations.map((inst, index) => (
+                    {sortedInstallations.map((inst) => (
                         <div
                             key={inst.orderNumber}
                             onClick={() => handleOpenDetail(inst)}
@@ -243,7 +243,7 @@ export const Installations: React.FC = () => {
                         >
                             {inst.isInvoiced && (
                                 <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#059669' }}>
-                                    <DollarSign size={20} title="Fatturata" />
+                                    <DollarSign size={20} />
                                 </div>
                             )}
                             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{inst.client}</h3>
