@@ -44,3 +44,15 @@ export interface Company {
     phone: string;
     lastUsedAt?: number;
 }
+
+export interface Installation {
+    orderNumber: string;
+    client: string;
+    machine: string;
+    installationSite: string;
+    deliveryDate: string;
+    modelSK: string;
+    serialSK: string;
+    installDate: string;
+    comments: string;
+}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, PlusCircle, Settings, LogOut, User } from 'lucide-react';
+import { Home, PlusCircle, Settings, LogOut, User, Truck } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export const Navigation: React.FC = () => {
@@ -54,6 +54,17 @@ export const Navigation: React.FC = () => {
                 >
                     <Home size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Home</span>
                 </NavLink>
+
+                {settings.enableInstallations && (
+                    <NavLink
+                        to="/installations"
+                        className="btn"
+                        style={({ isActive }) => ({ padding: '0.5rem 0.75rem', backgroundColor: isActive ? 'var(--secondary-color)' : 'transparent', color: isActive ? 'white' : 'var(--text-secondary)' })}
+                        title="Gestione Installazioni Macchine"
+                    >
+                        <Truck size={20} /> <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>Installazioni</span>
+                    </NavLink>
+                )}
 
                 {(isAdmin || settings.allowUserTicketCreation) && (
                     <NavLink

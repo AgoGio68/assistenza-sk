@@ -110,6 +110,41 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     )}
                 </div>
 
+                <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '1rem 0' }} />
+                <h4 style={{ marginBottom: '1rem', color: '#047857' }}>Gestione Installazioni (Google Sheets)</h4>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '1.5rem', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input
+                            type="checkbox"
+                            id="enableInstallations"
+                            checked={localSettings.enableInstallations || false}
+                            onChange={e => setLocalSettings((prev: any) => ({ ...prev, enableInstallations: e.target.checked }))}
+                            style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="enableInstallations" style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#047857', cursor: 'pointer' }}>
+                            Abilita la sezione Installazioni
+                        </label>
+                    </div>
+
+                    {localSettings.enableInstallations && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#065f46' }}>URL Foglio Google (Eseguibile/CSV)</label>
+                                <input
+                                    type="url"
+                                    placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                                    value={localSettings.installationsSheetUrl || ''}
+                                    onChange={e => setLocalSettings((prev: any) => ({ ...prev, installationsSheetUrl: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #6ee7b7' }}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: '#065f46', marginTop: '0.5rem' }}>
+                                    Assicurati che il foglio sia condiviso con "Chiunque abbia il link può visualizzare".
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '1.5rem' }}>
                     <SettingsIcon size={18} /> Salva e Applica Globalmente
                 </button>

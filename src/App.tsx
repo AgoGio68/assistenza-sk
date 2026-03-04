@@ -11,6 +11,7 @@ import { CreateTicket } from './pages/CreateTicket';
 import { TicketList } from './pages/TicketList';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Profile } from './pages/Profile';
+import { Installations } from './pages/Installations';
 
 // Placeholders for main pages
 
@@ -36,6 +37,7 @@ function App() {
                                     <Route path="/" element={<TicketList />} />
                                     <Route path="/create" element={<CreateTicket />} />
                                     <Route path="/profile" element={<Profile />} />
+                                    <Route path="/installations" element={<Installations />} />
                                 </Route>
                             </Route>
 

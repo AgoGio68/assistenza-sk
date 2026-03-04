@@ -14,6 +14,9 @@ export interface GlobalSettings {
     allowUserTicketCreation: boolean;
     // New v1.8 Settings
     enablePhotos: boolean;
+    // New v1.9 Settings
+    enableInstallations: boolean;
+    installationsSheetUrl: string;
 }
 
 const defaultSettings: GlobalSettings = {
@@ -25,7 +28,9 @@ const defaultSettings: GlobalSettings = {
     layoutMode: 'default',
     applyCompactToAll: false,
     allowUserTicketCreation: true,
-    enablePhotos: false
+    enablePhotos: false,
+    enableInstallations: false,
+    installationsSheetUrl: ''
 };
 
 interface SettingsContextType {
