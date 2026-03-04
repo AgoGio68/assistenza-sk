@@ -49,10 +49,19 @@ export interface Installation {
     orderNumber: string;
     client: string;
     machine: string;
-    installationSite: string;
-    deliveryDate: string;
     modelSK: string;
     serialSK: string;
+    deliveryDate: string;
+    installationSite: string;
     installDate: string;
     comments: string;
+    // v1.9.2 Dynamic Fields (Stored in Firestore)
+    isInvoiced?: boolean;
+    isDeleted?: boolean;
+    toTest?: boolean; // Yellow state: "da collaudare"
+    tested?: boolean; // Green state: "collaudata"
+    scheduledTime?: string; // HH:mm
+    scheduledDate?: string; // Overrides delivery
+    applications?: { name: string; checked: boolean }[];
+    localOverrides?: Partial<Installation>;
 }

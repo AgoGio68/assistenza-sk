@@ -3,25 +3,29 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchInstallations } from '../services/InstallationService';
 import { Installation } from '../types';
-import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare, Trash2, CheckCircle2, Clock, DollarSign, ListChecks, ArrowDownWideArrow } from 'lucide-react';
+import { doc, getDoc, setDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export const Installations: React.FC = () => {
     const { settings } = useSettings();
     const { isSuperadmin, isAdmin } = useAuth();
+    const [sheetData, setSheetData] = useState<Installation[]>([]);
     const [installations, setInstallations] = useState<Installation[]>([]);
+    const [dbData, setDbData] = useState<Record<string, Partial<Installation>>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortVerifiedAtBottom, setSortVerifiedAtBottom] = useState(true);
 
     // Modal & Note State
     const [selectedInst, setSelectedInst] = useState<Installation | null>(null);
-    const [extraNote, setExtraNote] = useState('');
-    const [savingNote, setSavingNote] = useState(false);
-    const [dbNotes, setDbNotes] = useState<Record<string, string>>({});
+    const [editData, setEditData] = useState<Partial<Installation>>({});
+    const [saving, setSaving] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-    const loadData = async () => {
+    // Load Google Sheets Data
+    const loadSheetData = async () => {
         if (!settings.installationsSheetUrl) {
             setError("URL del foglio Google non configurato nel pannello Admin.");
             setLoading(false);
@@ -32,7 +36,7 @@ export const Installations: React.FC = () => {
         setError(null);
         try {
             const data = await fetchInstallations(settings.installationsSheetUrl);
-            setInstallations(data);
+            setSheetData(data);
         } catch (err) {
             setError("Impossibile caricare i dati dal foglio. Verifica che l'URL sia corretto e il foglio sia pubblico.");
         } finally {
@@ -40,55 +44,129 @@ export const Installations: React.FC = () => {
         }
     };
 
+    // Real-time listener for Firestore overrides
     useEffect(() => {
-        loadData();
+        const unsub = onSnapshot(collection(db, 'installation_data'), (snap) => {
+            const dataMap: Record<string, Partial<Installation>> = {};
+            snap.forEach(doc => {
+                dataMap[doc.id] = doc.data() as Partial<Installation>;
+            });
+            setDbData(dataMap);
+        });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        loadSheetData();
     }, [settings.installationsSheetUrl]);
 
-    const handleOpenDetail = async (inst: Installation) => {
-        setSelectedInst(inst);
-        setExtraNote('');
+    // Merge Sheet Data with Firestore Data
+    useEffect(() => {
+        const merged = sheetData.map(inst => {
+            const extra = dbData[inst.orderNumber] || {};
+            return {
+                ...inst,
+                ...extra,
+                // Local overrides can specifically override fixed fields
+                ...(extra.localOverrides || {})
+            };
+        }).filter(inst => !inst.isDeleted); // Client-side filtering of deleted items
 
-        // Fetch extra note from Firestore
-        try {
-            const noteRef = doc(db, 'installation_notes', inst.orderNumber);
-            const noteSnap = await getDoc(noteRef);
-            if (noteSnap.exists()) {
-                const data = noteSnap.data();
-                setExtraNote(data.note || '');
-                setDbNotes(prev => ({ ...prev, [inst.orderNumber]: data.note || '' }));
-            }
-        } catch (err) {
-            console.error("Error fetching note:", err);
-        }
+        setInstallations(merged);
+    }, [sheetData, dbData]);
+
+    const handleOpenDetail = (inst: Installation) => {
+        setSelectedInst(inst);
+        setEditData({
+            comments: inst.comments || '',
+            isInvoiced: inst.isInvoiced || false,
+            toTest: inst.toTest || false,
+            tested: inst.tested || false,
+            scheduledTime: inst.scheduledTime || '',
+            scheduledDate: inst.scheduledDate || '',
+            applications: inst.applications || [],
+            localOverrides: inst.localOverrides || {}
+        });
+        setDeleteConfirm(false);
     };
 
-    const handleSaveNote = async () => {
+    const handleSave = async () => {
         if (!selectedInst) return;
-
-        setSavingNote(true);
+        setSaving(true);
         try {
-            const noteRef = doc(db, 'installation_notes', selectedInst.orderNumber);
-            await setDoc(noteRef, {
-                note: extraNote,
+            const docRef = doc(db, 'installation_data', selectedInst.orderNumber);
+            await setDoc(docRef, {
+                ...editData,
                 updatedAt: Date.now(),
-                updatedBy: 'admin'
+                updatedBy: isAdmin ? 'admin' : 'superadmin'
             }, { merge: true });
 
-            setDbNotes(prev => ({ ...prev, [selectedInst.orderNumber]: extraNote }));
-            alert("Nota salvata correttamente!");
+            alert("Modifiche salvate con successo!");
+            setSelectedInst(null);
         } catch (err) {
-            console.error("Error saving note:", err);
+            console.error("Save error:", err);
             alert("Errore durante il salvataggio.");
         } finally {
-            setSavingNote(false);
+            setSaving(false);
         }
     };
 
-    const filteredInstallations = installations.filter(inst =>
-        inst.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inst.machine.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inst.serialSK.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleDelete = async () => {
+        if (!selectedInst) return;
+        if (!deleteConfirm) {
+            setDeleteConfirm(true);
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const docRef = doc(db, 'installation_data', selectedInst.orderNumber);
+            await setDoc(docRef, { isDeleted: true }, { merge: true });
+            alert("Installazione eliminata.");
+            setSelectedInst(null);
+        } catch (err) {
+            console.error("Delete error:", err);
+            alert("Errore durante l'eliminazione.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const toggleApp = (index: number) => {
+        const newApps = [...(editData.applications || [])];
+        newApps[index].checked = !newApps[index].checked;
+
+        // Sorting apps: checked ones go move up if preferred, but user said "once checked they move to first position and change color"
+        // Let's implement that logic upon toggling or rendering
+        setEditData(prev => ({ ...prev, applications: newApps }));
+    };
+
+    const addApp = (name: string) => {
+        if (!name.trim()) return;
+        const newApps = [...(editData.applications || []), { name, checked: false }];
+        setEditData(prev => ({ ...prev, applications: newApps }));
+    };
+
+    const getCardColor = (inst: Installation) => {
+        if (inst.tested) return 'var(--success-color)'; // Green
+        if (inst.toTest) return '#facc15'; // Yellow (Amber 400)
+        return 'var(--secondary-color)'; // Blue (Default)
+    };
+
+    const sortedInstallations = [...installations]
+        .filter(inst =>
+            inst.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            inst.machine.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            inst.serialSK.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            inst.orderNumber.includes(searchTerm)
+        )
+        .sort((a, b) => {
+            if (sortVerifiedAtBottom) {
+                if (a.tested && !b.tested) return 1;
+                if (!a.tested && b.tested) return -1;
+            }
+            return 0; // Maintain original order if same state or disabled
+        });
 
     if (!settings.enableInstallations && !isSuperadmin) {
         return (
@@ -104,234 +182,256 @@ export const Installations: React.FC = () => {
         <div style={{ padding: '0 1rem 2rem 1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h2 style={{ marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Truck size={28} /> Gestione Installazioni
                     </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        Pianificazione e monitoraggio nuove installazioni da Google Sheets
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        Blu: In attesa | Giallo: Da collaudare | Verde: Collaudata
                     </p>
                 </div>
-                <button
-                    onClick={loadData}
-                    className="btn"
-                    disabled={loading}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                    <RefreshCw size={18} className={loading ? 'spin' : ''} />
-                    Aggiorna Dati
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        <ArrowDownWideArrow size={18} />
+                        <span>Fine lista collaudate:</span>
+                        <input
+                            type="checkbox"
+                            checked={sortVerifiedAtBottom}
+                            onChange={e => setSortVerifiedAtBottom(e.target.checked)}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                    </div>
+                    <button onClick={loadSheetData} className="btn" disabled={loading}>
+                        <RefreshCw size={18} className={loading ? 'spin' : ''} />
+                    </button>
+                </div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '1rem', marginBottom: '2rem' }}>
+            <div className="glass-panel" style={{ padding: '0.75rem', marginBottom: '1.5rem' }}>
                 <input
                     type="text"
-                    placeholder="Cerca per cliente, macchina o matricola..."
+                    placeholder="Cerca cliente, macchina, matricola o ordine..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        width: '100%',
-                        padding: '0.875rem',
-                        borderRadius: 'var(--border-radius-md)',
-                        border: '1px solid var(--border-color)',
-                        fontSize: '1rem'
-                    }}
+                    style={{ width: '100%', padding: '0.8rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-color)', fontSize: '0.95rem' }}
                 />
             </div>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '3rem' }}>
-                    <RefreshCw size={40} className="spin" style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }} />
-                    <p>Caricamento dati dal foglio Google...</p>
+                    <RefreshCw size={40} className="spin" style={{ color: 'var(--secondary-color)' }} />
+                    <p>Caricamento...</p>
                 </div>
             ) : error ? (
                 <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', border: '1px solid var(--danger-color)' }}>
                     <AlertTriangle size={32} style={{ color: 'var(--danger-color)', marginBottom: '1rem' }} />
-                    <p style={{ color: 'var(--danger-color)', fontWeight: 600 }}>{error}</p>
-                    {(isAdmin || isSuperadmin) && (
-                        <p style={{ fontSize: '0.85rem', marginTop: '1rem' }}>
-                            Controlla le impostazioni nel Pannello Admin.
-                        </p>
-                    )}
+                    <p>{error}</p>
                 </div>
             ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                    gap: '1.25rem'
-                }}>
-                    {filteredInstallations.length > 0 ? (
-                        filteredInstallations.map((inst, index) => (
-                            <div
-                                key={index}
-                                onClick={() => handleOpenDetail(inst)}
-                                className="glass-panel card-hover"
-                                style={{
-                                    padding: '1.25rem',
-                                    borderLeft: `5px solid ${inst.installDate ? 'var(--success-color)' : 'var(--secondary-color)'}`,
-                                    position: 'relative',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--primary-color)' }}>{inst.client}</h3>
-                                    <span style={{
-                                        fontSize: '0.75rem',
-                                        padding: '0.25rem 0.5rem',
-                                        borderRadius: '999px',
-                                        backgroundColor: inst.installDate ? '#dcfce7' : '#dbeafe',
-                                        color: inst.installDate ? '#166534' : '#1e40af',
-                                        fontWeight: 700
-                                    }}>
-                                        {inst.installDate ? 'INSTALLATA' : 'DA CONSEGNARE'}
-                                    </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                    {sortedInstallations.map((inst, index) => (
+                        <div
+                            key={inst.orderNumber}
+                            onClick={() => handleOpenDetail(inst)}
+                            className="glass-panel card-hover"
+                            style={{
+                                padding: '1.25rem',
+                                borderLeft: `6px solid ${getCardColor(inst)}`,
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s',
+                                position: 'relative'
+                            }}
+                        >
+                            {inst.isInvoiced && (
+                                <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#059669' }}>
+                                    <DollarSign size={20} title="Fatturata" />
                                 </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.9rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Box size={16} style={{ color: 'var(--text-secondary)' }} />
-                                        <span><strong>Macchina:</strong> {inst.machine}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Calendar size={16} style={{ color: 'var(--text-secondary)' }} />
-                                        <span><strong>Consegna:</strong> {inst.deliveryDate || 'N/D'}</span>
-                                    </div>
+                            )}
+                            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{inst.client}</h3>
+                            <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <Box size={14} /> <strong>{inst.machine}</strong>
                                 </div>
-                                <div style={{
-                                    marginTop: '1rem',
-                                    fontSize: '0.75rem',
-                                    color: 'var(--text-secondary)',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}>
-                                    <span>Ordine N° {inst.orderNumber}</span>
-                                    {dbNotes[inst.orderNumber] && (
-                                        <MessageSquare size={14} style={{ color: 'var(--secondary-color)' }} />
-                                    )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <Calendar size={14} /> {inst.scheduledDate || inst.deliveryDate} {inst.scheduledTime && `alle ${inst.scheduledTime}`}
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
-                            <p>Nessuna installazione trovata per i criteri di ricerca.</p>
+                            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Ordine {inst.orderNumber}</span>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {inst.comments && <MessageSquare size={14} />}
+                                    {inst.applications?.some(a => a.checked) && <ListChecks size={14} color="var(--success-color)" />}
+                                </div>
+                            </div>
                         </div>
-                    )}
+                    ))}
                 </div>
             )}
 
-            {/* Detail Modal */}
+            {/* Modal Evoluto v1.9.2 */}
             {selectedInst && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000,
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
-                }}>
-                    <div className="glass-panel" style={{
-                        width: '100%', maxWidth: '700px', maxHeight: '90vh',
-                        overflowY: 'auto', padding: '2rem', position: 'relative',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-                    }}>
-                        <button
-                            onClick={() => setSelectedInst(null)}
-                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
-                        >
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+                    <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}>
+                        <button onClick={() => setSelectedInst(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
                             <X size={28} />
                         </button>
 
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--secondary-color)', fontWeight: 700, textTransform: 'uppercase' }}>Dettaglio Installazione</span>
-                            <h2 style={{ margin: '0.5rem 0', color: 'var(--primary-color)' }}>{selectedInst.client}</h2>
-                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                <span style={{
-                                    fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '4px',
-                                    backgroundColor: '#f1f5f9', color: '#475569'
-                                }}>
-                                    Ordine: {selectedInst.orderNumber}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                            <div className="info-group">
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Dati Macchina</label>
-                                <div style={{ fontSize: '1rem', fontWeight: 500 }}>
-                                    <Box size={16} style={{ marginRight: '0.5rem' }} /> {selectedInst.machine}
+                        <div style={{ marginBottom: '2rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <h4 style={{ color: 'var(--secondary-color)', margin: 0, fontSize: '0.8rem', textTransform: 'uppercase' }}>Dettaglio Ordine {selectedInst.orderNumber}</h4>
+                                    <input
+                                        type="text"
+                                        value={editData.localOverrides?.client ?? selectedInst.client}
+                                        onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, client: e.target.value } }))}
+                                        style={{ fontSize: '1.75rem', fontWeight: 700, background: 'none', border: 'none', borderBottom: '2px dashed #ccc', width: '100%', padding: '0.2rem 0' }}
+                                    />
                                 </div>
-                                <div style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                                    Modello: {selectedInst.modelSK}
-                                </div>
-                                <div style={{ fontSize: '0.9rem' }}>
-                                    Matricola: {selectedInst.serialSK}
-                                </div>
-                            </div>
-
-                            <div className="info-group">
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Pianificazione</label>
-                                <div style={{ fontSize: '1rem', fontWeight: 500 }}>
-                                    <Calendar size={16} style={{ marginRight: '0.5rem' }} /> Consegna: {selectedInst.deliveryDate || 'N/D'}
-                                </div>
-                                {selectedInst.installDate && (
-                                    <div style={{ fontSize: '0.9rem', marginTop: '0.25rem', color: 'var(--success-color)', fontWeight: 600 }}>
-                                        Installata: {selectedInst.installDate}
-                                    </div>
-                                )}
-                                <div style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                                    Sito: {selectedInst.installationSite || 'N/D'}
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => setEditData(prev => ({ ...prev, isInvoiced: !prev.isInvoiced }))}
+                                        className={`btn ${editData.isInvoiced ? 'btn-success' : ''}`}
+                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                    >
+                                        <DollarSign size={16} /> {editData.isInvoiced ? 'Fatturato' : 'Fattura'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        {selectedInst.comments && (
-                            <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Commenti Originali (Google Sheets)</label>
-                                <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
-                                    {selectedInst.comments}
-                                </div>
-                            </div>
-                        )}
-
-                        {(isAdmin || isSuperadmin) && (
-                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
-                                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--secondary-color)' }}>
-                                    <MessageSquare size={20} /> Note Extra Amministrazione
-                                </h4>
-                                <textarea
-                                    value={extraNote}
-                                    onChange={(e) => setExtraNote(e.target.value)}
-                                    placeholder="Inserisci qui note aggiuntive visibili solo internamente..."
-                                    style={{
-                                        width: '100%',
-                                        minHeight: '120px',
-                                        padding: '1rem',
-                                        borderRadius: 'var(--border-radius-md)',
-                                        border: '1px solid var(--border-color)',
-                                        marginBottom: '1rem',
-                                        fontSize: '0.95rem',
-                                        resize: 'vertical'
-                                    }}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+                            <div className="edit-group">
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Dati Macchina</label>
+                                <input
+                                    className="form-control"
+                                    value={editData.localOverrides?.machine ?? selectedInst.machine}
+                                    onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, machine: e.target.value } }))}
+                                    placeholder="Macchina" style={{ marginBottom: '0.5rem' }}
                                 />
-                                <button
-                                    onClick={handleSaveNote}
-                                    disabled={savingNote}
-                                    className="btn btn-primary"
-                                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                >
-                                    {savingNote ? <RefreshCw className="spin" size={18} /> : <Save size={18} />}
-                                    Salva Note Extra
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        className="form-control"
+                                        value={editData.localOverrides?.modelSK ?? selectedInst.modelSK}
+                                        onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, modelSK: e.target.value } }))}
+                                        placeholder="Modello"
+                                    />
+                                    <input
+                                        className="form-control"
+                                        value={editData.localOverrides?.serialSK ?? selectedInst.serialSK}
+                                        onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, serialSK: e.target.value } }))}
+                                        placeholder="Matricola"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="edit-group">
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Pianificazione Installazione</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        type="date"
+                                        className="form-control"
+                                        value={editData.scheduledDate || selectedInst.deliveryDate}
+                                        onChange={e => setEditData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                                    />
+                                    <input
+                                        type="time"
+                                        className="form-control"
+                                        value={editData.scheduledTime || ''}
+                                        onChange={e => setEditData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                                    />
+                                </div>
+                                <input
+                                    className="form-control"
+                                    value={editData.localOverrides?.installationSite ?? selectedInst.installationSite}
+                                    onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, installationSite: e.target.value } }))}
+                                    placeholder="Sito di installazione" style={{ marginTop: '0.5rem' }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Stato Logica Colori */}
+                        <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid #e2e8f0' }}>
+                            <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <CheckCircle2 size={20} /> Stato Avanzamento
+                            </h4>
+                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600, color: '#b45309' }}>
+                                    <input type="checkbox" checked={editData.toTest || false} onChange={e => setEditData(prev => ({ ...prev, toTest: e.target.checked, tested: e.target.checked ? prev.tested : false }))} style={{ width: '20px', height: '20px' }} />
+                                    🟡 Da Collaudare
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600, color: '#15803d' }}>
+                                    <input type="checkbox" checked={editData.tested || false} onChange={e => setEditData(prev => ({ ...prev, tested: e.target.checked, toTest: e.target.checked ? true : prev.toTest }))} style={{ width: '20px', height: '20px' }} />
+                                    🟢 Collaudata (Definitiva)
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Applicazioni Checklist */}
+                        <div style={{ marginBottom: '2rem' }}>
+                            <h4 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <ListChecks size={20} /> Applicazioni da aggiungere
+                            </h4>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                <input id="new-app" type="text" className="form-control" placeholder="Nuova applicazione..." onKeyDown={e => { if (e.key === 'Enter') { addApp(e.currentTarget.value); e.currentTarget.value = ''; } }} />
+                                <button onClick={() => { const el = document.getElementById('new-app') as HTMLInputElement; addApp(el.value); el.value = ''; }} className="btn btn-secondary">Aggiungi</button>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                {[...(editData.applications || [])]
+                                    .sort((a, b) => (a.checked === b.checked ? 0 : a.checked ? -1 : 1))
+                                    .map((app, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => {
+                                                const originalIdx = editData.applications!.findIndex(a => a.name === app.name);
+                                                toggleApp(originalIdx);
+                                            }}
+                                            style={{
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '20px',
+                                                backgroundColor: app.checked ? '#dcfce7' : '#f1f5f9',
+                                                color: app.checked ? '#166534' : '#475569',
+                                                border: `2px solid ${app.checked ? '#22c55e' : '#cbd5e1'}`,
+                                                cursor: 'pointer',
+                                                fontWeight: 600,
+                                                fontSize: '0.9rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.4rem'
+                                            }}
+                                        >
+                                            {app.checked && <CheckCircle2 size={16} />}
+                                            {app.name}
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+
+                        {/* Commenti Extra */}
+                        <div style={{ marginBottom: '2rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Note Amministrazione</label>
+                            <textarea
+                                className="form-control"
+                                value={editData.comments || ''}
+                                onChange={e => setEditData(prev => ({ ...prev, comments: e.target.value }))}
+                                style={{ minHeight: '100px' }}
+                            />
+                        </div>
+
+                        {/* Footer Azioni */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button onClick={handleDelete} className="btn" style={{ borderColor: 'var(--danger-color)', color: 'var(--danger-color)' }}>
+                                    <Trash2 size={18} /> {deleteConfirm ? 'Clicca ancora per eliminare' : 'Elimina scheda'}
                                 </button>
                             </div>
-                        )}
-
-                        {(!isAdmin && !isSuperadmin) && dbNotes[selectedInst.orderNumber] && (
-                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
-                                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--secondary-color)' }}>
-                                    <MessageSquare size={20} /> Note Extra Amministrazione
-                                </h4>
-                                <div style={{ padding: '1rem', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7', fontSize: '0.9rem' }}>
-                                    {dbNotes[selectedInst.orderNumber]}
-                                </div>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button onClick={() => setSelectedInst(null)} className="btn btn-secondary">Annulla</button>
+                                <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {saving ? <RefreshCw className="spin" size={18} /> : <Save size={18} />}
+                                    Salva Tutto
+                                </button>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             )}
