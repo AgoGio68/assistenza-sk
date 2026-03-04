@@ -48,7 +48,7 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 1.8.0
+                    Versione 1.9.0
                 </div>
 
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
@@ -132,7 +132,7 @@ export const Login: React.FC = () => {
                             <>
                                 <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
                                     <a
-                                        href="/manuale.html?v=1.8.0"
+                                        href="/manuale.html?v=1.9.0"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-primary"
@@ -150,7 +150,7 @@ export const Login: React.FC = () => {
                                             maxWidth: '90%'
                                         }}
                                     >
-                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.8.0
+                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.9.0
                                     </a>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
                                         Guida professionale dettagliata per Utenti, Admin e Superadmin.
@@ -161,6 +161,15 @@ export const Login: React.FC = () => {
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.0 - Gestione Installazioni</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Nuova sezione "Installazioni" integrata con Google Sheets.</li>
+                                        <li>Dashboard dedicata con ricerca e monitoraggio consegne.</li>
+                                        <li>Controllo attivazione sezione dal Pannello Admin.</li>
+                                    </ul>
+                                </div>
+
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.8.0 - Milestone Stable</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
