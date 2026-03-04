@@ -60,17 +60,21 @@ export const Installations: React.FC = () => {
         loadSheetData();
     }, [settings.installationsSheetUrl]);
 
+    // Helper to generate a unique ID for each installation row
+    const getInstId = (inst: Installation) => `${inst.orderNumber}-${inst.serialSK || ''}-${inst.machine || ''}`.replace(/\s+/g, '_');
+
     // Merge Sheet Data with Firestore Data
     useEffect(() => {
+        // We use a Map to merge, but the key must be unique per row, not just per order
         const merged = sheetData.map(inst => {
-            const extra = dbData[inst.orderNumber] || {};
+            const id = getInstId(inst);
+            const extra = dbData[id] || {};
             return {
                 ...inst,
                 ...extra,
-                // Local overrides can specifically override fixed fields
                 ...(extra.localOverrides || {})
             };
-        }).filter(inst => !inst.isDeleted); // Client-side filtering of deleted items
+        }).filter(inst => !inst.isDeleted);
 
         setInstallations(merged);
     }, [sheetData, dbData]);
@@ -94,7 +98,8 @@ export const Installations: React.FC = () => {
         if (!selectedInst) return;
         setSaving(true);
         try {
-            const docRef = doc(db, 'installation_data', selectedInst.orderNumber);
+            const id = getInstId(selectedInst);
+            const docRef = doc(db, 'installation_data', id);
             await setDoc(docRef, {
                 ...editData,
                 updatedAt: Date.now(),
@@ -120,7 +125,8 @@ export const Installations: React.FC = () => {
 
         setSaving(true);
         try {
-            const docRef = doc(db, 'installation_data', selectedInst.orderNumber);
+            const id = getInstId(selectedInst);
+            const docRef = doc(db, 'installation_data', id);
             await setDoc(docRef, { isDeleted: true }, { merge: true });
             alert("Installazione eliminata.");
             setSelectedInst(null);
