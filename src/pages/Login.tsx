@@ -60,7 +60,7 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 2.0.0
+                    Versione {__APP_VERSION__}
                 </div>
 
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
@@ -177,7 +177,7 @@ export const Login: React.FC = () => {
                             <>
                                 <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
                                     <a
-                                        href={`/manuale.html?v=2.0.0&t=${Date.now()}`}
+                                        href={`/manuale.html?v=${__APP_VERSION__}&t=${Date.now()}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-primary"
@@ -195,7 +195,7 @@ export const Login: React.FC = () => {
                                             maxWidth: '90%'
                                         }}
                                     >
-                                        <Info size={24} /> APRI MANUALE UFFICIALE v2.0.0
+                                        <Info size={24} /> APRI MANUALE UFFICIALE v{__APP_VERSION__}
                                     </a>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
                                         Guida professionale dettagliata per Utenti, Admin e Superadmin.
@@ -206,6 +206,68 @@ export const Login: React.FC = () => {
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.1.0 - Assegnazioni e Permessi Granulari</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Assegnazione Rapida:</strong> Nuova interfaccia opzionale in fase di creazione del ticket per smistare subito il lavoro a un collega senza dover passare dalla vista dettagli.</li>
+                                        <li><strong>Poteri Granulari:</strong> Nuovo pannello dedicato in Impostazioni per il controllo capillare dei permessi: si può decidere se gli admin possono spostare o forzare la chiusura di ticket altrui, e se gli utenti possono auto-assegnare assistenza.</li>
+                                        <li><strong>Tracciamento Spostamenti:</strong> Integrazione tra presa in carico, calendario e permessi per una gestione team più snella.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.8 - Google Auth Fix</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Corretto l'errore tecnico (credential-already-in-use) che si verificava cercando di riconnettere il Calendario a Google. Adesso puoi cliccare "Collega Google" in modo sicuro anche se precedentemente interrotto.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.7 - Sblocco Sincronizzazione</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Risolto il blocco "Invisibile" del calendario: i pulsanti per autorizzare Google erano precedentemente bloccati ed esclusivi per il solo SuperAdmin. Ora tutti gli Admin possono utilizzare la funzionalità se collegati a Google!</li>
+                                        <li>Aggiunto un popup di avviso per quando l'utente prova a calendarizzare un intervento dimenticando di collegare prima l'account Google.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.6 - Hotfix Sincronizzazione</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Risolto bug che impediva al tasto "Sposta" di attivare la sincronizzazione a Google Calendar automaticamente.</li>
+                                        <li>Avviso automatico quando il collegamento a Google Calendar è scaduto (richiede ricollegamento per sicurezza fuso orario).</li>
+                                        <li>I Ticket aperti in dettaglio si chiudono finalmente anche cliccando Rilascia o Sposta.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.5 - UX e Fix Minori</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Le aziende "Nuove" vengono ora salvate direttamente nell'autocompletamento generale.</li>
+                                        <li>Il modulo nuovo ticket viene svuotato correttamente dopo l'invio.</li>
+                                        <li>Chiusura automatica dei modali su click di "Rilascia".</li>
+                                        <li>Orario di default impostato alle 08:00 quando si assegna un giorno all'intervento.</li>
+                                        <li>Format Data Calendar ritoccato per compatibilità assoluta con il timezone.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.3 - Versione Dinamica</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Centralizzazione automatica della versione (da package.json).</li>
+                                        <li>Risolto bug persistenza visualizzazione versione.</li>
+                                        <li>Allineamento totale tra codice e interfaccia.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.2 - Fix Icone Vista Compatta</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Aggiunto tasto "Zap" anche nella vista compatta (Griglia).</li>
+                                        <li>Migliorata la reattività dell'animazione di lampeggio.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.1 - Evidenziazione Ticket</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Nuova funzione "Zap" per far lampeggiare i ticket prioritari.</li>
+                                        <li>Persistenza dell'evidenziazione su database Firebase.</li>
+                                        <li>Miglioramenti alla sicurezza delle chiavi API.</li>
+                                    </ul>
+                                </div>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.0 - Automazione Fatturazione</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>

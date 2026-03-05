@@ -111,6 +111,38 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
 
                 <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '1rem 0' }} />
+                <h4 style={{ marginBottom: '1rem', color: '#b91c1c' }}>Gestione Sicurezza e Permessi Ruoli</h4>
+                <div style={{ backgroundColor: '#fef2f2', padding: '1.5rem', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                    <h5 style={{ color: '#991b1b', marginBottom: '1rem' }}>Permessi Admin (Tecnici / Supervisori)</h5>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input type="checkbox" id="adminCanAssignAtCreation" checked={localSettings.adminCanAssignAtCreation !== false} onChange={e => setLocalSettings((prev: any) => ({ ...prev, adminCanAssignAtCreation: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <label htmlFor="adminCanAssignAtCreation" style={{ cursor: 'pointer', fontWeight: 500, color: '#7f1d1d' }}>Permetti agli admin di assegnare testualmente a un collega il ticket durante la creazione</label>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input type="checkbox" id="adminCanReassignOthers" checked={localSettings.adminCanReassignOthers || false} onChange={e => setLocalSettings((prev: any) => ({ ...prev, adminCanReassignOthers: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <label htmlFor="adminCanReassignOthers" style={{ cursor: 'pointer', fontWeight: 500, color: '#7f1d1d' }}>Permetti agli admin di spodestare e spostare i ticket originariamente assegnati ad altri</label>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input type="checkbox" id="adminCanCloseOthers" checked={localSettings.adminCanCloseOthers || false} onChange={e => setLocalSettings((prev: any) => ({ ...prev, adminCanCloseOthers: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <label htmlFor="adminCanCloseOthers" style={{ cursor: 'pointer', fontWeight: 500, color: '#7f1d1d' }}>Permetti agli admin di chiudere coercitivamente i ticket in carico ad altri</label>
+                        </div>
+                    </div>
+
+                    <h5 style={{ color: '#991b1b', marginBottom: '1rem' }}>Permessi Utenti Comuni (Senza Privilegi)</h5>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input type="checkbox" id="userCanAssignAtCreation" checked={localSettings.userCanAssignAtCreation || false} onChange={e => setLocalSettings((prev: any) => ({ ...prev, userCanAssignAtCreation: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <label htmlFor="userCanAssignAtCreation" style={{ cursor: 'pointer', fontWeight: 500, color: '#7f1d1d' }}>Permetti esplicitamente anche a loro di pre-assegnare il ticket creato a un tecnico</label>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input type="checkbox" id="userCanCloseOwnTickets" checked={localSettings.userCanCloseOwnTickets !== false} onChange={e => setLocalSettings((prev: any) => ({ ...prev, userCanCloseOwnTickets: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <label htmlFor="userCanCloseOwnTickets" style={{ cursor: 'pointer', fontWeight: 500, color: '#7f1d1d' }}>Permetti loro di indicare e chiudere autonomamente l'esito dei propri ticket aperti</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '1rem 0' }} />
                 <h4 style={{ marginBottom: '1rem', color: '#047857' }}>Gestione Installazioni (Google Sheets)</h4>
                 <div style={{ backgroundColor: '#ecfdf5', padding: '1.5rem', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

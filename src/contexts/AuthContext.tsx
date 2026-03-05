@@ -4,7 +4,7 @@ import {
     onAuthStateChanged,
     signOut,
     GoogleAuthProvider,
-    linkWithPopup
+    signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
@@ -122,9 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return null;
             }
 
-            // Usiamo linkWithPopup invece di signInWithPopup per evitare conflitti di account
-            // e per mantenere la sessione Email/Password corrente.
-            const result = await linkWithPopup(currentUser, provider);
+            // Usiamo signInWithPopup per loggare Google (non linkWithPopup per evitare errore user already exists/credential-already-in-use)
+            const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential?.accessToken;
 

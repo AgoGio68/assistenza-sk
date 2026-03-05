@@ -18,6 +18,12 @@ export interface GlobalSettings {
     enableInstallations: boolean;
     installationsSheetUrl: string;
     serialPrefix: string;
+    // New v2.1.0 Permissions Settings
+    adminCanAssignAtCreation: boolean;
+    adminCanReassignOthers: boolean;
+    adminCanCloseOthers: boolean;
+    userCanAssignAtCreation: boolean;
+    userCanCloseOwnTickets: boolean;
 }
 
 const defaultSettings: GlobalSettings = {
@@ -32,7 +38,12 @@ const defaultSettings: GlobalSettings = {
     enablePhotos: false,
     enableInstallations: false,
     installationsSheetUrl: '',
-    serialPrefix: ''
+    serialPrefix: '',
+    adminCanAssignAtCreation: true,
+    adminCanReassignOthers: false,
+    adminCanCloseOthers: false,
+    userCanAssignAtCreation: false,
+    userCanCloseOwnTickets: true
 };
 
 interface SettingsContextType {

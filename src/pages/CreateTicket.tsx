@@ -3,7 +3,7 @@ import { collection, doc, setDoc, query, where, getDocs, limit } from 'firebase/
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { db, storage } from '../firebase';
-import { UrgencyLevel, Ticket, Company } from '../types';
+import { UrgencyLevel, Ticket, Company, UserProfile } from '../types';
 import { AlertCircle, CheckCircle2, Camera, X } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,20 +24,42 @@ export const CreateTicket: React.FC = () => {
     const [photos, setPhotos] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
+    // Gestione Pre-Assegnazione
+    const { isSuperadmin } = useAuth();
+    const canAssign = isSuperadmin ||
+        (isAdmin && settings.adminCanAssignAtCreation !== false) ||
+        (!isAdmin && settings.userCanAssignAtCreation === true);
+
+    const [assignedTo, setAssignedTo] = useState<string>('');
+    const [assignableUsers, setAssignableUsers] = useState<UserProfile[]>([]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (!canAssign) return;
+            try {
+                const q = query(collection(db, 'users'), where('status', '==', 'approved'));
+                const snap = await getDocs(q);
+                const fetched: UserProfile[] = [];
+                snap.forEach(d => {
+                    const data = d.data() as UserProfile;
+                    // Solo admin o superadmin possono prendere in carico un ticket in genere
+                    if (data.role === 'admin' || data.role === 'superadmin') {
+                        fetched.push({ ...data, uid: d.id });
+                    }
+                });
+                setAssignableUsers(fetched);
+            } catch (err) {
+                console.error("Errore recupero utenti per assegnazione", err);
+            }
+        };
+        fetchUsers();
+    }, [canAssign]);
+
     useEffect(() => {
         // Blocca accesso se non admin e creazione disabilitata
         if (!isAdmin && !settings.allowUserTicketCreation) {
             navigate('/');
         }
-
-        // Carica dati persistenti v1.7.9
-        const savedCompany = localStorage.getItem('last_company_name');
-        const savedContact = localStorage.getItem('last_contact_name');
-        const savedPhone = localStorage.getItem('last_phone');
-
-        if (savedCompany) setCompanyName(savedCompany);
-        if (savedContact) setContactName(savedContact);
-        if (savedPhone) setPhone(savedPhone);
     }, [isAdmin, settings.allowUserTicketCreation, navigate]);
 
     // Simple debounce for company search
@@ -129,25 +151,49 @@ export const CreateTicket: React.FC = () => {
                 }
             }
 
+            const assigneeUser = assignedTo ? assignableUsers.find(u => u.uid === assignedTo) : null;
+
             const newTicket: Ticket = {
                 urgency: urgency,
                 companyName: companyName.trim(),
                 contactName: contactName.trim(),
                 phone: phone.trim(),
                 description: description.trim(),
-                status: 'aperto',
+                status: assignedTo ? 'preso_in_carico' : 'aperto',
                 createdAt: Date.now(),
                 ...(uploadedPhotoUrls.length > 0 && { photoUrls: uploadedPhotoUrls }),
                 createdBy: userProfile?.uid,
-                creatorName: userProfile?.displayName || userProfile?.email || 'Anonimo'
+                creatorName: userProfile?.displayName || userProfile?.email || 'Anonimo',
+                ...(assignedTo && assigneeUser && {
+                    assignedTo: assignedTo,
+                    assigneeName: assigneeUser.displayName || assigneeUser.email || 'Tecnico'
+                })
             };
 
             await setDoc(newTicketRef, newTicket);
 
-            // Persistenza dati v1.7.9
-            localStorage.setItem('last_company_name', companyName.trim());
-            localStorage.setItem('last_contact_name', contactName.trim());
-            localStorage.setItem('last_phone', phone.trim());
+            // Salvataggio azienda nei suggerimenti per il futuro se nuova (sostituisce vecchio local storage)
+            try {
+                const companiesQuery = query(collection(db, 'companies'), where('name', '==', companyName.trim()));
+                const companiesSnapshot = await getDocs(companiesQuery);
+                if (companiesSnapshot.empty) {
+                    await setDoc(doc(collection(db, 'companies')), {
+                        name: companyName.trim(),
+                        contactName: contactName.trim(),
+                        phone: phone.trim()
+                    });
+                }
+            } catch (errCompany) {
+                console.error("Non è stato possibile salvare l'azienda per i suggerimenti futuri", errCompany);
+            }
+
+            setCompanyName('');
+            setContactName('');
+            setPhone('');
+            setDescription('');
+            setUrgency(null);
+            setPhotos([]);
+            setAssignedTo('');
 
             navigate('/');
         } catch (err) {
@@ -264,6 +310,22 @@ export const CreateTicket: React.FC = () => {
                         placeholder="Problema riscontrato..."
                     />
                 </div>
+
+                {canAssign && (
+                    <div style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#166534' }}>Assegna Subito A (Opzionale)</label>
+                        <select
+                            value={assignedTo}
+                            onChange={(e) => setAssignedTo(e.target.value)}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #86efac', fontSize: '1rem' }}
+                        >
+                            <option value="">Nessuno (Lascia in "Da Assegnare")</option>
+                            {assignableUsers.map(u => (
+                                <option key={u.uid} value={u.uid}>{u.displayName || u.email}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 {settings.enablePhotos && (
                     <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>

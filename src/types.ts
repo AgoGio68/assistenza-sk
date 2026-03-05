@@ -35,6 +35,8 @@ export interface Ticket {
     photoUrls?: string[];
     durationHours?: number;
     durationMinutes?: number;
+    highlighted?: boolean;
+    scheduledDate?: string; // ISO string o YYYY-MM-DDTHH:mm
 }
 
 export interface Company {

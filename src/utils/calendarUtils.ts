@@ -38,6 +38,9 @@ export const createGoogleCalendarEvent = async (
         if (!response.ok) {
             const error = await response.json();
             console.error('Google Calendar API Error:', error);
+            if (response.status === 401) {
+                throw new Error("Il collegamento a Google è scaduto (sicurezza dopo 1 ora). Ricollega il calendario cliccando 'Calendario Collegato' per scollegarlo e ricollegarlo!");
+            }
             throw new Error(error.error?.message || 'Errore durante la creazione dell\'evento');
         }
 
@@ -61,7 +64,6 @@ export const formatTicketToEvent = (
     scheduledDate: Date,
     ticketUrl?: string
 ): CalendarEvent => {
-    // Di default creiamo un evento di 1 ora
     const endDate = new Date(scheduledDate.getTime() + 60 * 60 * 1000);
 
     return {
