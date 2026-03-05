@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import {
     signInWithEmailAndPassword,
-    createUserWithEmailAndPassword
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
-import { LogIn, UserPlus, Info, X } from 'lucide-react';
+import { LogIn, UserPlus, Info, X, Mail, ArrowLeft } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export const Login: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [viewMode, setViewMode] = useState<'guide' | 'changelog'>('guide');
@@ -25,18 +28,27 @@ export const Login: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setMessage('');
         setLoading(true);
 
         try {
-            if (isLogin) {
+            if (isForgotPassword) {
+                await sendPasswordResetEmail(auth, email);
+                setMessage('Email di recupero inviata! Controlla la tua casella di posta (anche nello spam).');
+                setTimeout(() => setIsForgotPassword(false), 5000);
+            } else if (isLogin) {
                 await signInWithEmailAndPassword(auth, email, password);
+                navigate('/');
             } else {
                 await createUserWithEmailAndPassword(auth, email, password);
+                navigate('/');
             }
-            navigate('/');
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'Errore di autenticazione');
+            let errorMessage = err.message || 'Errore di autenticazione';
+            if (err.code === 'auth/user-not-found') errorMessage = 'Nessun utente trovato con questa email.';
+            if (err.code === 'auth/wrong-password') errorMessage = 'Password errata.';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -52,12 +64,18 @@ export const Login: React.FC = () => {
                 </div>
 
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
-                    {isLogin ? 'Accedi al sistema' : 'Registrazione'}
+                    {isForgotPassword ? 'Recupero Password' : (isLogin ? 'Accedi al sistema' : 'Registrazione')}
                 </h3>
 
                 {error && (
                     <div style={{ backgroundColor: 'var(--danger-color)', color: 'white', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>
                         {error}
+                    </div>
+                )}
+
+                {message && (
+                    <div style={{ backgroundColor: '#10b981', color: 'white', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                        {message}
                     </div>
                 )}
 
@@ -73,17 +91,31 @@ export const Login: React.FC = () => {
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', outline: 'none' }}
                         />
                     </div>
-                    <div>
-                        <label htmlFor="password" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Password</label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', outline: 'none' }}
-                        />
-                    </div>
+
+                    {!isForgotPassword && (
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <label htmlFor="password" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Password</label>
+                                {isLogin && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsForgotPassword(true)}
+                                        style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', fontSize: '0.75rem', textDecoration: 'underline' }}
+                                    >
+                                        Dimenticata?
+                                    </button>
+                                )}
+                            </div>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', outline: 'none' }}
+                            />
+                        </div>
+                    )}
 
                     <button
                         type="submit"
@@ -91,17 +123,30 @@ export const Login: React.FC = () => {
                         disabled={loading}
                         style={{ marginTop: '1rem' }}
                     >
-                        {isLogin ? <><LogIn size={20} /> Entra</> : <><UserPlus size={20} /> Registrati</>}
+                        {isForgotPassword ? (
+                            <><Mail size={20} /> Invia link di reset</>
+                        ) : (
+                            isLogin ? <><LogIn size={20} /> Entra</> : <><UserPlus size={20} /> Registrati</>
+                        )}
                     </button>
                 </form>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                    <button
-                        onClick={() => setIsLogin(!isLogin)}
-                        style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                        {isLogin ? 'Non hai un account? Registrati' : 'Hai già un account? Accedi'}
-                    </button>
+                    {isForgotPassword ? (
+                        <button
+                            onClick={() => setIsForgotPassword(false)}
+                            style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
+                        >
+                            <ArrowLeft size={16} /> Torna al login
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setIsLogin(!isLogin)}
+                            style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                            {isLogin ? 'Non hai un account? Registrati' : 'Hai già un account? Accedi'}
+                        </button>
+                    )}
                     <br />
                     <button
                         type="button"
