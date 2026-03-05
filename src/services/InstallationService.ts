@@ -43,17 +43,23 @@ const parseCSV = (csvText: string): Installation[] => {
         }
         parts.push(current.trim());
 
+        const deliveryDateRaw = parts[4] || '';
+        // v2.0.0: Rilevamento automatico fatturazione
+        // Se contiene "FT" o ha un formato tipo "2025_FT..." (lungo e con underscore/numeri)
+        const autoInvoiced = /FT/i.test(deliveryDateRaw) || (deliveryDateRaw.includes('_') && deliveryDateRaw.length > 5);
+
         return {
             rowId: `row-${index}`,
             orderNumber: parts[0] || '',
             client: parts[1] || '',
             machine: parts[2] || '',
             installationSite: parts[3] || '',
-            deliveryDate: parts[4] || '',
+            deliveryDate: deliveryDateRaw,
             modelSK: parts[5] || '',
             serialSK: parts[6] || '',
             installDate: parts[7] || '',
-            comments: parts[8] || ''
+            comments: parts[8] || '',
+            isInvoiced: autoInvoiced // Campo dinamico derivato dal foglio
         };
     }).filter(inst => inst.client !== '');
 };

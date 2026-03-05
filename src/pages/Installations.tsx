@@ -162,12 +162,13 @@ export const Installations: React.FC = () => {
     };
 
     const getCardColor = (inst: Installation) => {
+        if (inst.isInvoiced) return '#94a3b8'; // Grigio ardesia per fatturato
         if (inst.tested) return 'var(--success-color)';
         if (inst.toTest) return '#facc15';
         return 'var(--secondary-color)';
     };
 
-    const sortedInstallations = [...installations]
+    const filteredInstallations = [...installations]
         .filter(inst => {
             const search = searchTerm.toLowerCase();
             return (
@@ -176,7 +177,10 @@ export const Installations: React.FC = () => {
                 inst.serialSK.toLowerCase().includes(search) ||
                 inst.orderNumber.includes(search)
             );
-        })
+        });
+
+    const activeInstallations = filteredInstallations
+        .filter(inst => !inst.isInvoiced)
         .sort((a, b) => {
             if (sortVerifiedAtBottom) {
                 if (a.tested && !b.tested) return 1;
@@ -184,6 +188,8 @@ export const Installations: React.FC = () => {
             }
             return 0;
         });
+
+    const invoicedInstallations = filteredInstallations.filter(inst => inst.isInvoiced);
 
     if (!settings.enableInstallations && !isSuperadmin) {
         return (
@@ -244,43 +250,87 @@ export const Installations: React.FC = () => {
                     <p>{error}</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
-                    {sortedInstallations.map((inst) => (
-                        <div
-                            key={getInstId(inst)}
-                            onClick={() => handleOpenDetail(inst)}
-                            className="glass-panel card-hover"
-                            style={{
-                                padding: '1.25rem',
-                                borderLeft: `6px solid ${getCardColor(inst)}`,
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s',
-                                position: 'relative'
-                            }}
-                        >
-                            {inst.isInvoiced && (
-                                <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#059669' }}>
-                                    <DollarSign size={20} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                    {/* Sezione Attive */}
+                    <div>
+                        <h4 style={{ marginBottom: '1rem', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Box size={20} /> Installazioni Attive ({activeInstallations.length})
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
+                            {activeInstallations.map((inst) => (
+                                <div
+                                    key={getInstId(inst)}
+                                    onClick={() => handleOpenDetail(inst)}
+                                    className="glass-panel card-hover"
+                                    style={{
+                                        padding: '1.25rem',
+                                        borderLeft: `6px solid ${getCardColor(inst)}`,
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s',
+                                        position: 'relative'
+                                    }}
+                                >
+                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{inst.client}</h3>
+                                    <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <Box size={14} /> <strong>{inst.machine}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <Calendar size={14} /> {inst.scheduledDate || inst.deliveryDate} {inst.scheduledTime && `alle ${inst.scheduledTime}`}
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Ordine {inst.orderNumber}</span>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            {inst.comments && <MessageSquare size={14} />}
+                                            {inst.applications?.some(a => a.checked) && <ListChecks size={14} color="var(--success-color)" />}
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{inst.client}</h3>
-                            <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <Box size={14} /> <strong>{inst.machine}</strong>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <Calendar size={14} /> {inst.scheduledDate || inst.deliveryDate} {inst.scheduledTime && `alle ${inst.scheduledTime}`}
-                                </div>
-                            </div>
-                            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Ordine {inst.orderNumber}</span>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    {inst.comments && <MessageSquare size={14} />}
-                                    {inst.applications?.some(a => a.checked) && <ListChecks size={14} color="var(--success-color)" />}
-                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Sezione Fatturate (Grigio) */}
+                    {invoicedInstallations.length > 0 && (
+                        <div>
+                            <h4 style={{ marginBottom: '1rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <CheckCircle2 size={20} /> Installazioni Fatturate ({invoicedInstallations.length})
+                            </h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
+                                {invoicedInstallations.map((inst) => (
+                                    <div
+                                        key={getInstId(inst)}
+                                        onClick={() => handleOpenDetail(inst)}
+                                        className="glass-panel"
+                                        style={{
+                                            padding: '1.25rem',
+                                            borderLeft: `6px solid ${getCardColor(inst)}`,
+                                            cursor: 'pointer',
+                                            opacity: 0.8,
+                                            backgroundColor: '#f8fafc'
+                                        }}
+                                    >
+                                        <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#94a3b8' }}>
+                                            <DollarSign size={20} />
+                                        </div>
+                                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#64748b' }}>{inst.client}</h3>
+                                        <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Box size={14} /> <strong>{inst.machine}</strong>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Calendar size={14} /> {inst.deliveryDate}
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                                            <span>Ordine {inst.orderNumber}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
 
@@ -505,30 +555,6 @@ export const Installations: React.FC = () => {
                                             <input type="checkbox" checked={editData.tested || false} onChange={e => setEditData(prev => ({ ...prev, tested: e.target.checked, toTest: e.target.checked ? true : prev.toTest }))} style={{ width: '28px', height: '28px' }} />
                                             <span style={{ fontWeight: 700, color: '#15803d', fontSize: '0.85rem' }}>🟢 COLLAUDATA</span>
                                         </label>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                                        <button
-                                            onClick={() => setEditData(prev => ({ ...prev, isInvoiced: !prev.isInvoiced }))}
-                                            style={{
-                                                border: '2px solid',
-                                                borderColor: editData.isInvoiced ? '#22c55e' : '#cbd5e1',
-                                                backgroundColor: editData.isInvoiced ? '#dcfce7' : '#fff',
-                                                color: editData.isInvoiced ? '#15803d' : '#475569',
-                                                padding: '0.8rem 1.5rem',
-                                                borderRadius: '12px',
-                                                fontWeight: 800,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.6rem',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                width: '100%',
-                                                maxWidth: '300px',
-                                                justifyContent: 'center'
-                                            }}
-                                        >
-                                            <DollarSign size={22} /> {editData.isInvoiced ? 'FATTURATO' : 'SEGNA FATTURATO'}
-                                        </button>
                                     </div>
                                 </div>
                             </div>

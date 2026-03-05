@@ -48,7 +48,7 @@ export const Login: React.FC = () => {
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
                 <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione 1.9.9
+                    Versione 2.0.0
                 </div>
 
                 <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
@@ -132,7 +132,7 @@ export const Login: React.FC = () => {
                             <>
                                 <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
                                     <a
-                                        href={`/manuale.html?v=1.9.9&t=${Date.now()}`}
+                                        href={`/manuale.html?v=2.0.0&t=${Date.now()}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="btn btn-primary"
@@ -150,7 +150,7 @@ export const Login: React.FC = () => {
                                             maxWidth: '90%'
                                         }}
                                     >
-                                        <Info size={24} /> APRI MANUALE UFFICIALE v1.9.9
+                                        <Info size={24} /> APRI MANUALE UFFICIALE v2.0.0
                                     </a>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
                                         Guida professionale dettagliata per Utenti, Admin e Superadmin.
@@ -161,6 +161,15 @@ export const Login: React.FC = () => {
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.0 - Automazione Fatturazione</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li>Riconoscimento automatico delle righe fatturate dalla colonna "Consegna" del foglio Google.</li>
+                                        <li>Raggruppamento visivo delle installazioni fatturate in fondo alla lista (Grigio).</li>
+                                        <li>Rimozione gestione manuale della fatturazione per maggiore efficienza.</li>
+                                        <li>Aggiornamento progetto Firebase a "assistenza-sk".</li>
+                                    </ul>
+                                </div>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.9 - Prefisso Compilabile e App Avanzate</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
