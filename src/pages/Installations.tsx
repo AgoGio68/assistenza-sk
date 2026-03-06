@@ -163,8 +163,10 @@ export const Installations: React.FC = () => {
 
             const descriptionText = `Installazione: ${machineName}\nOrdine: ${selectedInst?.orderNumber || ''}\nMatricola: ${editData.localOverrides?.serialSK ?? selectedInst?.serialSK ?? ''}`;
 
+            const googleEventTitle = locationStr ? `${clientName} - ${locationStr}` : clientName;
+
             const googleEvent: CalendarEvent = formatTicketToEvent(
-                clientName,
+                googleEventTitle,
                 descriptionText,
                 scheduledDateTime,
                 window.location.origin
@@ -311,7 +313,14 @@ export const Installations: React.FC = () => {
                                         } : {})
                                     }}
                                 >
-                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{inst.client}</h3>
+                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
+                                        {inst.client}
+                                        {inst.installationSite && (
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                                                {' - '}{inst.installationSite}
+                                            </span>
+                                        )}
+                                    </h3>
                                     <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                             <Box size={14} /> <strong>{inst.machine}</strong>
@@ -355,7 +364,14 @@ export const Installations: React.FC = () => {
                                         <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#94a3b8' }}>
                                             <DollarSign size={20} />
                                         </div>
-                                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#64748b' }}>{inst.client}</h3>
+                                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#64748b' }}>
+                                            {inst.client}
+                                            {inst.installationSite && (
+                                                <span style={{ fontSize: '0.9rem', fontWeight: 'normal', opacity: 0.8 }}>
+                                                    {' - '}{inst.installationSite}
+                                                </span>
+                                            )}
+                                        </h3>
                                         <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                 <Box size={14} /> <strong>{inst.machine}</strong>

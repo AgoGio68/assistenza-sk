@@ -212,6 +212,12 @@ export const Login: React.FC = () => {
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.10 - Sedi nelle Installazioni</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Dettaglio Località:</strong> L'interfaccia delle installazioni adesso espone anche la sede di installazione (es. Cliente - Città) per una rapida identificazione, e questo stesso formato verrà riportato come titolo negli eventi sincronizzati con Google Calendar.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.9 - Moduli Dinamici Custom</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
                                         <li><strong>Pannello Amministratore:</strong> Configurazione completa e customizzabile per le "Voci Attivabili" del collaudo, gestibili totalmente dall'apposito pannello "Impostazioni Grafica" per l'aggiunta o rimozione rapida.</li>
