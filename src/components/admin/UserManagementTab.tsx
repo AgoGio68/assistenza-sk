@@ -37,7 +37,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({
                     {loadingUsers ? (
                         <tr><td colSpan={6} style={{ padding: '1rem', textAlign: 'center' }}>Caricamento...</td></tr>
                     ) : users.filter(u => u.role !== 'superadmin').map(user => (
-                        <tr key={user.uid} style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <tr key={user.uid} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                             <td style={{ padding: '0.75rem 0' }}>{user.displayName}</td>
                             <td>{user.email}</td>
                             <td>{user.role}</td>
@@ -56,9 +56,11 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({
                                 <span style={{
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: '4px',
-                                    backgroundColor: user.status === 'approved' ? '#dcfce7' : user.status === 'pending' ? '#fef3c7' : '#fee2e2',
-                                    color: user.status === 'approved' ? '#166534' : user.status === 'pending' ? '#92400e' : '#991b1b',
-                                    fontSize: '0.875rem'
+                                    background: user.status === 'approved' ? 'rgba(16,185,129,0.12)' : user.status === 'pending' ? 'rgba(245,158,11,0.12)' : 'rgba(244,63,94,0.12)',
+                                    color: user.status === 'approved' ? 'var(--success-color)' : user.status === 'pending' ? 'var(--warning-color)' : 'var(--danger-color)',
+                                    border: `1px solid ${user.status === 'approved' ? 'rgba(16,185,129,0.25)' : user.status === 'pending' ? 'rgba(245,158,11,0.25)' : 'rgba(244,63,94,0.25)'}`,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600
                                 }}>
                                     {user.status}
                                 </span>

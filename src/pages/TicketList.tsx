@@ -310,7 +310,11 @@ export const TicketList: React.FC = () => {
     };
 
     if (loading) {
-        return <div style={{ textAlign: 'center', padding: '2rem' }}>Caricamento assistenze...</div>;
+        return (
+            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.9rem', letterSpacing: '0.05em' }}>Caricamento assistenze...</div>
+            </div>
+        );
     }
 
     // Determina se mostrare la vista compatta
@@ -318,37 +322,40 @@ export const TicketList: React.FC = () => {
 
     return (
         <div style={{ paddingBottom: '2rem' }}>
-            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                Assistenze Attive
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.1rem' }}>Assistenze Attive</h2>
+                    {isCompact && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>VISTA COMPATTA</span>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                     {isAdmin && (
                         <button
                             onClick={() => googleToken ? disconnectGoogle() : connectGoogle()}
                             className="btn"
                             style={{
                                 fontSize: '0.75rem',
-                                padding: '0.3rem 0.6rem',
+                                padding: '0.4rem 0.75rem',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.4rem',
-                                backgroundColor: googleToken ? '#dcfce7' : '#f1f5f9',
-                                color: googleToken ? '#166534' : 'var(--text-secondary)'
+                                background: googleToken ? 'rgba(20,184,166,0.12)' : 'var(--bg-elevated)',
+                                color: googleToken ? 'var(--accent-teal)' : 'var(--text-muted)',
+                                border: `1px solid ${googleToken ? 'rgba(20,184,166,0.25)' : 'var(--border-subtle)'}`,
                             }}
                         >
-                            <Calendar size={14} />
-                            {googleToken ? 'Calendario Collegato' : 'Collega Google'}
+                            <Calendar size={13} />
+                            {googleToken ? 'Calendario ✓' : 'Collega Google'}
                         </button>
                     )}
-                    {isCompact && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Vista Compatta Attiva</span>}
-                    <span style={{ fontSize: '0.875rem', background: 'var(--secondary-color)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem' }}>
+                    <span style={{ fontSize: '0.78rem', background: 'rgba(99,102,241,0.15)', color: 'var(--primary-color)', border: '1px solid rgba(99,102,241,0.25)', padding: '0.25rem 0.65rem', borderRadius: '100px', fontWeight: 700 }}>
                         {tickets.length}
                     </span>
                 </div>
-            </h2>
+            </div>
 
             {!isCompact && (
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem', paddingLeft: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                <div style={{ marginBottom: '0.75rem' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', cursor: 'pointer', color: 'var(--text-muted)', userSelect: 'none' }}>
                         <input
                             type="checkbox"
                             checked={showOtherAssignees}
@@ -378,44 +385,49 @@ export const TicketList: React.FC = () => {
                         return (
                             <div
                                 key={ticket.id}
-                                className="glass-panel"
                                 onClick={() => setSelectedTicket(ticket)}
                                 style={{
-                                    padding: '1rem',
+                                    padding: '0.9rem 1rem',
                                     cursor: 'pointer',
-                                    border: '1px solid #cbd5e1',
-                                    borderTop: isUrgent ? '4px solid var(--danger-color)' : '4px solid var(--success-color)',
-                                    opacity: isTakenByOthers ? 0.6 : 1,
-                                    animation: ticket.highlighted ? 'blink 1s infinite ease-in-out' : 'none',
+                                    background: 'var(--bg-surface)',
+                                    border: '1px solid var(--border-subtle)',
+                                    borderTop: `3px solid ${isUrgent ? 'var(--danger-color)' : isTakenByMe ? 'var(--accent-teal)' : 'var(--primary-color)'}`,
+                                    borderRadius: 'var(--border-radius-md)',
+                                    opacity: isTakenByOthers ? 0.55 : 1,
+                                    animation: ticket.highlighted ? 'glowPulse 1.4s ease-in-out infinite' : 'slideInUp 0.3s ease forwards',
                                     position: 'relative',
-                                    transition: 'transform 0.2s',
+                                    transition: 'all 0.22s',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     justifyContent: 'space-between',
-                                    minHeight: '120px'
+                                    minHeight: '120px',
+                                    boxShadow: ticket.highlighted ? '0 0 20px rgba(245,158,11,0.3)' : 'var(--shadow-sm)',
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'scale(1.03) translateY(-2px)';
+                                    e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
+                                    e.currentTarget.style.background = 'var(--bg-elevated)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'scale(1) translateY(0)';
+                                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                                    e.currentTarget.style.background = 'var(--bg-surface)';
+                                }}
                             >
                                 <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
                                         {ticket.companyName}
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                                        <div style={{ marginBottom: '0.25rem' }}>
-                                            Creato da: <strong>{getCreatorName(ticket, allUsers)}</strong>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                                        <div style={{ marginBottom: '0.2rem', color: 'var(--text-muted)' }}>
+                                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{getCreatorName(ticket, allUsers)}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.85rem' }}>
-                                            In carico a: <strong>{getAssigneeName(ticket, allUsers)}</strong>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 500, color: isTakenByMe ? 'var(--accent-teal)' : 'var(--text-secondary)' }}>
+                                            {getAssigneeName(ticket, allUsers)}
                                         </div>
                                         {ticket.scheduledDate && (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--primary-color)', fontWeight: 600, marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <Calendar size={12} /> Pianificato: {new Date(ticket.scheduledDate).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        )}
-                                        {ticket.updatedAt && (
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                                                Aggiornato: {new Date(ticket.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600, marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <Calendar size={11} /> {new Date(ticket.scheduledDate).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         )}
                                     </div>
@@ -454,39 +466,43 @@ export const TicketList: React.FC = () => {
                     return (
                         <div
                             key={ticket.id}
-                            className="glass-panel"
                             style={{
-                                padding: '1.25rem',
-                                border: '1px solid #cbd5e1',
-                                borderLeft: isUrgent ? '6px solid var(--danger-color)' : '6px solid var(--success-color)',
-                                opacity: isTakenByOthers ? 0.6 : 1,
-                                boxShadow: ticket.highlighted ? '0 0 15px rgba(59, 130, 246, 0.5)' : '0 2px 4px rgba(0,0,0,0.05)',
-                                animation: ticket.highlighted ? 'blink 1s infinite ease-in-out' : 'none',
-                                marginBottom: '0.5rem'
+                                padding: '1.1rem 1.25rem',
+                                background: 'var(--bg-surface)',
+                                borderRadius: 'var(--border-radius-lg)',
+                                border: '1px solid var(--border-subtle)',
+                                borderLeft: `4px solid ${isUrgent ? 'var(--danger-color)' : isTakenByMe ? 'var(--accent-teal)' : 'var(--primary-color)'}`,
+                                opacity: isTakenByOthers ? 0.55 : 1,
+                                boxShadow: ticket.highlighted ? '0 0 20px rgba(245,158,11,0.35), var(--shadow-sm)' : 'var(--shadow-sm)',
+                                animation: ticket.highlighted ? 'glowPulse 1.4s ease-in-out infinite' : 'slideInUp 0.3s ease forwards',
+                                transition: 'all 0.22s',
                             }}
                         >
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                                Creato da: <strong>{getCreatorName(ticket, allUsers)}</strong>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>da</span>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{getCreatorName(ticket, allUsers)}</span>
+                                <span style={{ color: 'var(--border-subtle)', marginInline: '0.2rem' }}>·</span>
+                                <span style={{ fontSize: '0.7rem' }}>{new Date(ticket.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.125rem', color: isUrgent ? 'var(--danger-color)' : 'var(--text-primary)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.6rem' }}>
+                                <div style={{ fontWeight: 700, fontSize: '1.05rem', color: isUrgent ? 'var(--danger-color)' : 'var(--text-primary)' }}>
                                     {ticket.companyName}
                                 </div>
-                                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                                     {new Date(ticket.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-                                <div><strong>Ref:</strong> {ticket.contactName}{ticket.phone && ticket.phone.trim() !== '' && ticket.phone.trim() !== '()' ? ` - ${ticket.phone.trim()}` : ''}</div>
-                                <div style={{ marginTop: '0.5rem', color: 'var(--text-primary)' }}>{ticket.description}</div>
+                            <div style={{ marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <div style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}><span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Ref:</span> <strong style={{ color: 'var(--text-primary)' }}>{ticket.contactName}</strong>{ticket.phone && ticket.phone.trim() !== '' && ticket.phone.trim() !== '()' ? <span style={{ color: 'var(--text-muted)' }}> · {ticket.phone.trim()}</span> : ''}</div>
+                                <div style={{ marginTop: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.4 }}>{ticket.description}</div>
                                 {ticket.scheduledDate && (
-                                    <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--primary-color)', color: 'white', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-                                        <Calendar size={18} /> INTERVENTO PROGRAMMATO: {new Date(ticket.scheduledDate).toLocaleString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem', padding: '0.6rem 0.9rem', background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', borderRadius: 'var(--border-radius-sm)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, border: '1px solid rgba(99,102,241,0.2)' }}>
+                                        <Calendar size={15} /> INTERVENTO: {new Date(ticket.scheduledDate).toLocaleString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 )}
                                 {ticket.notes && (
-                                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '4px', fontSize: '0.875rem', borderLeft: '3px solid #f59e0b', whiteSpace: 'pre-wrap' }}>
+                                    <div style={{ marginTop: '0.6rem', padding: '0.6rem 0.9rem', background: 'rgba(245,158,11,0.08)', color: '#fcd34d', borderRadius: 'var(--border-radius-sm)', fontSize: '0.85rem', borderLeft: '3px solid rgba(245,158,11,0.4)', whiteSpace: 'pre-wrap' }}>
                                         <strong>Appunti:</strong> {ticket.notes}
                                     </div>
                                 )}
@@ -494,13 +510,13 @@ export const TicketList: React.FC = () => {
 
 
                             {isTakenByOthers && isAdmin && (
-                                <div style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--warning-color)' }}>
-                                    Preso in carico {showOtherAssignees ? `da: ${assigneeName}` : 'da un collega'} (Admin può riassegnare)
+                                <div style={{ marginBottom: '0.75rem', fontSize: '0.82rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 'var(--border-radius-sm)', padding: '0.45rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <UserPlus size={14} /> Preso in carico {showOtherAssignees ? `da: ${assigneeName}` : 'da un collega'}
                                 </div>
                             )}
 
                             {isTakenByOthers && !isAdmin ? (
-                                <div style={{ fontSize: '0.875rem', padding: '0.5rem', backgroundColor: '#f1f5f9', borderRadius: '4px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem', background: 'rgba(148,163,184,0.07)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-sm)', color: 'var(--text-muted)', textAlign: 'center' }}>
                                     Preso in carico {showOtherAssignees ? `da ${assigneeName}` : 'da un collega'}
                                 </div>
                             ) : (
@@ -520,13 +536,13 @@ export const TicketList: React.FC = () => {
                                         className="btn"
                                         title={ticket.highlighted ? "Rimuovi evidenziazione" : "Evidenzia ticket (Lampeggio)"}
                                         style={{
-                                            padding: '0.75rem',
-                                            backgroundColor: ticket.highlighted ? '#fef3c7' : '#f1f5f9',
-                                            color: ticket.highlighted ? '#d97706' : '#64748b',
-                                            border: ticket.highlighted ? '1px solid #f59e0b' : '1px solid #cbd5e1'
+                                            padding: '0.65rem 0.75rem',
+                                            background: ticket.highlighted ? 'rgba(245,158,11,0.12)' : 'transparent',
+                                            color: ticket.highlighted ? '#fbbf24' : 'var(--text-muted)',
+                                            border: `1px solid ${ticket.highlighted ? 'rgba(245,158,11,0.3)' : 'var(--border-subtle)'}`,
                                         }}
                                     >
-                                        <Zap size={18} fill={ticket.highlighted ? "#d97706" : "none"} />
+                                        <Zap size={17} fill={ticket.highlighted ? "#fbbf24" : "none"} />
                                     </button>
 
                                     {(isTakenByMe || (isTakenByOthers && isAdmin && settings.adminCanReassignOthers)) && (
@@ -535,21 +551,21 @@ export const TicketList: React.FC = () => {
                                                 <button
                                                     onClick={() => handleUpdateNotes(ticket.id!, ticket.notes)}
                                                     className="btn"
-                                                    style={{ flex: 1, padding: '0.75rem', backgroundColor: '#e2e8f0', color: '#1e293b' }}
+                                                    style={{ flex: 1, padding: '0.65rem' }}
                                                 >
                                                     Appunti
                                                 </button>
                                                 <button
                                                     onClick={() => handleTakeCharge(ticket)}
                                                     className="btn"
-                                                    style={{ flex: 1, padding: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #166534' }}
+                                                    style={{ flex: 1, padding: '0.65rem', background: 'rgba(20,184,166,0.12)', color: 'var(--accent-teal)', border: '1px solid rgba(20,184,166,0.25)' }}
                                                 >
-                                                    <Calendar size={18} /> {isTakenByMe ? 'Sposta' : 'Forza Sposta'}
+                                                    <Calendar size={16} /> {isTakenByMe ? 'Sposta' : 'Forza Sposta'}
                                                 </button>
                                                 <button
                                                     onClick={() => handleRelease(ticket.id!)}
                                                     className="btn"
-                                                    style={{ flex: 1, padding: '0.75rem', backgroundColor: '#fca5a5', color: '#991b1b' }}
+                                                    style={{ flex: 1, padding: '0.65rem', background: 'rgba(244,63,94,0.1)', color: '#fb7185', border: '1px solid rgba(244,63,94,0.2)' }}
                                                 >
                                                     {isTakenByMe ? 'Rilascia' : 'Forza Rilascia'}
                                                 </button>
@@ -583,34 +599,42 @@ export const TicketList: React.FC = () => {
                 })}
             </div>
 
-            {/* Modal Dettaglio (per vista compatta o visione estesa) */}
+            {/* Modal Dettaglio */}
             {selectedTicket && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', padding: '2rem', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <button onClick={() => setSelectedTicket(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                            <X size={24} />
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', animation: 'fadeIn 0.2s ease' }}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-xl)', width: '100%', maxWidth: '600px', padding: '1.5rem', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-xl)', animation: 'slideInUp 0.25s ease' }}>
+                        <button onClick={() => setSelectedTicket(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <X size={18} />
                         </button>
 
-                        <h3 style={{ marginBottom: '1rem', color: selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : 'inherit' }}>
-                            {selectedTicket.companyName}
-                        </h3>
-
-                        <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                            <p><strong>Aperto il:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
-                            <p><strong>Creato da:</strong> {getCreatorName(selectedTicket, allUsers)}</p>
-                            <p><strong>Referente:</strong> {selectedTicket.contactName}{selectedTicket.phone && selectedTicket.phone.trim() !== '' && selectedTicket.phone.trim() !== '()' ? ` (${selectedTicket.phone.trim()})` : ''}</p>
-                            <p><strong>In carico a:</strong> {getAssigneeName(selectedTicket, allUsers)}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', paddingRight: '2rem' }}>
+                            <div style={{ width: 4, height: 36, borderRadius: 4, background: selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : selectedTicket.assignedTo === currentUser?.uid ? 'var(--accent-teal)' : 'var(--primary-color)', flexShrink: 0 }} />
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : 'var(--text-primary)' }}>
+                                    {selectedTicket.companyName}
+                                </h3>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{new Date(selectedTicket.createdAt).toLocaleString()}</div>
+                            </div>
                         </div>
 
-                        <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                            <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Descrizione Problema:</p>
-                            <p>{selectedTicket.description}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                            {[['Creato da', getCreatorName(selectedTicket, allUsers)], ['Referente', `${selectedTicket.contactName}${selectedTicket.phone && selectedTicket.phone.trim() !== '' && selectedTicket.phone.trim() !== '()' ? ' · ' + selectedTicket.phone.trim() : ''}`], ['In carico a', getAssigneeName(selectedTicket, allUsers)], ['Stato', selectedTicket.status]].map(([label, value]) => (
+                                <div key={label} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-sm)', padding: '0.5rem 0.75rem' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.2rem' }}>{label}</div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>{value}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ padding: '0.9rem', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-md)', marginBottom: '1rem' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>Descrizione Problema</div>
+                            <p style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>{selectedTicket.description}</p>
 
                             {selectedTicket.photoUrls && selectedTicket.photoUrls.length > 0 && (
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                                    <p style={{ width: '100%', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>FOTO ALLEGATE:</p>
+                                    <p style={{ width: '100%', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>FOTO ALLEGATE</p>
                                     {selectedTicket.photoUrls.map((url, i) => (
-                                        <a key={i} href={url} target="_blank" rel="noreferrer" title="Clicca per ingrandire" style={{ display: 'block', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', width: '80px', height: '80px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                                             <img src={url} alt={`Allegato ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </a>
                                     ))}
@@ -619,39 +643,39 @@ export const TicketList: React.FC = () => {
                         </div>
 
                         {selectedTicket.notes && (
-                            <div style={{ padding: '1rem', backgroundColor: '#fef3c7', borderRadius: '8px', marginBottom: '1.5rem', borderLeft: '4px solid #f59e0b', whiteSpace: 'pre-wrap' }}>
-                                <p style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#92400e' }}>Appunti Intervento:</p>
-                                <p style={{ color: '#92400e' }}>{selectedTicket.notes}</p>
+                            <div style={{ padding: '0.9rem', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 'var(--border-radius-md)', marginBottom: '1rem', borderLeft: '3px solid rgba(245,158,11,0.4)', whiteSpace: 'pre-wrap' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fbbf24', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Appunti Intervento</div>
+                                <p style={{ color: '#fcd34d' }}>{selectedTicket.notes}</p>
                             </div>
                         )}
 
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
                             {selectedTicket.status === 'aperto' && (
                                 <button onClick={() => { handleTakeCharge(selectedTicket); setSelectedTicket(null); }} className="btn btn-primary" style={{ flex: 1 }}>
                                     Prendi in Carico
                                 </button>
                             )}
                             {(isAdmin || selectedTicket.assignedTo === currentUser?.uid) && (
-                                <button onClick={() => handleUpdateNotes(selectedTicket.id!, selectedTicket.notes)} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0', minWidth: '150px' }}>
+                                <button onClick={() => handleUpdateNotes(selectedTicket.id!, selectedTicket.notes)} className="btn" style={{ flex: 1, minWidth: '150px' }}>
                                     {isAdmin && selectedTicket.assignedTo !== currentUser?.uid ? 'Modifica Note (Admin)' : 'Appunti'}
                                 </button>
                             )}
                             {(selectedTicket.assignedTo === currentUser?.uid || (isAdmin && settings.adminCanReassignOthers && selectedTicket.status === 'preso_in_carico')) && (
-                                <button onClick={() => { handleTakeCharge(selectedTicket); setSelectedTicket(null); }} className="btn" style={{ flex: 1, backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #166534' }}>Sposta</button>
+                                <button onClick={() => { handleTakeCharge(selectedTicket); setSelectedTicket(null); }} className="btn" style={{ flex: 1, background: 'rgba(20,184,166,0.12)', color: 'var(--accent-teal)', border: '1px solid rgba(20,184,166,0.25)' }}>Sposta</button>
                             )}
                             {(selectedTicket.assignedTo === currentUser?.uid || (isAdmin && settings.adminCanReassignOthers && selectedTicket.status === 'preso_in_carico')) && (
-                                <button onClick={() => handleRelease(selectedTicket.id!)} className="btn" style={{ flex: 1, backgroundColor: '#fca5a5' }}>Rilascia</button>
+                                <button onClick={() => handleRelease(selectedTicket.id!)} className="btn" style={{ flex: 1, background: 'rgba(244,63,94,0.1)', color: '#fb7185', border: '1px solid rgba(244,63,94,0.2)' }}>Rilascia</button>
                             )}
                             {((selectedTicket.assignedTo === currentUser?.uid && (isAdmin || settings.userCanCloseOwnTickets !== false)) || (selectedTicket.assignedTo !== currentUser?.uid && isAdmin && settings.adminCanCloseOthers)) && selectedTicket.status === 'preso_in_carico' && (
                                 <button onClick={() => handleCloseTicket(selectedTicket.id!, selectedTicket.notes)} className="btn btn-success" style={{ width: '100%', marginTop: '0.5rem' }}>Chiudi Definitivamente</button>
                             )}
                             {isAdmin && (
-                                <button onClick={() => handleDeleteTicket(selectedTicket.id!)} className="btn" style={{ flex: 1, backgroundColor: '#fee2e2', color: 'var(--danger-color)', border: '1px solid #fca5a5', minWidth: '150px' }}>
+                                <button onClick={() => handleDeleteTicket(selectedTicket.id!)} className="btn" style={{ flex: 1, background: 'rgba(244,63,94,0.08)', color: 'var(--danger-color)', border: '1px solid rgba(244,63,94,0.15)', minWidth: '150px' }}>
                                     Elimina Ticket
                                 </button>
                             )}
                             {isAdmin && selectedTicket.status === 'preso_in_carico' && selectedTicket.assignedTo !== currentUser?.uid && settings.adminCanReassignOthers && (
-                                <button onClick={() => setReassignTarget({ ticketId: selectedTicket.id!, oldAssigneeName: userNames[selectedTicket.assignedTo!] || selectedTicket.assignedTo! })} className="btn" style={{ flex: 1, border: '1px solid var(--primary-color)' }}>Riassegna Collega</button>
+                                <button onClick={() => setReassignTarget({ ticketId: selectedTicket.id!, oldAssigneeName: userNames[selectedTicket.assignedTo!] || selectedTicket.assignedTo! })} className="btn" style={{ flex: 1, border: '1px solid rgba(99,102,241,0.35)', color: 'var(--primary-color)', background: 'rgba(99,102,241,0.08)' }}>Riassegna Collega</button>
                             )}
                         </div>
                     </div>
@@ -660,17 +684,17 @@ export const TicketList: React.FC = () => {
 
             {/* Modal Riassegnazione */}
             {reassignTarget && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '2rem' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>Riassegna Ticket</h3>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-xl)', width: '100%', maxWidth: '450px', padding: '1.75rem', boxShadow: 'var(--shadow-xl)', animation: 'slideInUp 0.25s ease' }}>
+                        <h3 style={{ marginBottom: '1.25rem', color: 'var(--text-primary)', fontSize: '1.1rem' }}>Riassegna Ticket</h3>
                         <form onSubmit={handleReassign}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Nuovo Assegnatario</label>
+                                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nuovo Assegnatario</label>
                                 <select
                                     required
                                     value={reassignTo}
                                     onChange={e => setReassignTo(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                    style={{ width: '100%' }}
                                 >
                                     <option value="">Seleziona un collega...</option>
                                     {allUsers.filter(u => u.uid !== currentUser?.uid).map(u => (
@@ -678,19 +702,19 @@ export const TicketList: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Motivo della riassegnazione</label>
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Motivo della riassegnazione</label>
                                 <textarea
                                     placeholder="Scrivi qui perché stai spostando il ticket..."
                                     value={reassignReason}
                                     onChange={e => setReassignReason(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1', minHeight: '80px' }}
+                                    style={{ width: '100%', minHeight: '80px' }}
                                 />
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button type="button" onClick={() => setReassignTarget(null)} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0' }}>Annulla</button>
+                                <button type="button" onClick={() => setReassignTarget(null)} className="btn" style={{ flex: 1 }}>Annulla</button>
                                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                                    <Send size={18} /> Conferma
+                                    <Send size={16} /> Conferma
                                 </button>
                             </div>
                         </form>
@@ -700,38 +724,37 @@ export const TicketList: React.FC = () => {
 
             {/* Modal Presa in Carico / Calendario */}
             {takeChargeTicket && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem' }}>{takeChargeTicket.status === 'preso_in_carico' ? 'Sposta / Riprogramma Intervento' : 'Prendi in Carico'}</h3>
-                        <p style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-xl)', width: '100%', maxWidth: '450px', padding: '1.75rem', boxShadow: 'var(--shadow-xl)', animation: 'slideInUp 0.25s ease' }}>
+                        <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)', fontSize: '1.1rem' }}>{takeChargeTicket.status === 'preso_in_carico' ? 'Sposta / Riprogramma Intervento' : 'Prendi in Carico'}</h3>
+                        <p style={{ marginBottom: '1.25rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                             {takeChargeTicket.status === 'preso_in_carico'
                                 ? `Stai aggiornando la pianificazione per ${takeChargeTicket.companyName}.`
                                 : `Stai prendendo in carico l'assistenza per ${takeChargeTicket.companyName}.`}
                         </p>
 
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Pianifica data e ora (opzionale)</label>
+                        <div style={{ marginBottom: '1.25rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pianifica data e ora (opzionale)</label>
                             <input
                                 type="datetime-local"
                                 value={scheduledDateTime}
                                 onChange={e => setScheduledDateTime(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                style={{ width: '100%' }}
                             />
                         </div>
 
                         {isAdmin && scheduledDateTime && (
-                            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--border-subtle)' }}>
                                 <input
                                     type="checkbox"
                                     id="syncToCalendar"
                                     checked={syncToCalendar}
                                     onChange={e => setSyncToCalendar(e.target.checked)}
                                     disabled={!googleToken}
-                                    style={{ width: '18px', height: '18px' }}
                                 />
-                                <label htmlFor="syncToCalendar" style={{ fontSize: '0.875rem', cursor: googleToken ? 'pointer' : 'default' }}>
+                                <label htmlFor="syncToCalendar" style={{ fontSize: '0.875rem', cursor: googleToken ? 'pointer' : 'default', color: googleToken ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                                     Crea evento su Google Calendar
-                                    {!googleToken && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--danger-color)' }}>Collega il tuo account Google per attivare questa opzione.</span>}
+                                    {!googleToken && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--danger-color)', marginTop: '0.2rem' }}>Collega il tuo account Google per attivare questa opzione.</span>}
                                 </label>
                             </div>
                         )}
@@ -740,9 +763,9 @@ export const TicketList: React.FC = () => {
                             <button
                                 onClick={() => connectGoogle()}
                                 className="btn"
-                                style={{ width: '100%', marginBottom: '1rem', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                style={{ width: '100%', marginBottom: '1rem', background: 'rgba(20,184,166,0.10)', color: 'var(--accent-teal)', border: '1px solid rgba(20,184,166,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                             >
-                                <LinkIcon size={18} /> Collega Google ora
+                                <LinkIcon size={16} /> Collega Google ora
                             </button>
                         )}
 
@@ -751,7 +774,7 @@ export const TicketList: React.FC = () => {
                                 onClick={() => setTakeChargeTicket(null)}
                                 className="btn"
                                 disabled={calendarLoading}
-                                style={{ flex: 1, backgroundColor: '#e2e8f0' }}
+                                style={{ flex: 1 }}
                             >
                                 Annulla
                             </button>
@@ -767,6 +790,7 @@ export const TicketList: React.FC = () => {
                     </div>
                 </div>
             )}
+
 
             <VoiceDictationModal
                 isOpen={isDictationModalOpen && dictationTarget?.action === 'update'}

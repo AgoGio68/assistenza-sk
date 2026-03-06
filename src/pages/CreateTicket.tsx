@@ -207,48 +207,61 @@ export const CreateTicket: React.FC = () => {
 
     return (
         <div style={{ paddingBottom: '2rem' }}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Nuova Assistenza</h2>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Nuova Assistenza</h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Compila il form per aprire un nuovo ticket di supporto</p>
+            </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                 {/* Urgency Selection */}
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button
                         type="button"
                         onClick={() => setUrgency('urgente')}
-                        className={`btn ${urgency === 'urgente' ? 'btn-danger' : ''}`}
                         style={{
                             flex: 1,
-                            padding: '1.5rem',
-                            fontSize: '1.25rem',
-                            backgroundColor: urgency === 'urgente' ? 'var(--danger-color)' : 'white',
-                            color: urgency === 'urgente' ? 'white' : 'var(--danger-color)',
-                            border: '2px solid var(--danger-color)'
+                            padding: '1.2rem',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            borderRadius: 'var(--border-radius-md)',
+                            border: `2px solid ${urgency === 'urgente' ? 'var(--danger-color)' : 'rgba(244,63,94,0.2)'}`,
+                            background: urgency === 'urgente' ? 'linear-gradient(135deg, #f43f5e, #e11d48)' : 'rgba(244,63,94,0.06)',
+                            color: urgency === 'urgente' ? 'white' : '#fb7185',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                            transition: 'all 0.2s',
+                            boxShadow: urgency === 'urgente' ? '0 4px 16px rgba(244,63,94,0.35)' : 'none',
                         }}
                     >
-                        <AlertCircle size={28} /> URGENTE
+                        <AlertCircle size={22} /> URGENTE
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setUrgency('non_urgente')}
-                        className={`btn ${urgency === 'non_urgente' ? 'btn-success' : ''}`}
                         style={{
                             flex: 1,
-                            padding: '1.5rem',
-                            fontSize: '1.25rem',
-                            backgroundColor: urgency === 'non_urgente' ? 'var(--success-color)' : 'white',
-                            color: urgency === 'non_urgente' ? 'white' : 'var(--success-color)',
-                            border: '2px solid var(--success-color)'
+                            padding: '1.2rem',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            borderRadius: 'var(--border-radius-md)',
+                            border: `2px solid ${urgency === 'non_urgente' ? 'var(--accent-teal)' : 'rgba(20,184,166,0.2)'}`,
+                            background: urgency === 'non_urgente' ? 'linear-gradient(135deg, #14b8a6, #0d9488)' : 'rgba(20,184,166,0.06)',
+                            color: urgency === 'non_urgente' ? 'white' : 'var(--accent-teal)',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                            transition: 'all 0.2s',
+                            boxShadow: urgency === 'non_urgente' ? '0 4px 16px rgba(20,184,166,0.35)' : 'none',
                         }}
                     >
-                        <CheckCircle2 size={28} /> NORMALE
+                        <CheckCircle2 size={22} /> NORMALE
                     </button>
                 </div>
 
                 {/* Company AutoComplete */}
                 <div style={{ position: 'relative' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Azienda</label>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Azienda</label>
                     <input
                         type="text"
                         value={companyName}
@@ -257,20 +270,22 @@ export const CreateTicket: React.FC = () => {
                             setShowSuggestions(true);
                         }}
                         required
-                        style={{ width: '100%', padding: '1rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                        style={{ width: '100%', fontSize: '1rem' }}
                         placeholder="Nome azienda..."
                     />
                     {showSuggestions && suggestions.length > 0 && (
-                        <div className="glass-panel" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: '4px', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: '4px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
                             {suggestions.map(comp => (
                                 <div
                                     key={comp.id}
                                     onClick={() => selectCompany(comp)}
-                                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.05)' }}
+                                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                 >
-                                    <div style={{ fontWeight: 600 }}>{comp.name}</div>
-                                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                        {comp.contactName} - {comp.phone}
+                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{comp.name}</div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                        {comp.contactName} ·  {comp.phone}
                                     </div>
                                 </div>
                             ))}
@@ -279,45 +294,45 @@ export const CreateTicket: React.FC = () => {
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Referente</label>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Referente</label>
                     <input
                         type="text"
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
-                        style={{ width: '100%', padding: '1rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                        style={{ width: '100%', fontSize: '1rem' }}
                         placeholder="Nome di chi ha chiamato"
                     />
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Telefono</label>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Telefono</label>
                     <input
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        style={{ width: '100%', padding: '1rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                        style={{ width: '100%', fontSize: '1rem' }}
                         placeholder="Numero di telefono"
                     />
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Breve Descrizione</label>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Breve Descrizione</label>
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         required
-                        style={{ width: '100%', padding: '1rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', fontSize: '1rem', minHeight: '100px', resize: 'vertical' }}
+                        style={{ width: '100%', fontSize: '1rem', minHeight: '100px', resize: 'vertical' }}
                         placeholder="Problema riscontrato..."
                     />
                 </div>
 
                 {canAssign && (
-                    <div style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#166534' }}>Assegna Subito A (Opzionale)</label>
+                    <div style={{ background: 'rgba(20,184,166,0.07)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(20,184,166,0.2)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-teal)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Assegna Subito A (Opzionale)</label>
                         <select
                             value={assignedTo}
                             onChange={(e) => setAssignedTo(e.target.value)}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #86efac', fontSize: '1rem' }}
+                            style={{ width: '100%' }}
                         >
                             <option value="">Nessuno (Lascia in "Da Assegnare")</option>
                             {assignableUsers.map(u => (
@@ -328,39 +343,52 @@ export const CreateTicket: React.FC = () => {
                 )}
 
                 {settings.enablePhotos && (
-                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                            <Camera size={18} /> Aggiungi Fotografie (Max 3)
+                    <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-subtle)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            <Camera size={15} /> Aggiungi Fotografie (Max 3)
                         </label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
                             {photos.map((photo, idx) => (
-                                <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                                     <img src={URL.createObjectURL(photo)} alt={`Upload ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     <button
                                         type="button"
                                         onClick={() => removePhoto(idx)}
-                                        style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', padding: '2px', cursor: 'pointer' }}
+                                        style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     >
-                                        <X size={14} />
+                                        <X size={12} />
                                     </button>
                                 </div>
                             ))}
                             {photos.length < 3 && (
-                                <label style={{ width: '80px', height: '80px', borderRadius: '8px', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: 'white', color: '#94a3b8' }}>
-                                    <Camera size={24} />
+                                <label style={{ width: '80px', height: '80px', borderRadius: 'var(--border-radius-sm)', border: '2px dashed rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.2s' }}>
+                                    <Camera size={22} />
                                     <input type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} />
                                 </label>
                             )}
                         </div>
-                        <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Le immagini verranno compresse automaticamente prima dell'invio per risparmiare traffico dati.</p>
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>Le immagini verranno compresse automaticamente prima dell'invio.</p>
                     </div>
                 )}
 
                 <button
                     type="submit"
-                    className="btn btn-primary btn-large"
                     disabled={loading || !urgency}
-                    style={{ marginTop: '1rem' }}
+                    style={{
+                        marginTop: '0.75rem',
+                        padding: '1.1rem',
+                        fontSize: '1.05rem',
+                        fontWeight: 700,
+                        borderRadius: 'var(--border-radius-md)',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-violet) 100%)',
+                        color: 'white',
+                        cursor: loading || !urgency ? 'not-allowed' : 'pointer',
+                        opacity: loading || !urgency ? 0.6 : 1,
+                        boxShadow: '0 4px 20px rgba(99,102,241,0.35)',
+                        transition: 'all 0.2s',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                    }}
                 >
                     {loading ? (uploadProgress || 'Invio in corso...') : 'INVIA ASSISTENZA'}
                 </button>

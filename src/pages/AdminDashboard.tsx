@@ -376,21 +376,21 @@ export const AdminDashboard: React.FC = () => {
                 <button
                     className={`btn ${activeTab === 'tickets' ? 'btn-primary' : ''}`}
                     onClick={() => setActiveTab('tickets')}
-                    style={{ flex: 1, minWidth: '120px', backgroundColor: activeTab !== 'tickets' ? 'white' : '', color: activeTab !== 'tickets' ? 'var(--text-primary)' : '' }}
+                    style={{ flex: 1, minWidth: '120px' }}
                 >
                     <TicketIcon size={20} /> Assistenze
                 </button>
                 <button
                     className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
                     onClick={() => setActiveTab('users')}
-                    style={{ flex: 1, minWidth: '120px', backgroundColor: activeTab !== 'users' ? 'white' : '', color: activeTab !== 'users' ? 'var(--text-primary)' : '' }}
+                    style={{ flex: 1, minWidth: '120px' }}
                 >
                     <Users size={20} /> Utenti
                 </button>
                 <button
                     className={`btn ${activeTab === 'companies' ? 'btn-primary' : ''}`}
                     onClick={() => setActiveTab('companies')}
-                    style={{ flex: 1, minWidth: '120px', backgroundColor: activeTab !== 'companies' ? 'white' : '', color: activeTab !== 'companies' ? 'var(--text-primary)' : '' }}
+                    style={{ flex: 1, minWidth: '120px' }}
                 >
                     <Building2 size={20} /> Aziende
                 </button>
@@ -398,7 +398,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                         className={`btn ${activeTab === 'settings' ? 'btn-primary' : ''}`}
                         onClick={() => setActiveTab('settings')}
-                        style={{ flex: 1, minWidth: '120px', backgroundColor: activeTab !== 'settings' ? 'white' : '', color: activeTab !== 'settings' ? 'var(--text-primary)' : '' }}
+                        style={{ flex: 1, minWidth: '120px' }}
                     >
                         <SettingsIcon size={20} /> Impostazioni
                     </button>

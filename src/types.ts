@@ -58,6 +58,7 @@ export interface Installation {
     installationSite: string;
     installDate: string;
     comments: string;
+    extractedNotes?: string; // Nuova colonna dello script Google Apps per voci con Cod.
     // v1.9.2 Dynamic Fields (Stored in Firestore)
     isInvoiced?: boolean;
     isDeleted?: boolean;

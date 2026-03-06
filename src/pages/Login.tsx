@@ -58,49 +58,54 @@ export const Login: React.FC = () => {
         <div className="auth-wrapper">
             <div className="glass-panel auth-card">
                 <img src={settings.logoUrl || "/logo-sk.jpg"} alt={settings.appName || "LMS Logo"} className="auth-logo" />
-                <h2 style={{ textAlign: 'center', marginBottom: '0.2rem', fontSize: '1.5rem', fontWeight: 700 }}>{settings.appName || appName}</h2>
-                <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Versione {__APP_VERSION__}
+                <h2 style={{
+                    textAlign: 'center', marginBottom: '0.2rem',
+                    fontSize: '1.6rem', fontWeight: 800,
+                    background: 'linear-gradient(135deg, #f1f5f9 30%, #94a3b8)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
+                }}>{settings.appName || appName}</h2>
+                <div style={{ textAlign: 'center', marginBottom: '1.75rem', color: 'var(--text-muted)', fontSize: '0.78rem', letterSpacing: '0.05em' }}>
+                    v{__APP_VERSION__}
                 </div>
 
-                <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+                <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '1rem' }}>
                     {isForgotPassword ? 'Recupero Password' : (isLogin ? 'Accedi al sistema' : 'Registrazione')}
                 </h3>
 
                 {error && (
-                    <div style={{ backgroundColor: 'var(--danger-color)', color: 'white', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                    <div style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.25)', color: '#fb7185', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>
                         {error}
                     </div>
                 )}
 
                 {message && (
-                    <div style={{ backgroundColor: '#10b981', color: 'white', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                    <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#6ee7b7', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>
                         {message}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                        <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Email</label>
+                        <label htmlFor="email" style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Email</label>
                         <input
                             id="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', outline: 'none' }}
+                            style={{ width: '100%' }}
                         />
                     </div>
 
                     {!isForgotPassword && (
                         <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                <label htmlFor="password" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Password</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                <label htmlFor="password" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Password</label>
                                 {isLogin && (
                                     <button
                                         type="button"
                                         onClick={() => setIsForgotPassword(true)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', fontSize: '0.75rem', textDecoration: 'underline' }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--accent-teal)', cursor: 'pointer', fontSize: '0.75rem' }}
                                     >
                                         Dimenticata?
                                     </button>
@@ -112,7 +117,7 @@ export const Login: React.FC = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid #cbd5e1', outline: 'none' }}
+                                style={{ width: '100%' }}
                             />
                         </div>
                     )}
@@ -121,7 +126,7 @@ export const Login: React.FC = () => {
                         type="submit"
                         className="btn btn-primary"
                         disabled={loading}
-                        style={{ marginTop: '1rem' }}
+                        style={{ marginTop: '0.75rem', padding: '0.9rem', fontSize: '1rem' }}
                     >
                         {isForgotPassword ? (
                             <><Mail size={20} /> Invia link di reset</>
@@ -135,14 +140,14 @@ export const Login: React.FC = () => {
                     {isForgotPassword ? (
                         <button
                             onClick={() => setIsForgotPassword(false)}
-                            style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--accent-teal)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
                         >
                             <ArrowLeft size={16} /> Torna al login
                         </button>
                     ) : (
                         <button
                             onClick={() => setIsLogin(!isLogin)}
-                            style={{ background: 'none', border: 'none', color: 'var(--secondary-color)', cursor: 'pointer', textDecoration: 'underline' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}
                         >
                             {isLogin ? 'Non hai un account? Registrati' : 'Hai già un account? Accedi'}
                         </button>
@@ -151,9 +156,9 @@ export const Login: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => { setShowGuide(true); setViewMode('guide'); }}
-                        style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
+                        style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem' }}
                     >
-                        <Info size={16} /> Guida e Versioni
+                        <Info size={14} /> Guida e Versioni
                     </button>
                 </div>
             </div>
@@ -162,7 +167,7 @@ export const Login: React.FC = () => {
             {showGuide && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                    backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 1000,
                     display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
                 }}>
                     <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}>
@@ -206,6 +211,44 @@ export const Login: React.FC = () => {
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.7 - Rendering Note Multiriga</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Fix Compatibilità CSV:</strong> Riscritto completamente il motore di estrazione CSV per supportare l'inclusione di note estremamente complesse e formattate su più righe all'interno della singola cella Google.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.6 - Allineamento Dinamico Colonne</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Motore di Lettura CSV:</strong> Il parser riconosce ora i "Componenti Estratti" in modo fluido, indipendentemente dalla presenza di colonne vuote prima o dopo le Note nel foglio Google originale.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.5 - Riorganizzazione Layout Installazioni</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Nuovo Layout:</strong> La sezione "Applicazioni da aggiungere" è stata rimossa per dare maggiore spazio e risalto ai Componenti Estratti automaticamente dal foglio Google, ottimizzando l'area di lavoro.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.4 - Hotfix Sincronizzazione</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>ID Foglio e GID:</strong> L'app riconosce ora correttamente l'ID del tab specifico (GID) inserito nelle impostazioni per scaricare con precisione millimetrica i codici estratti in background dallo script specchio.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.3 - Sincronizzazione Componenti Macchina (Notes)</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Componenti Estratti:</strong> I codici dei componenti vengono ora estratti automaticamente dai commenti del Google Sheet e visualizzati nel Modale Installazione in un riquadro dedicato.</li>
+                                        <li><strong>Sincronizzazione Background:</strong> Implementata automazione `onEdit` nel Google Sheet per l'aggiornamento real-time e sicuro dei dati verso l'App.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.2 - Sincronizzazione Installazioni</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Calendario Google:</strong> Integrazione con Google Calendar per la pianificazione automatica delle installazioni nella loro scheda di dettaglio.</li>
+                                        <li><strong>Check Visibili:</strong> Aggiunto effetto visivo luminoso (luce arancione pulsante) sulle schede delle installazioni pronte ad essere verificate.</li>
+                                    </ul>
+                                </div>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.1.0 - Assegnazioni e Permessi Granulari</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>

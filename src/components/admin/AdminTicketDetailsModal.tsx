@@ -22,7 +22,7 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
             backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2000,
             display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
         }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative', backgroundColor: 'white' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}>
                 <button
                     onClick={onClose}
                     style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '1.5rem', fontWeight: 'bold' }}
@@ -30,7 +30,7 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
                     &times;
                 </button>
 
-                <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>Dettagli Assistenza: {selectedTicket.companyName}</h3>
+                <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>Dettagli Assistenza: {selectedTicket.companyName}</h3>
 
                 <div style={{ display: 'grid', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div>
@@ -50,7 +50,7 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontWeight: 600, color: selectedTicket.status === 'chiuso' ? 'var(--success-color)' : 'var(--danger-color)' }}>{selectedTicket.status.toUpperCase()}</span>
                             {selectedTicket.status === 'chiuso' && (selectedTicket.durationHours !== undefined || selectedTicket.durationMinutes !== undefined) && (
-                                <span style={{ fontSize: '0.8rem', backgroundColor: '#dcfce7', padding: '0.1rem 0.4rem', borderRadius: '4px', color: '#166534' }}>
+                                <span style={{ fontSize: '0.8rem', background: 'rgba(16,185,129,0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--success-color)', border: '1px solid rgba(16,185,129,0.2)' }}>
                                     Durata: {selectedTicket.durationHours || 0}h {selectedTicket.durationMinutes || 0}m
                                 </span>
                             )}
@@ -63,7 +63,7 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
                             <div>{getClosedByName(selectedTicket, users)} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>il {new Date(selectedTicket.closedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                         </div>
                     )}
-                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-subtle)' }}>
                         <strong style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Descrizione Originale del Problema:</strong>
                         <div style={{ whiteSpace: 'pre-wrap' }}>{selectedTicket.description}</div>
 
@@ -80,9 +80,9 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
                     </div>
 
                     {selectedTicket.notes && (
-                        <div style={{ backgroundColor: '#fef3c7', padding: '1rem', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                            <strong style={{ color: '#92400e', display: 'block', marginBottom: '0.5rem' }}>Appunti / Note di Chiusura:</strong>
-                            <div style={{ whiteSpace: 'pre-wrap', color: '#92400e' }}>{selectedTicket.notes}</div>
+                        <div style={{ background: 'rgba(245,158,11,0.08)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                            <strong style={{ color: 'var(--warning-color)', display: 'block', marginBottom: '0.5rem' }}>Appunti / Note di Chiusura:</strong>
+                            <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>{selectedTicket.notes}</div>
                         </div>
                     )}
 
@@ -99,10 +99,10 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
                     >
                         Modifica Appunti
                     </button>
-                    <button onClick={() => onDeleteTicket(selectedTicket.id!)} className="btn" style={{ flex: 1, minWidth: '150px', backgroundColor: '#fee2e2', color: 'var(--danger-color)', border: '1px solid #fca5a5' }}>
+                    <button onClick={() => onDeleteTicket(selectedTicket.id!)} className="btn btn-danger" style={{ flex: 1, minWidth: '150px' }}>
                         Elimina Ticket
                     </button>
-                    <button onClick={onClose} className="btn" style={{ flex: 1, minWidth: '150px', backgroundColor: '#e2e8f0', color: 'var(--text-primary)' }}>
+                    <button onClick={onClose} className="btn" style={{ flex: 1, minWidth: '150px' }}>
                         Chiudi Finestra
                     </button>
                 </div>

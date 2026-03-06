@@ -6,7 +6,12 @@ export const fetchInstallations = async (sheetUrl: string): Promise<Installation
         if (!sheetIdMatch) throw new Error("Invalid Google Sheet URL");
 
         const sheetId = sheetIdMatch[1];
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+        // Cattura il GID dal link fornito per scaricare il tab corretto, non sempre il primo
+        const gidMatch = sheetUrl.match(/[#&]gid=([0-9]+)/);
+        const gid = gidMatch ? gidMatch[1] : '0';
+
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
 
         const response = await fetch(csvUrl);
         if (!response.ok) throw new Error("Failed to fetch sheet data. Ensure the sheet is public.");
@@ -20,28 +25,48 @@ export const fetchInstallations = async (sheetUrl: string): Promise<Installation
 };
 
 const parseCSV = (csvText: string): Installation[] => {
-    const lines = csvText.split(/\r?\n/);
-    if (lines.length < 2) return [];
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentCell = '';
+    let inQuotes = false;
 
-    const dataLines = lines.slice(1);
+    for (let i = 0; i < csvText.length; i++) {
+        const char = csvText[i];
+        const nextChar = csvText[i + 1];
 
-    return dataLines.map((line, index) => {
-        const parts: string[] = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                parts.push(current.trim());
-                current = '';
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                currentCell += '"'; // Escaped quote
+                i++;
             } else {
-                current += char;
+                inQuotes = !inQuotes;
             }
+        } else if (char === ',' && !inQuotes) {
+            currentRow.push(currentCell.trim());
+            currentCell = '';
+        } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !inQuotes) {
+            if (char === '\r') i++; // Skip the \n part of \r\n
+            if (currentCell || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                rows.push(currentRow);
+                currentRow = [];
+                currentCell = '';
+            }
+        } else {
+            currentCell += char;
         }
-        parts.push(current.trim());
+    }
+    // Aggiungi l'ultima cella/riga se il file non finisce con \n
+    if (currentCell || currentRow.length > 0) {
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+    }
+
+    if (rows.length < 2) return [];
+
+    const dataLines = rows.slice(1);
+
+    return dataLines.map((parts, index) => {
 
         const deliveryDateRaw = parts[4] || '';
         // v2.0.0: Rilevamento automatico fatturazione
@@ -59,6 +84,10 @@ const parseCSV = (csvText: string): Installation[] => {
             serialSK: parts[6] || '',
             installDate: parts[7] || '',
             comments: parts[8] || '',
+            // Cerca la colonna delle 'Note Estratte' in qualsiasi posizione dopo i commenti 
+            // per essere resiliente a eventuali colonne vuote lasciate nel foglio Google
+            extractedNotes: parts.slice(9).find(p => p.trim() !== '') || '',
+
             isInvoiced: autoInvoiced // Campo dinamico derivato dal foglio
         };
     }).filter(inst => inst.client !== '');

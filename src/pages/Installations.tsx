@@ -3,13 +3,14 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchInstallations } from '../services/InstallationService';
 import { Installation } from '../types';
-import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare, Trash2, CheckCircle2, DollarSign, ListChecks, ArrowDownWideNarrow, MapPin, User } from 'lucide-react';
+import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare, Trash2, CheckCircle2, DollarSign, ListChecks, ArrowDownWideNarrow, MapPin, User, Link as LinkIcon } from 'lucide-react';
 import { setDoc, collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { createGoogleCalendarEvent, formatTicketToEvent, CalendarEvent } from '../utils/calendarUtils';
 
 export const Installations: React.FC = () => {
     const { settings } = useSettings();
-    const { isSuperadmin, isAdmin } = useAuth();
+    const { isSuperadmin, isAdmin, googleToken, connectGoogle } = useAuth();
     const [sheetData, setSheetData] = useState<Installation[]>([]);
     const [installations, setInstallations] = useState<Installation[]>([]);
     const [dbData, setDbData] = useState<Record<string, Partial<Installation>>>({});
@@ -23,6 +24,7 @@ export const Installations: React.FC = () => {
     const [editData, setEditData] = useState<Partial<Installation>>({});
     const [saving, setSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
 
     // Load Google Sheets Data
     const loadSheetData = async () => {
@@ -137,29 +139,52 @@ export const Installations: React.FC = () => {
         }
     };
 
-    const toggleApp = (index: number) => {
-        const newApps = [...(editData.applications || [])];
-        newApps[index].checked = !newApps[index].checked;
-        setEditData(prev => ({ ...prev, applications: newApps }));
+    const handleAddEventToCalendar = async () => {
+        if (!googleToken) {
+            connectGoogle();
+            return;
+        }
+        if (!editData.scheduledDate) {
+            alert('Inserisci una data di installazione per creare l\'evento su Google Calendar.');
+            return;
+        }
+
+        setIsSyncingCalendar(true);
+        try {
+            // Build scheduled datetime string
+            const dateStr = editData.scheduledDate;
+            const timeStr = editData.scheduledTime || '08:00';
+            const scheduledDateTime = new Date(`${dateStr}T${timeStr}`);
+
+            // Gather context data for the event
+            const clientName = editData.localOverrides?.client ?? selectedInst?.client ?? 'Cliente Sconosciuto';
+            const machineName = editData.localOverrides?.machine ?? selectedInst?.machine ?? 'Macchina Sconosciuta';
+            const locationStr = editData.localOverrides?.installationSite ?? selectedInst?.installationSite ?? '';
+
+            const descriptionText = `Installazione: ${machineName}\nOrdine: ${selectedInst?.orderNumber || ''}\nMatricola: ${editData.localOverrides?.serialSK ?? selectedInst?.serialSK ?? ''}`;
+
+            const googleEvent: CalendarEvent = formatTicketToEvent(
+                clientName,
+                descriptionText,
+                scheduledDateTime,
+                window.location.origin
+            );
+
+            if (locationStr) {
+                googleEvent.location = locationStr;
+            }
+
+            await createGoogleCalendarEvent(googleToken, googleEvent);
+            alert('Evento creato con successo in Google Calendar!');
+
+        } catch (error: any) {
+            console.error('Google Calendar Sync Error:', error);
+            alert(`Errore durante la sincronizzazione con Google Calendar: ${error.message}`);
+        } finally {
+            setIsSyncingCalendar(false);
+        }
     };
 
-    const updateAppQty = (index: number, qty: string) => {
-        const newApps = [...(editData.applications || [])];
-        newApps[index].qty = qty;
-        setEditData(prev => ({ ...prev, applications: newApps }));
-    };
-
-    const removeApp = (index: number) => {
-        const newApps = [...(editData.applications || [])];
-        newApps.splice(index, 1);
-        setEditData(prev => ({ ...prev, applications: newApps }));
-    };
-
-    const addApp = (name: string) => {
-        if (!name.trim()) return;
-        const newApps = [...(editData.applications || []), { name, checked: false }];
-        setEditData(prev => ({ ...prev, applications: newApps }));
-    };
 
     const getCardColor = (inst: Installation) => {
         if (inst.isInvoiced) return '#94a3b8'; // Grigio ardesia per fatturato
@@ -261,13 +286,17 @@ export const Installations: React.FC = () => {
                                 <div
                                     key={getInstId(inst)}
                                     onClick={() => handleOpenDetail(inst)}
-                                    className="glass-panel card-hover"
+                                    className={`glass-panel card-hover ${inst.scheduledDate ? 'scheduled-glow' : ''}`}
                                     style={{
                                         padding: '1.25rem',
                                         borderLeft: `6px solid ${getCardColor(inst)}`,
                                         cursor: 'pointer',
-                                        transition: 'transform 0.2s',
-                                        position: 'relative'
+                                        transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                                        position: 'relative',
+                                        ...(inst.scheduledDate ? {
+                                            animation: 'glowPulseOrange 2s infinite',
+                                            borderColor: 'rgba(249, 115, 22, 0.5)' // Tailwind orange-500 equivalent color
+                                        } : {})
                                     }}
                                 >
                                     <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{inst.client}</h3>
@@ -456,65 +485,58 @@ export const Installations: React.FC = () => {
                                                 />
                                             </div>
                                         </div>
+
+                                        {/* Google Calendar Sync Button */}
+                                        <div style={{ marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                                            <button
+                                                onClick={handleAddEventToCalendar}
+                                                disabled={isSyncingCalendar || !editData.scheduledDate}
+                                                className="btn"
+                                                style={{
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '0.5rem',
+                                                    padding: '0.65rem',
+                                                    backgroundColor: googleToken ? (editData.scheduledDate ? '#f0fdfa' : '#f1f5f9') : '#f8fafc',
+                                                    color: googleToken ? (editData.scheduledDate ? '#0f766e' : '#94a3b8') : '#64748b',
+                                                    border: `1px solid ${googleToken ? (editData.scheduledDate ? '#14b8a6' : '#cbd5e1') : '#e2e8f0'}`,
+                                                    transition: 'all 0.2s',
+                                                    cursor: (isSyncingCalendar || (!editData.scheduledDate && googleToken)) ? 'not-allowed' : 'pointer'
+                                                }}
+                                            >
+                                                {isSyncingCalendar ? (
+                                                    <><RefreshCw className="spin" size={18} /> Sincronizzazione in corso...</>
+                                                ) : googleToken ? (
+                                                    <><Calendar size={18} /> {editData.scheduledDate ? 'Aggiungi a Google Calendar' : 'Inserisci una data per sincronizzare'}</>
+                                                ) : (
+                                                    <><LinkIcon size={18} /> Collega Google per sincronizzare</>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Applicazioni Checklist - Spostato SOPRA */}
-                            <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f0f9ff', borderRadius: '16px', border: '1px solid #bae6fd' }}>
-                                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0369a1', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <ListChecks size={20} /> APPLICAZIONI DA AGGIUNGERE
+
+                            {/* Componenti Estratti (Al posto di Applicazioni) */}
+                            <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#fdf4ff', borderRadius: '16px', border: '1px solid #fbcfe8' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#9d174d', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Truck size={20} /> COMPONENTI ESTRATTI (CODICI DALLE NOTE)
                                 </label>
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                                    <input id="new-app-v196" type="text" className="form-control" placeholder="Nuova applicazione (Invio per aggiungere)..." onKeyDown={e => { if (e.key === 'Enter') { addApp(e.currentTarget.value); e.currentTarget.value = ''; } }} style={{ padding: '0.75rem', backgroundColor: '#fff', border: '1px solid #bae6fd' }} />
-                                    <button onClick={() => { const el = document.getElementById('new-app-v196') as HTMLInputElement; addApp(el.value); el.value = ''; }} className="btn btn-primary" style={{ padding: '0 1.5rem' }}>Aggiungi</button>
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                                    {[...(editData.applications || [])]
-                                        .map((app, idx) => ({ app, originalIdx: idx }))
-                                        .sort((a, b) => (a.app.checked === b.app.checked ? 0 : a.app.checked ? -1 : 1))
-                                        .map(({ app, originalIdx }, idx) => (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    padding: '0.4rem 0.6rem 0.4rem 1.1rem',
-                                                    borderRadius: '12px',
-                                                    backgroundColor: app.checked ? '#dcfce7' : '#fff',
-                                                    color: app.checked ? '#166534' : '#475569',
-                                                    border: `2px solid ${app.checked ? '#22c55e' : '#e2e8f0'}`,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.75rem',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <div
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
-                                                    onClick={() => toggleApp(originalIdx)}
-                                                >
-                                                    {app.checked ? <CheckCircle2 size={18} /> : <div style={{ width: 18, height: 18, border: '2px solid #cbd5e1', borderRadius: '4px' }}></div>}
-                                                    {app.name}
-                                                </div>
-
-                                                {app.name.toLowerCase().includes('canali') && (
-                                                    <input
-                                                        type="number"
-                                                        placeholder="Q.tà"
-                                                        value={app.qty || ''}
-                                                        onChange={(e) => updateAppQty(originalIdx, e.target.value)}
-                                                        style={{ width: '60px', padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.85rem' }}
-                                                    />
-                                                )}
-
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); removeApp(originalIdx); }}
-                                                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', display: 'flex', padding: '0.2rem' }}
-                                                >
-                                                    <X size={18} />
-                                                </button>
-                                            </div>
-                                        ))
-                                    }
+                                <div style={{ backgroundColor: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #fce7f3', minHeight: '120px' }}>
+                                    {selectedInst.extractedNotes ? (
+                                        <ul style={{ margin: 0, paddingLeft: '1.2rem', color: '#831843', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                            {selectedInst.extractedNotes.split('\n').filter(line => line.trim() !== '').map((line, idx) => (
+                                                <li key={idx} style={{ marginBottom: '0.4rem' }}>{line}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#f472b6', fontStyle: 'italic', fontSize: '0.95rem', marginTop: '1.5rem' }}>
+                                            Nessun componente aggiuntivo registrato nelle note del Foglio Google.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

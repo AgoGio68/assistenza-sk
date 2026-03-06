@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Ticket } from '../types';
-import { User, Clock, CheckCircle, Edit2, Save } from 'lucide-react';
+import { User, Clock, CheckCircle, Edit2, Save, X, ArrowLeft } from 'lucide-react';
 
 export const Profile: React.FC = () => {
     const { currentUser, userProfile, updateDisplayName } = useAuth();
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         totalClosed: 0,
         totalHours: 0,
@@ -61,19 +63,40 @@ export const Profile: React.FC = () => {
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem' }}>
-            <h2 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <User size={28} color="var(--primary-color)" /> Il Tuo Profilo
-            </h2>
+            {/* Header with back button */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                    <User size={28} color="var(--primary-color)" /> Il Tuo Profilo
+                </h2>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="btn"
+                    title="Torna indietro"
+                    style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                    <ArrowLeft size={18} /> Indietro
+                </button>
+            </div>
 
-            <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', backgroundColor: 'white' }}>
+            {/* Main card — dark theme */}
+            <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Nome Visualizzato</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
+                            Nome Visualizzato
+                        </div>
                         {!isEditing ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <strong style={{ fontSize: '1.5rem' }}>{userProfile?.displayName || 'Nessun nome'}</strong>
-                                <button onClick={() => setIsEditing(true)} className="btn" style={{ padding: '0.25rem 0.5rem', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>
-                                    <Edit2 size={16} />
+                                <strong style={{ fontSize: '1.5rem', color: 'var(--text-primary)' }}>
+                                    {userProfile?.displayName || 'Nessun nome'}
+                                </strong>
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="btn"
+                                    title="Modifica nome"
+                                    style={{ padding: '0.3rem 0.6rem' }}
+                                >
+                                    <Edit2 size={15} />
                                 </button>
                             </div>
                         ) : (
@@ -82,49 +105,96 @@ export const Profile: React.FC = () => {
                                     type="text"
                                     value={newName}
                                     onChange={(e) => setNewName(e.target.value)}
-                                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--primary-color)', fontSize: '1rem' }}
+                                    style={{ padding: '0.5rem', borderRadius: '8px', fontSize: '1rem', width: '200px' }}
                                 />
-                                <button onClick={handleSaveName} className="btn btn-primary" style={{ padding: '0.5rem' }}>
-                                    <Save size={20} />
+                                <button onClick={handleSaveName} className="btn btn-primary" style={{ padding: '0.5rem 0.75rem' }}>
+                                    <Save size={18} />
                                 </button>
-                                <button onClick={() => setIsEditing(false)} className="btn" style={{ padding: '0.5rem', backgroundColor: '#f1f5f9' }}>
-                                    Annulla
+                                <button onClick={() => setIsEditing(false)} className="btn" style={{ padding: '0.5rem 0.75rem' }}>
+                                    <X size={18} />
                                 </button>
                             </div>
                         )}
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{userProfile?.email}</div>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                            {userProfile?.email}
+                        </div>
                     </div>
-                    <div style={{ padding: '0.5rem 1rem', borderRadius: '20px', backgroundColor: '#e2e8f0', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        RUOLO: {userProfile?.role?.toUpperCase() || 'UTENTE'}
+
+                    {/* Role badge */}
+                    <div style={{
+                        padding: '0.4rem 1rem',
+                        borderRadius: '100px',
+                        background: 'rgba(99,102,241,0.15)',
+                        border: '1px solid rgba(99,102,241,0.3)',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#a5b4fc',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                    }}>
+                        {userProfile?.role?.toUpperCase() || 'UTENTE'}
                     </div>
                 </div>
 
-                <h3 style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>Le Tue Statistiche</h3>
+                {/* Section title */}
+                <div className="section-title">Le Tue Statistiche</div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                    <div style={{ padding: '1.5rem', borderRadius: '12px', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '50%' }}>
-                            <CheckCircle size={24} color="#15803d" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
+                    {/* Ticket Chiusi */}
+                    <div style={{
+                        padding: '1.25rem',
+                        borderRadius: 'var(--border-radius-md)',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        display: 'flex', alignItems: 'center', gap: '1rem'
+                    }}>
+                        <div style={{
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            padding: '0.75rem',
+                            borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <CheckCircle size={24} color="var(--success-color)" />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.875rem', color: '#166534' }}>Ticket Chiusi</div>
-                            <strong style={{ fontSize: '1.5rem', color: '#15803d' }}>{loading ? '...' : stats.totalClosed}</strong>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Ticket Chiusi
+                            </div>
+                            <strong style={{ fontSize: '1.75rem', color: 'var(--success-color)', fontWeight: 800 }}>
+                                {loading ? '...' : stats.totalClosed}
+                            </strong>
                         </div>
                     </div>
 
-                    <div style={{ padding: '1.5rem', borderRadius: '12px', backgroundColor: '#fef3c7', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '50%' }}>
-                            <Clock size={24} color="#92400e" />
+                    {/* Tempo Totale */}
+                    <div style={{
+                        padding: '1.25rem',
+                        borderRadius: 'var(--border-radius-md)',
+                        background: 'rgba(245, 158, 11, 0.08)',
+                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                        display: 'flex', alignItems: 'center', gap: '1rem'
+                    }}>
+                        <div style={{
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            padding: '0.75rem',
+                            borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <Clock size={24} color="var(--warning-color)" />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.875rem', color: '#92400e' }}>Tempo Totale</div>
-                            <strong style={{ fontSize: '1.5rem', color: '#b45309' }}>{loading ? '...' : `${stats.totalHours}h ${stats.totalMinutes}m`}</strong>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Tempo Totale
+                            </div>
+                            <strong style={{ fontSize: '1.75rem', color: 'var(--warning-color)', fontWeight: 800 }}>
+                                {loading ? '...' : `${stats.totalHours}h ${stats.totalMinutes}m`}
+                            </strong>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                 Queste statistiche mostrano il tuo contributo al sistema basato sui ticket che hai chiuso personalmente.
             </p>
         </div>

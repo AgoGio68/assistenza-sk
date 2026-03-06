@@ -59,34 +59,34 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
     formatTimeDiff
 }) => {
     return (
-        <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto' }}>
             {/* Statistiche */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ flex: 1, padding: '1rem', backgroundColor: '#e0f2fe', borderRadius: '8px', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, padding: '1rem', background: 'rgba(56,189,248,0.08)', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(56,189,248,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                        <h4 style={{ color: '#0369a1', margin: 0, fontSize: '0.875rem' }}>Ticket Aperti</h4>
-                        <strong style={{ fontSize: '1.5rem', color: '#0284c7' }}>{openTicketsCount}</strong>
+                        <h4 style={{ color: 'var(--info-color)', margin: 0, fontSize: '0.875rem' }}>Ticket Aperti</h4>
+                        <strong style={{ fontSize: '1.5rem', color: 'var(--info-color)' }}>{openTicketsCount}</strong>
                     </div>
-                    <PieChart size={32} color="#0284c7" />
+                    <PieChart size={32} color="var(--info-color)" />
                 </div>
-                <div style={{ flex: 1, padding: '1rem', backgroundColor: '#dcfce7', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, padding: '1rem', background: 'rgba(16,185,129,0.08)', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                        <h4 style={{ color: '#166534', margin: 0, fontSize: '0.875rem' }}>Ticket Chiusi</h4>
-                        <strong style={{ fontSize: '1.5rem', color: '#15803d' }}>{closedTicketsCount}</strong>
+                        <h4 style={{ color: 'var(--success-color)', margin: 0, fontSize: '0.875rem' }}>Ticket Chiusi</h4>
+                        <strong style={{ fontSize: '1.5rem', color: 'var(--success-color)' }}>{closedTicketsCount}</strong>
                     </div>
-                    <PieChart size={32} color="#15803d" />
+                    <PieChart size={32} color="var(--success-color)" />
                 </div>
-                <div style={{ flex: 1, padding: '1rem', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, padding: '1rem', background: 'rgba(245,158,11,0.08)', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                        <h4 style={{ color: '#92400e', margin: 0, fontSize: '0.875rem' }}>Tempo Totale</h4>
-                        <strong style={{ fontSize: '1.5rem', color: '#b45309' }}>{totalDurationHours}h {totalDurationMinutes}m</strong>
+                        <h4 style={{ color: 'var(--warning-color)', margin: 0, fontSize: '0.875rem' }}>Tempo Totale</h4>
+                        <strong style={{ fontSize: '1.5rem', color: 'var(--warning-color)' }}>{totalDurationHours}h {totalDurationMinutes}m</strong>
                     </div>
-                    <PieChart size={32} color="#b45309" />
+                    <PieChart size={32} color="var(--warning-color)" />
                 </div>
             </div>
 
             {/* Filtri e Ricerca */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-subtle)' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Ricerca Libera</label>
                     <div style={{ position: 'relative' }}>
@@ -120,25 +120,26 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
                 </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
                 <div>
                     <h3 style={{ margin: 0, marginBottom: '0.5rem' }}>Lista Ticket ({filteredTickets.length})</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button onClick={onExportCSV} className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', color: 'var(--text-primary)' }}>
+                        <button onClick={onExportCSV} className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
                             <Download size={16} /> Esporta CSV
                         </button>
 
-                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', backgroundColor: '#fee2e2', padding: '0.25rem', borderRadius: '4px', border: '1px solid #fca5a5' }} title="Elimina tutti i ticket di un mese specifico">
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', background: 'rgba(244,63,94,0.08)', padding: '0.25rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid rgba(244,63,94,0.2)' }} title="Elimina tutti i ticket di un mese specifico">
                             <input
                                 type="month"
                                 value={deleteMonthStr}
                                 onChange={e => setDeleteMonthStr(e.target.value)}
-                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #f87171', fontSize: '0.8rem', backgroundColor: 'white' }}
+                                style={{ padding: '0.25rem', fontSize: '0.8rem' }}
                             />
                             <button
                                 onClick={onDeleteTicketsByMonth}
                                 disabled={!deleteMonthStr}
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', backgroundColor: deleteMonthStr ? 'var(--danger-color)' : '#fca5a5', color: 'white', borderRadius: '4px', border: 'none', cursor: deleteMonthStr ? 'pointer' : 'not-allowed' }}
+                                className="btn btn-danger"
+                                style={{ padding: '0.35rem 0.7rem', fontSize: '0.8rem', opacity: deleteMonthStr ? 1 : 0.4, cursor: deleteMonthStr ? 'pointer' : 'not-allowed' }}
                             >
                                 Elimina Mese
                             </button>
@@ -147,12 +148,12 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
                 </div>
 
                 <div>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>Ordina Vista:</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ordina Vista:</span>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className={`btn ${ticketSortMode === 'chronological' ? 'btn-primary' : ''}`} onClick={() => setTicketSortMode('chronological')} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', backgroundColor: ticketSortMode !== 'chronological' ? '#f1f5f9' : '', color: ticketSortMode !== 'chronological' ? 'var(--text-secondary)' : '', border: '1px solid #cbd5e1' }} title="Mostra esattamente in ordine di data di apertura">
+                        <button className={`btn ${ticketSortMode === 'chronological' ? 'btn-primary' : ''}`} onClick={() => setTicketSortMode('chronological')} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} title="Mostra esattamente in ordine di data di apertura">
                             Cronologico
                         </button>
-                        <button className={`btn ${ticketSortMode === 'closed_bottom' ? 'btn-primary' : ''}`} onClick={() => setTicketSortMode('closed_bottom')} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', backgroundColor: ticketSortMode !== 'closed_bottom' ? '#f1f5f9' : '', color: ticketSortMode !== 'closed_bottom' ? 'var(--text-secondary)' : '', border: '1px solid #cbd5e1' }} title="Spingi i ticket già risolti in fondo">
+                        <button className={`btn ${ticketSortMode === 'closed_bottom' ? 'btn-primary' : ''}`} onClick={() => setTicketSortMode('closed_bottom')} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} title="Spingi i ticket già risolti in fondo">
                             Chiusi in Fondo
                         </button>
                     </div>
@@ -160,9 +161,9 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px', backgroundColor: 'white' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
                     <thead>
-                        <tr style={{ borderBottom: '2px solid var(--text-secondary)', textAlign: 'left', backgroundColor: '#f8fafc' }}>
+                        <tr style={{ borderBottom: '2px solid var(--border-subtle)', textAlign: 'left', background: 'var(--bg-elevated)' }}>
                             <th style={{ padding: '1rem 0.75rem', minWidth: '150px' }}>Apertura/Chiusura</th>
                             <th style={{ padding: '1rem 0.75rem' }}>Aperto da</th>
                             <th style={{ padding: '1rem 0.75rem' }}>Azienda</th>
@@ -177,7 +178,7 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
                         {loadingTickets ? (
                             <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Caricamento...</td></tr>
                         ) : filteredTickets.map((ticket, index) => (
-                            <tr key={ticket.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f8fafc'}>
+                            <tr key={ticket.id} style={{ borderBottom: '1px solid var(--border-subtle)', background: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-elevated)'} onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'}>
                                 <td style={{ padding: '1rem 0.75rem', fontSize: '0.875rem' }}>
                                     <div><strong>Aperto:</strong><br />{new Date(ticket.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
                                     {ticket.closedAt && (
@@ -194,12 +195,7 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
                                     </span>
                                 </td>
                                 <td>
-                                    <span style={{
-                                        padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.875rem',
-                                        backgroundColor: ticket.status === 'chiuso' ? '#dcfce7' : ticket.status === 'aperto' ? '#fee2e2' : '#fef3c7',
-                                        color: ticket.status === 'chiuso' ? '#166534' : ticket.status === 'aperto' ? '#991b1b' : '#92400e',
-                                        whiteSpace: 'nowrap'
-                                    }}>
+                                    <span className={`status-badge ${ticket.status === 'chiuso' ? 'chiuso' : ticket.status === 'aperto' ? 'aperto' : 'in-carico'}`}>
                                         {ticket.status}
                                     </span>
                                 </td>
@@ -211,17 +207,17 @@ export const TicketManagementTab: React.FC<TicketManagementTabProps> = ({
                                 </td>
                                 <td style={{ fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
                                     {ticket.status === 'chiuso' && (
-                                        <div style={{ color: '#166534', fontWeight: 500 }}>
+                                        <div style={{ color: 'var(--success-color)', fontWeight: 500 }}>
                                             <div>Chiuso in: {formatTimeDiff(ticket.createdAt, ticket.closedAt || Date.now())}</div>
                                             {(ticket.durationHours !== undefined || ticket.durationMinutes !== undefined) && (
-                                                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', backgroundColor: '#dcfce7', padding: '0.1rem 0.3rem', borderRadius: '4px', display: 'inline-block' }}>
+                                                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', background: 'rgba(16,185,129,0.12)', color: 'var(--success-color)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-block', border: '1px solid rgba(16,185,129,0.2)' }}>
                                                     Durata: {ticket.durationHours || 0}h {ticket.durationMinutes || 0}m
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                     {ticket.status !== 'chiuso' && (
-                                        <span style={{ color: '#92400e', fontWeight: 500 }}>Aperto da:<br />{formatTimeDiff(ticket.createdAt, Date.now())}</span>
+                                        <span style={{ color: 'var(--warning-color)', fontWeight: 500 }}>Aperto da:<br />{formatTimeDiff(ticket.createdAt, Date.now())}</span>
                                     )}
                                 </td>
                                 <td style={{ padding: '1rem 0.75rem' }}>
