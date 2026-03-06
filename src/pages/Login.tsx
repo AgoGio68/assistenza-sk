@@ -197,10 +197,28 @@ export const Login: React.FC = () => {
                                 <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#6366f1', boxShadow: '0 0 10px #6366f1' }} />
                                 <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#6366f1' }}>Assistenza SK</span>
                             </div>
-                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Novit\u00e0 &amp; Aggiornamenti</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Novità &amp; Aggiornamenti</h2>
                             <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)' }}>
                                 Cronologia versioni &middot; versione attuale: <strong style={{ color: 'rgba(255,255,255,0.6)' }}>v{__APP_VERSION__}</strong>
                             </p>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                            <a
+                                href={`/manuale.html?v=${__APP_VERSION__}&t=${Date.now()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                    color: '#f1f5f9', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 700,
+                                    padding: '0.65rem 1.4rem', borderRadius: '99px',
+                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                    boxShadow: '0 4px 15px rgba(99,102,241,0.4)',
+                                    letterSpacing: '0.01em',
+                                }}
+                            >
+                                <Info size={14} /> Apri Manuale Ufficiale
+                            </a>
                         </div>
 
                         {([
@@ -209,12 +227,12 @@ export const Login: React.FC = () => {
                             { version: '2.2.13', label: 'DOC', color: '#0ea5e9', items: ['Manuale utente riscritto: ordinamento installazioni, Google Calendar, moduli SuperAdmin.'] },
                             { version: '2.2.12', label: 'FIX', color: '#10b981', items: ['Griglia allineata per "Moduli da attivare": colonne proporzionali, ordine visivo garantito.'] },
                             { version: '2.2.11', label: 'LAYOUT', color: '#f59e0b', items: ['Checklist moduli flex-wrap compatto.', 'Impostazioni Admin: layout a griglia, larghezza piena.'] },
-                            { version: '2.2.10', label: 'FEATURE', color: '#6366f1', items: ['Sede di installazione (Cliente \u2014 Citt\u00e0) nella card e nel titolo evento Google Calendar.'] },
+                            { version: '2.2.10', label: 'FEATURE', color: '#6366f1', items: ['Sede di installazione (Cliente \u2014 Città) nella card e nel titolo evento Google Calendar.'] },
                             { version: '2.2.9', label: 'SUPERADMIN', color: '#ec4899', items: ['Lista Moduli Attivabili configurabile dal pannello Impostazioni senza toccare codice.'] },
                             { version: '2.2.8', label: 'FEATURE', color: '#6366f1', items: ['Ordinamento intelligente: installazioni con data evidenziate e in prima posizione.', 'Nuova checklist interattiva Moduli nel Dettaglio Installazione.'] },
                             { version: '2.2.7', label: 'FIX', color: '#10b981', items: ['Parser CSV riscritto per note multiriga nelle celle Google Sheets.'] },
                             { version: '2.2.6', label: 'FIX', color: '#10b981', items: ['Componenti Estratti riconosciuti anche con celle vuote nel foglio.'] },
-                            { version: '2.2.5', label: 'LAYOUT', color: '#f59e0b', items: ['Sezione "Applicazioni" rimossa: pi\u00f9 spazio ai Componenti Estratti automatici.'] },
+                            { version: '2.2.5', label: 'LAYOUT', color: '#f59e0b', items: ['Sezione "Applicazioni" rimossa: più spazio ai Componenti Estratti automatici.'] },
                             { version: '2.2.4', label: 'FIX', color: '#10b981', items: ['Fix GID Google Sheet per sincronizzazione precisa componenti.'] },
                             { version: '2.2.3', label: 'FEATURE', color: '#6366f1', items: ['Componenti macchina estratti dai commenti Google Sheet.', 'Script onEdit per aggiornamento real-time.'] },
                             { version: '2.2.2', label: 'FEATURE', color: '#6366f1', items: ['Google Calendar: evento collaudo con un click.', 'Luce arancione pulsante su schede in attesa verifica.'] },
@@ -251,22 +269,7 @@ export const Login: React.FC = () => {
                             </div>
                         ))}
 
-                        <div style={{ marginTop: '1.25rem', textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                            <a
-                                href={`/manuale.html?v=${__APP_VERSION__}&t=${Date.now()}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                                    color: '#818cf8', textDecoration: 'none', fontSize: '0.83rem', fontWeight: 600,
-                                    padding: '0.55rem 1.1rem', borderRadius: '99px',
-                                    border: '1px solid rgba(99,102,241,0.25)',
-                                    background: 'rgba(99,102,241,0.07)',
-                                }}
-                            >
-                                <Info size={13} /> Apri Manuale Ufficiale v{__APP_VERSION__}
-                            </a>
-                        </div>
+
                     </div>
                 </div>
             )}

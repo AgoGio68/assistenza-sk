@@ -4,21 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manuale Utente Ufficiale - Assistenza SK v2.2.13</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Manuale Utente — Assistenza SK v2.2.15</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --primary: #0f172a;
-            --secondary: #3b82f6;
-            --accent: #f59e0b;
-            --success: #10b981;
-            --danger: #ef4444;
+            --primary-light: #1e293b;
+            --indigo: #6366f1;
+            --indigo-dark: #4f46e5;
+            --teal: #14b8a6;
+            --amber: #f59e0b;
+            --green: #10b981;
+            --red: #ef4444;
             --text-main: #1e293b;
             --text-light: #64748b;
+            --text-muted: #94a3b8;
             --bg-body: #f1f5f9;
             --bg-card: #ffffff;
             --border: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
 
         * {
@@ -31,171 +37,251 @@
             padding: 0;
             background-color: var(--bg-body);
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.65;
         }
 
+        /* ── HEADER ── */
         .header {
-            background-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, #1a2744 100%);
             color: white;
-            padding: 3rem 1.5rem;
+            padding: 3.5rem 1.5rem 3rem;
             text-align: center;
-            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: -40px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(20, 184, 166, 0.1);
         }
 
         .header h1 {
             margin: 0;
-            font-size: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1.2;
+            font-size: 2.1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            position: relative;
         }
 
         .header p {
-            margin: 1rem 0 0;
-            opacity: 0.8;
+            margin: 0.7rem 0 0;
+            opacity: 0.65;
             font-weight: 300;
+            font-size: 0.95rem;
+            position: relative;
         }
 
+        .version-badge {
+            display: inline-block;
+            margin-top: 1rem;
+            background: rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            color: #a5b4fc;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.3rem 0.9rem;
+            border-radius: 99px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        /* ── LAYOUT ── */
         .container {
-            max-width: 1100px;
-            margin: 2rem auto;
+            max-width: 1140px;
+            margin: 2.5rem auto;
             padding: 0 1rem;
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 260px 1fr;
             gap: 2rem;
+            align-items: start;
         }
 
-        /* Sidebar Navigation */
+        /* ── SIDEBAR ── */
         .sidebar {
             position: sticky;
             top: 2rem;
-            height: fit-content;
             background: var(--bg-card);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 1.5rem;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
         }
 
-        .sidebar h3 {
-            font-size: 0.9rem;
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
             text-transform: uppercase;
-            color: var(--text-light);
-            margin-top: 0;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin: 0 0 1rem;
+            padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 0.5rem;
         }
 
         .sidebar ul {
             list-style: none;
             padding: 0;
-            margin: 1rem 0 0;
+            margin: 0;
         }
 
         .sidebar li {
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.2rem;
         }
 
         .sidebar a {
             text-decoration: none;
-            color: var(--text-main);
-            font-size: 0.95rem;
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
             display: block;
-            padding: 0.5rem;
-            border-radius: 6px;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
         .sidebar a:hover {
-            background-color: #f8fafc;
-            color: var(--secondary);
-            padding-left: 0.75rem;
+            background: #f0f4ff;
+            color: var(--indigo);
         }
 
-        /* Main Content */
+        .sidebar .sub-item a {
+            padding-left: 1.5rem;
+            font-size: 0.82rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .sidebar .sub-item a:hover {
+            color: var(--indigo);
+        }
+
+        /* ── CONTENT AREA ── */
         .content {
             background: var(--bg-card);
-            border-radius: 12px;
-            padding: 3rem;
+            border-radius: 16px;
+            padding: 2.5rem;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
         }
 
         section {
-            margin-bottom: 4rem;
+            margin-bottom: 3.5rem;
             scroll-margin-top: 2rem;
         }
 
+        section:last-child {
+            margin-bottom: 0;
+        }
+
         h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
             color: var(--primary);
-            font-size: 1.8rem;
-            border-bottom: 2px solid var(--secondary);
-            padding-bottom: 0.5rem;
-            margin-top: 0;
+            margin: 0 0 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.6rem;
         }
 
         h3 {
+            font-size: 1rem;
+            font-weight: 700;
             color: var(--primary);
-            font-size: 1.3rem;
-            margin-top: 2rem;
+            margin: 1.75rem 0 0.6rem;
+        }
+
+        h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin: 1.25rem 0 0.4rem;
         }
 
         p {
-            margin: 1rem 0;
+            margin: 0.5rem 0 0.75rem;
+            color: #334155;
         }
 
-        .role-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            vertical-align: middle;
+        ul,
+        ol {
+            padding-left: 1.4rem;
+            color: #334155;
         }
 
-        .badge-user {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .badge-admin {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-super {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .feature-box {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-        }
-
-        .feature-box ul {
-            padding-left: 1.5rem;
-            margin: 0;
-        }
-
-        .feature-box li {
+        li {
             margin-bottom: 0.5rem;
         }
 
+        /* ── ROLE BADGES ── */
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 5px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-all {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge-user {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .badge-admin {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+
+        .badge-super {
+            background: #fdf4ff;
+            color: #7e22ce;
+            border: 1px solid #e9d5ff;
+        }
+
+        /* ── CALLOUT BOXES ── */
         .alert {
-            padding: 1rem;
-            border-radius: 8px;
+            padding: 0.9rem 1.1rem;
+            border-radius: 10px;
             margin: 1rem 0;
+            font-size: 0.875rem;
             display: flex;
-            gap: 1rem;
+            gap: 0.6rem;
             align-items: flex-start;
+        }
+
+        .alert-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 0.05rem;
         }
 
         .alert-info {
@@ -210,24 +296,216 @@
             color: #92400e;
         }
 
-        .image-placeholder {
-            background: #e2e8f0;
-            border-radius: 8px;
-            height: 150px;
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+        }
+
+        .alert-tip {
+            background: #fdf4ff;
+            border: 1px solid #e9d5ff;
+            color: #7e22ce;
+        }
+
+        /* ── FEATURE BOX ── */
+        .feature-box {
+            background: #fafbff;
+            border: 1px solid #e0e7ff;
+            border-left: 4px solid var(--indigo);
+            border-radius: 10px;
+            padding: 1.25rem 1.4rem;
+            margin: 1rem 0;
+        }
+
+        .feature-box>*:first-child {
+            margin-top: 0;
+        }
+
+        .feature-box>*:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── STEPS ── */
+        .steps {
+            counter-reset: step;
+            list-style: none;
+            padding: 0;
+        }
+
+        .steps li {
+            counter-increment: step;
+            padding: 0.8rem 1rem 0.8rem 3.2rem;
+            position: relative;
+            border-left: 2px solid #e0e7ff;
+            margin-bottom: 0;
+            margin-left: 1rem;
+        }
+
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: -1.15rem;
+            top: 0.75rem;
+            background: var(--indigo);
+            color: white;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #94a3b8;
-            font-style: italic;
-            margin: 1rem 0;
-            border: 2px dashed #cbd5e1;
+            font-size: 0.72rem;
+            font-weight: 700;
         }
 
-        @media (max-width: 850px) {
+        .steps li:last-child {
+            border-left: 2px solid transparent;
+        }
+
+        /* ── STATE DOTS ── */
+        .state-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .dot {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-blue {
+            background: #3b82f6;
+            box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+        }
+
+        .dot-yellow {
+            background: #f59e0b;
+            box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+        }
+
+        .dot-green {
+            background: #10b981;
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+        }
+
+        .dot-gray {
+            background: #94a3b8;
+        }
+
+        .dot-blink {
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.2
+            }
+        }
+
+        /* ── PERMISSION TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            margin: 1rem 0;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 0.65rem 0.9rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        td {
+            padding: 0.6rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .check {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .cross {
+            color: var(--text-muted);
+        }
+
+        /* ── INLINE CODE ── */
+        code {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            color: #7c3aed;
+        }
+
+        /* ── MODULE GRID ── */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin: 0.75rem 0;
+        }
+
+        .module-item {
+            background: #f0f4ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #3730a3;
+        }
+
+        .module-item code {
+            background: transparent;
+            border: none;
+            padding: 0;
+            color: #4f46e5;
+            font-size: 0.75rem;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 860px) {
             .container {
                 grid-template-columns: 1fr;
-                margin-top: 0;
                 gap: 0;
+                margin-top: 0;
                 padding: 0;
             }
 
@@ -236,10 +514,10 @@
             }
 
             .content {
-                padding: 2rem 1.5rem;
                 border-radius: 0;
                 border: none;
                 box-shadow: none;
+                padding: 1.75rem 1.25rem;
             }
 
             .header h1 {
@@ -253,167 +531,522 @@
 
     <div class="header">
         <h1>Manuale Utente Ufficiale</h1>
-        <p>Applicazione Assistenza SK • Versione 2.2.13</p>
-
+        <p>Applicazione Assistenza SK — Sistema Gestionale Tecnico</p>
+        <div class="version-badge">Versione 2.2.15</div>
     </div>
 
     <div class="container">
         <div class="sidebar">
-            <h3>Indice</h3>
+            <div class="sidebar-title">Indice</div>
             <ul>
                 <li><a href="#introduzione">Introduzione</a></li>
-                <li><a href="#accesso">Accesso e Registrazione</a></li>
-                <li><a href="#profilo">Gestione Profilo</a></li>
-                <li><a href="#gestione-ticket">Gestione Ticket</a></li>
-                <li><a href="#installazioni">Gestione Installazioni (Novità)</a></li>
-                <li><a href="#dashboard-admin">Dashboard Admin</a></li>
-                <li><a href="#configurazione-super">SuperAdmin & Setup</a></li>
+                <li><a href="#accesso">Accesso al Sistema</a></li>
+                <li class="sub-item"><a href="#registrazione">Registrazione</a></li>
+                <li class="sub-item"><a href="#login">Login</a></li>
+                <li class="sub-item"><a href="#recovery">Reset Password</a></li>
+                <li><a href="#profilo">Profilo Personale</a></li>
+                <li><a href="#ticket">Gestione Ticket</a></li>
+                <li class="sub-item"><a href="#crea-ticket">Creare un Ticket</a></li>
+                <li class="sub-item"><a href="#prendi">Presa in Carico</a></li>
+                <li class="sub-item"><a href="#chiudi">Chiusura Ticket</a></li>
+                <li class="sub-item"><a href="#assegna">Assegnazione Diretta</a></li>
+                <li><a href="#installazioni">Gestione Installazioni</a></li>
+                <li class="sub-item"><a href="#lista-inst">Lista e Ordinamento</a></li>
+                <li class="sub-item"><a href="#dettaglio-inst">Dettaglio Installazione</a></li>
+                <li class="sub-item"><a href="#moduli">Moduli da Attivare</a></li>
+                <li class="sub-item"><a href="#calendario">Google Calendar</a></li>
+                <li><a href="#admin">Pannello Amministratore</a></li>
+                <li class="sub-item"><a href="#statistiche">Statistiche</a></li>
+                <li class="sub-item"><a href="#export">Export CSV</a></li>
+                <li><a href="#superadmin">Pannello SuperAdmin</a></li>
+                <li class="sub-item"><a href="#utenti">Gestione Utenti</a></li>
+                <li class="sub-item"><a href="#impostazioni">Impostazioni Globali</a></li>
+                <li class="sub-item"><a href="#moduli-config">Configurazione Moduli</a></li>
+                <li><a href="#ruoli">Riepilogo Ruoli</a></li>
             </ul>
         </div>
 
         <div class="content">
+
+            <!-- ────────────────────────── INTRODUZIONE ────────────────────────── -->
             <section id="introduzione">
-                <h2>Introduzione</h2>
-                <p>Benvenuti nel manuale ufficiale di <strong>Assistenza SK</strong>. Questo sistema è stato progettato
-                    per centralizzare la gestione dei ticket di assistenza tecnica, monitorare le tempistiche di
-                    intervento e gestire il parco installato dei clienti.</p>
+                <h2>🏠 Introduzione</h2>
+                <p><strong>Assistenza SK</strong> è un sistema gestionale tecnico web-based pensato per centralizzare il
+                    flusso di lavoro di un team di assistenza: dalla ricezione della chiamata alla chiusura del ticket,
+                    fino alla pianificazione delle installazioni e al collaudo macchine.</p>
                 <div class="alert alert-info">
-                    <strong>Nota:</strong> L'interfaccia è completamente <em>responsive</em>, ottimizzata per l'uso da
-                    smartphone durante gli interventi in campo.
+                    <span class="alert-icon">💡</span>
+                    <div>L'interfaccia è completamente <strong>responsive</strong>: funziona da PC, tablet e smartphone.
+                        Il design è ottimizzato per l'utilizzo in mobilità durante gli interventi sul campo.</div>
+                </div>
+                <div class="feature-box">
+                    <h4>Cosa puoi fare con Assistenza SK</h4>
+                    <ul>
+                        <li>Aprire, gestire e chiudere ticket di assistenza con tracciamento tempi</li>
+                        <li>Pianificare e monitorare installazioni sincronizzate con Google Sheets</li>
+                        <li>Aggiungere eventi di collaudo su Google Calendar con un click</li>
+                        <li>Gestire i moduli software da attivare su ogni macchina installata</li>
+                        <li>Esportare report CSV per la rendicontazione</li>
+                        <li>Amministrare utenti, ruoli e configurazioni dell'applicazione</li>
+                    </ul>
                 </div>
             </section>
 
+            <!-- ────────────────────────── ACCESSO ────────────────────────── -->
             <section id="accesso">
-                <h2>Accesso e Registrazione <span class="role-badge badge-user">Tutti</span></h2>
-                <p>Per utilizzare il sistema è necessario un account autorizzato.</p>
-                <h3>1. Registrazione</h3>
-                <p>I nuovi utenti possono registrarsi inserendo Email e Password. Al termine, il sistema genererà un
-                    <strong>Codice di Richiesta</strong>.
-                </p>
+                <h2>🔑 Accesso al Sistema <span class="role-badge badge-all">Tutti</span></h2>
+
+                <h3 id="registrazione">Registrazione nuovo account</h3>
+                <p>Per accedere al sistema è necessario un account. Se non ne hai uno, clicca su <em>"Non hai un
+                        account? Registrati"</em> nella schermata di login.</p>
+                <ol class="steps">
+                    <li>Inserisci la tua <strong>email aziendale</strong> e scegli una <strong>password sicura</strong>
+                        (minimo 6 caratteri).</li>
+                    <li>Clicca <strong>"Registrati"</strong>. Il sistema crea il tuo account in stato <em>Pendente</em>.
+                    </li>
+                    <li>Comunica la tua email a un <strong>Amministratore</strong> per richiedere l'attivazione.</li>
+                </ol>
                 <div class="alert alert-warning">
-                    <strong>Attenzione:</strong> Dopo la registrazione, l'account rimane in stato "Pendiente". È
-                    necessario inviare il Codice di Richiesta a un amministratore per l'attivazione.
+                    <span class="alert-icon">⚠️</span>
+                    <div>Finché il tuo account non viene <strong>attivato da un Admin</strong>, non potrai accedere alle
+                        funzionalità del sistema. Non è sufficiente registrarsi.</div>
                 </div>
-                <h3>2. Login</h3>
-                <p>Una volta approvato l'account, è possibile accedere normalmente per iniziare a gestire i ticket.</p>
+
+                <h3 id="login">Login</h3>
+                <p>Inserisci email e password e clicca <strong>"Entra"</strong>. Se le credenziali sono corrette e
+                    l'account è attivo, verrai reindirizzato alla home.</p>
+
+                <h3 id="recovery">Reset password dimenticata</h3>
+                <p>Clicca su <strong>"Dimenticata?"</strong> accanto al campo password. Inserisci la tua email e clicca
+                    <strong>"Invia link di reset"</strong>. Riceverai un'email con il link per reimpostare la password
+                    (controlla anche la cartella Spam).</p>
             </section>
 
+            <!-- ────────────────────────── PROFILO ────────────────────────── -->
             <section id="profilo">
-                <h2>Il Tuo Profilo <span class="role-badge badge-user">Tutti</span></h2>
-                <p>Ogni utente ha accesso alla propria area personale cliccando sul proprio nome in alto a sinistra.</p>
+                <h2>👤 Profilo Personale <span class="role-badge badge-all">Tutti</span></h2>
+                <p>Clicca sul tuo nome in alto a sinistra per accedere al tuo profilo personale.</p>
                 <div class="feature-box">
                     <ul>
-                        <li><strong>Nome Visualizzato:</strong> Puoi modificare il nome con cui appari nel sistema.</li>
-                        <li><strong>Statistiche Personali:</strong> Visualizza il conteggio dei ticket chiusi e il tempo
-                            totale di intervento da te accumulato.</li>
-                        <li><strong>Ruolo:</strong> Verifica il tuo livello di permessi (Utente, Admin, SuperAdmin).
-                        </li>
+                        <li><strong>Nome Visualizzato:</strong> Modifica il nome che appare nelle intestazioni e nei
+                            ticket che gestisci. Il cambiamento è immediato.</li>
+                        <li><strong>Ruolo attuale:</strong> Visualizza se sei Utente Base, Admin o SuperAdmin.</li>
+                        <li><strong>Statistiche personali:</strong> Numero totale di ticket chiusi da te e ore di lavoro
+                            cumulate nel tempo.</li>
+                        <li><strong>Google Calendar:</strong> Se è attiva la funzione Installazioni, puoi collegare qui
+                            il tuo account Google per permettere la creazione di eventi di collaudo.</li>
                     </ul>
                 </div>
             </section>
 
-            <section id="gestione-ticket">
-                <h2>Gestione Ticket <span class="role-badge badge-user">Tecnici</span></h2>
-                <p>Il cuore del sistema. Gestisci il flusso di lavoro dalla chiamata alla chiusura.</p>
+            <!-- ────────────────────────── TICKET ────────────────────────── -->
+            <section id="ticket">
+                <h2>🎫 Gestione Ticket <span class="role-badge badge-user">Tecnici</span></h2>
+                <p>I ticket sono il cuore operativo del sistema. Ogni chiamata/richiesta di intervento diventa un ticket
+                    tracciato dall'apertura alla chiusura.</p>
 
-                <h3>1. Creazione Ticket</h3>
-                <p>Inserisci i dati del cliente. Il sistema supporta l'<strong>autocompletamento</strong>: iniziando a
-                    scrivere il nome dell'azienda, verranno suggeriti i dati salvati in precedenza.</p>
+                <h3 id="crea-ticket">Creare un nuovo Ticket</h3>
+                <p>Clicca sul pulsante <strong>"+ Nuovo Ticket"</strong> nella barra in alto.</p>
                 <ul>
-                    <li><strong>Urgenza:</strong> Scegli tra NORMALE o URGENTE (colore rosso fisso).</li>
-                    <li><strong>Descrizione:</strong> Dettaglio del problema segnalato.</li>
-                    <li><strong>Allegati:</strong> Se abilitato, puoi caricare fino a 3 foto direttamente dalla
-                        fotocamera dello smartphone.</li>
+                    <li><strong>Azienda:</strong> Digita il nome del cliente. Il sistema suggerisce automaticamente le
+                        aziende già presenti nello storico (<em>autocompletamento</em>). Scegli o scrivi il nome
+                        completo.</li>
+                    <li><strong>Referente:</strong> Nome della persona che ha segnalato il problema.</li>
+                    <li><strong>Telefono:</strong> Numero da richiamare.</li>
+                    <li><strong>Urgenza:</strong> <code>NORMALE</code> (colore standard) o <code>URGENTE</code>
+                        (evidenziato in rosso fisso nella lista).</li>
+                    <li><strong>Descrizione:</strong> Dettaglio del guasto o della richiesta. Puoi usare la
+                        <strong>dettatura vocale</strong> del tuo dispositivo.</li>
+                    <li><strong>Assegna a:</strong> Se stai aprendo un ticket per un collega (funzione Admin+), puoi
+                        selezionare un utente dalla lista. Altrimenti, rimane non assegnato.</li>
+                    <li><strong>Foto Allegati:</strong> Se abilitato dal SuperAdmin, puoi allegare fino a 3 immagini
+                        (dalla fotocamera o dalla galleria).</li>
                 </ul>
 
-                <h3>2. Presa in Carico</h3>
-                <p>Dalla lista Home, clicca su "Prendi in Carico" per assegnarti il ticket. Il sistema chiederà una
-                    conferma per evitare errori.</p>
+                <h3 id="prendi">Presa in Carico</h3>
+                <p>Dalla lista ticket Home, identifica un ticket non ancora assegnato (o quello che ti è stato
+                    assegnato) e clicca <strong>"Prendi in Carico"</strong>. Il sistema chiederà una conferma per
+                    evitare errori.</p>
+                <div class="alert alert-info">
+                    <span class="alert-icon">ℹ️</span>
+                    <div>Una volta preso in carico, il ticket ti viene assegnato e appare evidenziato nella tua vista.
+                        Gli altri utenti vedono che è già gestito.</div>
+                </div>
 
-                <h3>3. Chiusura Ticket</h3>
-                <p>Al termine dell'intervento, clicca su "Chiudi Ticket". Dovrai inserire:</p>
+                <h3 id="chiudi">Chiusura del Ticket</h3>
+                <p>Al termine dell'intervento, apri il ticket e clicca <strong>"Chiudi Ticket"</strong>. Compila i campi
+                    richiesti:</p>
                 <ul>
-                    <li><strong>Note Finali:</strong> Cosa è stato fatto (puoi usare la <strong>dettatura
-                            vocale</strong>).</li>
-                    <li><strong>Durata:</strong> Inserisci Ore e Minuti effettivamente impiegati.</li>
+                    <li><strong>Note di chiusura:</strong> Descrivi cosa è stato fatto. Puoi dettare con il microfono.
+                    </li>
+                    <li><strong>Durata intervento:</strong> Inserisci ore e minuti effettivamente impiegati. Questo dato
+                        alimenta le statistiche.</li>
                 </ul>
+                <p>La chiusura è istantanea nell'interfaccia (<em>UI ottimistica</em>): il ticket sparisce subito dalla
+                    lista attivi, anche prima della conferma del server.</p>
+
+                <h3 id="assegna">Rilascio e Spostamento Ticket <span class="role-badge badge-admin">Admin</span></h3>
+                <ul>
+                    <li><strong>Rilascia:</strong> Riporta il ticket allo stato "Non Assegnato" se è stato preso in
+                        carico per errore.</li>
+                    <li><strong>Sposta:</strong> Assegna il ticket a un altro tecnico. Il pannello mostra la lista degli
+                        utenti attivi. Seleziona e conferma.</li>
+                </ul>
+                <div class="alert alert-tip">
+                    <span class="alert-icon">🔧</span>
+                    <div>Le azioni "Sposta" e "Rilascia" chiudono automaticamente qualsiasi pannello dettaglio aperto
+                        del ticket.</div>
+                </div>
+
+                <h3>Evidenziazione Priorità (Zap ⚡)</h3>
+                <p>Accanto a ogni ticket c'è un'icona <strong>⚡ (fulmine)</strong>. Cliccandola si attiva un lampeggio
+                    visivo sul ticket, visibile a <em>tutti gli utenti connessi</em> in tempo reale. Utile per segnalare
+                    urgenza massima in modo immediato.</p>
             </section>
 
+            <!-- ────────────────────────── INSTALLAZIONI ────────────────────────── -->
             <section id="installazioni">
-                <h2>Gestione Installazioni <span class="role-badge badge-admin">Admin/SuperAdmin</span></h2>
-                <p>La funzione Installazioni permette di sincronizzare, gestire e collaudare il parco macchine direttamente da un Foglio Google condiviso.</p>
+                <h2>🔧 Gestione Installazioni <span class="role-badge badge-admin">Admin+</span></h2>
+                <p>La sezione Installazioni permette di tenere traccia di tutte le macchine da installare/collaudare,
+                    sincronizzate in tempo reale da un <strong>Foglio Google condiviso</strong>.</p>
+
+                <div class="alert alert-info">
+                    <span class="alert-icon">ℹ️</span>
+                    <div>La sezione Installazioni deve essere abilitata dal SuperAdmin nelle Impostazioni Globali. Se
+                        non la vedi nel menu, contatta il tuo amministratore.</div>
+                </div>
+
+                <h3 id="lista-inst">Lista installazioni e ordinamento intelligente</h3>
+                <p>La lista delle installazioni non segue un ordine casuale: usa un <strong>ordinamento
+                        intelligente</strong> progettato per mettere in evidenza le priorità:</p>
 
                 <div class="feature-box">
-                    <h3>Pannello Installazioni Base</h3>
-                    <ul>
-                        <li><strong>Ordinamento Intelligente (Novità):</strong> Le installazioni con una data di programmata vengono evidenziate (lampeggianti) e spostate in prima posizione. Le macchine non programmate vengono raggruppate in ordine alfabetico.</li>
-                        <li><strong>Dati Sincronizzati:</strong> Nomi macchine, clienti e date di consegna vengono letti in tempo reale dal File Google.</li>
-                        <li><strong>Stati Colorati:</strong> Usa i tasti a forma di cerchio nel Dettaglio (Giallo: Da Collaudare, Verde: Collaudata). Le schede cambieranno colore e bordo di conseguenza.</li>
-                        <li><strong>Fatturazione:</strong> Contrassegna una macchina come fatturata attivando il pulsante apposito; apparirà un'icona del dollaro verde.</li>
-                    </ul>
+                    <div class="state-row">
+                        <div class="dot dot-blink" style="background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.8);">
+                        </div>
+                        <span><strong>Prima posizione — Installazioni con data programmata:</strong> Le macchine che
+                            hanno una data di consegna impostata vengono sempre mostrate per prime, con un effetto
+                            lampeggiante arancione per attirare l'attenzione.</span>
+                    </div>
+                    <div class="state-row" style="margin-top:0.75rem;">
+                        <div class="dot" style="background:#e2e8f0;"></div>
+                        <span><strong>Seconda posizione — Installazioni senza data:</strong> Le macchine ancora non
+                            programmate appaiono sotto, ordinate <em>alfabeticamente per nome cliente</em>.</span>
+                    </div>
+                </div>
 
-                    <h3 style="margin-top:1.5rem;">Matricole e Moduli Attivabili</h3>
-                    <ul>
-                        <li><strong>Prefisso Matricole Base:</strong> Il SuperAdmin può impostare un "Prefisso Matricole" nelle Impostazioni. Quando digiti una matricola, il prefisso entrerà automaticamente nel campo di testo per velocizzare l'inserimento.</li>
-                        <li><strong>Checklist "Moduli da Attivare":</strong> Nel dettaglio dell'installazione è presente una griglia dinamica di moduli (es. Upgrade, Multiple tool). Basta un "click" per spuntare i moduli necessari: quelli selezionati diventeranno verdi, mentre gli altri si sfumeranno visivamente.</li>
-                        <li><strong>Configurazione Moduli (SuperAdmin):</strong> Dal "Pannello Impostazioni" il SuperAdmin ha il totale controllo su questa lista. Può aggiungere o eliminare voci liberamente semplicemente scrivendole e andando a capo.</li>
-                        <li><strong>Sincronizzazione Google Calendar:</strong> Cliccando sull'apposito tasto, potrai aggiungere automaticamente l'intervento di collaudo sul tuo Calendario. Il titolo sarà intelligente, includendo automaticamente il nome del Cliente e la Sede di Installazione.</li>
-                    </ul>
+                <p>Il titolo della card dell'installazione mostra: <code>Nome Cliente — Sede di Installazione</code>
+                    (es. <em>Rossi Srl — Milano</em>). Questo nome viene usato anche come titolo dell'evento Google
+                    Calendar.</p>
+
+                <h3 id="dettaglio-inst">Pannello Dettaglio Installazione</h3>
+                <p>Clicca su una scheda installazione per aprire il pannello dettaglio. Da qui puoi:</p>
+
+                <table>
+                    <tr>
+                        <th>Elemento</th>
+                        <th>Descrizione</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Stati collaudo</strong></td>
+                        <td>
+                            Pulsanti circolari per cambiare lo stato:<br>
+                            <div class="state-row" style="margin-top:0.4rem;">
+                                <div class="dot dot-blue"></div><span>Blu = In attesa</span>
+                            </div>
+                            <div class="state-row">
+                                <div class="dot dot-yellow"></div><span>Giallo = Da Collaudare</span>
+                            </div>
+                            <div class="state-row">
+                                <div class="dot dot-green"></div><span>Verde = Collaudata ✓</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prefisso Matricola</strong></td>
+                        <td>Se il SuperAdmin ha impostato un prefisso matricola, al click sul campo matricola il
+                            prefisso viene inserito automaticamente per velocizzare la digitazione.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Componenti Estratti</strong></td>
+                        <td>Lista dei componenti letta automaticamente dai commenti del Google Sheet corrispondente. Non
+                            richiede nessuna azione manuale.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fatturazione</strong></td>
+                        <td>Attiva il flag "Fatturata" per contrassegnare la macchina. Apparirà un'icona verde 💰 e la
+                            card finirà in fondo alla lista.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Note interne</strong></td>
+                        <td>Campo note libero salvato su Firestore. Non sovrascrive i dati del Google Sheet.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Google Calendar</strong></td>
+                        <td>Vedi sezione dedicata ↓</td>
+                    </tr>
+                </table>
+
+                <h3 id="moduli">Checklist Moduli da Attivare</h3>
+                <p>Nel pannello dettaglio è presente una <strong>griglia interattiva</strong> dei moduli software da
+                    attivare sulla macchina.</p>
+                <ul>
+                    <li>La lista dei moduli disponibili è configurata dal SuperAdmin (vedi sezione apposita).</li>
+                    <li><strong>Spunta</strong> i moduli che devi attivare: diventeranno evidenziati (verde/indigo).
+                    </li>
+                    <li>I moduli <strong>non selezionati</strong> diventano visivamente sfumati ma restano leggibili.
+                    </li>
+                    <li>La selezione viene <strong>salvata automaticamente</strong> su Firestore per quella macchina
+                        specifica.</li>
+                </ul>
+                <p>Esempio di moduli disponibili (configurabili dal SuperAdmin):</p>
+                <div class="module-grid">
+                    <div class="module-item"><code>OCMSKD20101</code> Upgrade Monitoring</div>
+                    <div class="module-item"><code>OCMSKD20202</code> Multiple Tool Counter</div>
+                    <div class="module-item"><code>OCMSKD20301</code> Triple Profile</div>
+                    <div class="module-item"><code>OCMSKD20304</code> Peak Force</div>
+                    <div class="module-item"><code>OCMSKD20401</code> Part Data Mgmt</div>
+                    <div class="module-item"><code>OCMSKD20402</code> User Administration</div>
+                    <div class="module-item">... e altri</div>
+                </div>
+
+                <h3 id="calendario">Sincronizzazione Google Calendar</h3>
+                <p>Puoi aggiungere l'intervento di collaudo direttamente nel tuo Google Calendar senza uscire dall'app.
+                </p>
+
+                <ol class="steps">
+                    <li>Dal tuo <strong>Profilo</strong> (icona utente in alto), clicca <strong>"Collega
+                            Google"</strong>. Autorizza l'accesso al calendario tramite il popup di Google.</li>
+                    <li>Apri il dettaglio di un'installazione e imposta data e ora dell'intervento.</li>
+                    <li>Clicca il pulsante <strong>📅 "Aggiungi a Google Calendar"</strong>.</li>
+                    <li>L'evento viene creato automaticamente con il titolo <em>"Collaudo — [Cliente] — [Sede]"</em>.
+                    </li>
+                </ol>
+
+                <div class="alert alert-warning">
+                    <span class="alert-icon">⚠️</span>
+                    <div>Se il collegamento Google è scaduto, apparirà un avviso automatico. Basta ri-cliccare "Collega
+                        Google" dal Profilo per rinnovare l'autorizzazione. Questa operazione è sicura e non elimina
+                        nessun dato.</div>
+                </div>
+                <div class="alert alert-tip">
+                    <span class="alert-icon">🔧</span>
+                    <div>Anche "Sposta" sincronizza automaticamente l'evento su Google Calendar se il collegamento è
+                        attivo.</div>
                 </div>
             </section>
 
-            <section id="dashboard-admin">
-                <h2>Pannello Amministratore <span class="role-badge badge-admin">Admin</span></h2>
-                <p>Accessibile tramite il pulsante "Pannello Admin", permette il controllo totale del sistema.</p>
+            <!-- ────────────────────────── ADMIN ────────────────────────── -->
+            <section id="admin">
+                <h2>🛠️ Pannello Amministratore <span class="role-badge badge-admin">Admin</span></h2>
+                <p>Accessibile cliccando <strong>"Pannello Admin"</strong> dal menu principale. Questo pannello è
+                    visibile solo agli utenti con ruolo Admin o SuperAdmin.</p>
 
+                <h3 id="statistiche">Statistiche e Monitoraggio</h3>
                 <div class="feature-box">
-                    <h3>Monitoraggio e Statistiche</h3>
-                    <p>La dashboard mostra in tempo reale:</p>
                     <ul>
-                        <li>Numero di ticket Aperti e Chiusi.</li>
-                        <li><strong>Tempo Totale Interventi:</strong> Somma dinamica delle ore di lavoro basate sui
-                            filtri impostati.</li>
+                        <li><strong>Ticket Aperti:</strong> Numero totale di ticket ancora in lavorazione.</li>
+                        <li><strong>Ticket Chiusi:</strong> Totale dei ticket risolti nel periodo selezionato.</li>
+                        <li><strong>Ore Totali:</strong> Somma dinamica delle ore di lavoro di tutto il team, filtrabili
+                            per intervallo di date.</li>
+                        <li><strong>Performance per Tecnico:</strong> Visualizzazione comparativa dei ticket chiusi e
+                            ore per ogni membro del team.</li>
                     </ul>
                 </div>
 
-                <h3>Export Dati (CSV)</h3>
-                <p>È possibile scaricare un report CSV completo. Dalla versione 1.8.0 il report è ottimizzato:</p>
-
+                <h3 id="export">Export CSV</h3>
+                <p>Clicca <strong>"Scarica Report CSV"</strong> per esportare tutti i ticket chiusi. Il file è
+                    compatibile con Excel e ottimizzato per la rendicontazione:</p>
                 <ul>
-                    <li>Tutti i testi sono in <strong>MAIUSCOLO</strong> per uniformità professionale.</li>
-                    <li>La durata è unificata nel formato <strong>HH:MM</strong> in un'unica colonna.</li>
-                    <li>Compatibile con Excel (gestione automatica dei caratteri speciali e virgole).</li>
+                    <li>Tutti i testi in <strong>MAIUSCOLO</strong> per uniformità.</li>
+                    <li>Durata intervento in formato <strong>HH:MM</strong>.</li>
+                    <li>Gestione automatica di caratteri speciali e virgole (formato CSV corretto).</li>
                 </ul>
 
-                <h3>Anagrafiche Aziende</h3>
-                <p>Gli amministratori possono gestire l'elenco delle aziende "frequenti" per rendere la creazione dei
-                    ticket istantanea per i tecnici.</p>
+                <h3>Gestione Anagrafiche Aziende</h3>
+                <p>L'Admin può visualizzare e gestire l'elenco delle aziende salvate nel sistema per
+                    l'autocompletamento. Le aziende nuove vengono aggiunte automaticamente al primo salvataggio di un
+                    ticket.</p>
+
+                <h3>Gestione Documenti</h3>
+                <p>Se la funzione è abilitata, è disponibile una sezione per il caricamento di documenti tecnici
+                    (manuali, schede tecniche) accessibili a tutto il team.</p>
             </section>
 
-            <section id="configurazione-super">
-                <h2>Manutenzione & SuperAdmin <span class="role-badge badge-super">SuperAdmin</span></h2>
-                <p>Il SuperAdmin gestisce le fondamenta dell'applicazione.</p>
+            <!-- ────────────────────────── SUPERADMIN ────────────────────────── -->
+            <section id="superadmin">
+                <h2>⚙️ Pannello SuperAdmin <span class="role-badge badge-super">SuperAdmin</span></h2>
+                <p>Il SuperAdmin ha accesso completo a tutte le funzioni di configurazione dell'applicazione.</p>
 
-                <h3>1. Gestione Utenti</h3>
-                <p>Approva i nuovi iscritti, promuovi utenti ad Admin o elimina account non più necessari.</p>
-
-                <h3>2. Impostazioni Globali</h3>
-                <p>Dalla scheda Impostazioni è possibile personalizzare:</p>
+                <h3 id="utenti">Gestione Utenti</h3>
                 <ul>
-                    <li><strong>Branding:</strong> Nome app, Logo personalizzato (URL), Colori primari e secondari.</li>
-                    <li><strong>Permessi:</strong> Abilitazione creazione ticket per utenti base.</li>
-                    <li><strong>Algoritmi di Vista:</strong> Modalità compatta (griglia) o estesa (lista) per la
-                        gestione ticket.</li>
-                    <li><strong>Storage:</strong> Abilitazione o disabilitazione dell'upload fotografico (con avviso
-                        limiti Firebase).</li>
+                    <li><strong>Attivazione account:</strong> Quando un nuovo utente si registra, appare nell'elenco
+                        come "Pendente". Il SuperAdmin (o un Admin) può <strong>attivarlo</strong> così che possa fare
+                        login.</li>
+                    <li><strong>Promozione ruolo:</strong> Puoi promuovere un Utente Base ad <strong>Admin</strong> o un
+                        Admin a <strong>SuperAdmin</strong>.</li>
+                    <li><strong>Eliminazione:</strong> Rimuove definitivamente l'account dall'applicazione.</li>
                 </ul>
+
+                <h3 id="impostazioni">Impostazioni Globali</h3>
+                <p>Dalla scheda "Impostazioni" (icona ingranaggio) puoi configurare:</p>
+                <table>
+                    <tr>
+                        <th>Impostazione</th>
+                        <th>Descrizione</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Nome Applicazione</strong></td>
+                        <td>Il nome che appare nella schermata di login e nell'intestazione.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Logo</strong></td>
+                        <td>URL pubblico dell'immagine da usare come logo. Sostituisce il logo predefinito.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Colore Primario</strong></td>
+                        <td>Colore principale dei pulsanti e accenti dell'interfaccia (formato HEX, es.
+                            <code>#6366f1</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Colore Secondario</strong></td>
+                        <td>Colore secondario per contrasti e dettagli.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vista Predefinita</strong></td>
+                        <td>Lista estesa o Griglia compatta per la visualizzazione ticket.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Upload Foto</strong></td>
+                        <td>Abilita/disabilita il caricamento allegati fotografici nei ticket.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Creazione Ticket</strong></td>
+                        <td>Se disabilitata, solo Admin+ possono aprire ticket. Gli utenti base vedono la lista ma non
+                            il pulsante "Nuovo Ticket".</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sezione Installazioni</strong></td>
+                        <td>Abilita/disabilita la sezione Installazioni per tutti gli utenti.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Google Sheets URL</strong></td>
+                        <td>URL del Foglio Google da cui leggere i dati delle installazioni.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prefisso Matricola</strong></td>
+                        <td>Stringa che viene pre-compilata nel campo matricola delle installazioni (es.
+                            <code>SK-</code>).</td>
+                    </tr>
+                </table>
+
+                <h3 id="moduli-config">Configurazione Moduli Attivabili</h3>
+                <p>Nella scheda Impostazioni, la sezione <strong>"Moduli da Attivare"</strong> mostra l'elenco completo
+                    dei moduli software disponibili nella checklist delle installazioni.</p>
+                <div class="feature-box">
+                    <h4>Come modificare la lista moduli</h4>
+                    <ul>
+                        <li><strong>Aggiungere un modulo:</strong> Clicca <strong>"+ Aggiungi Modulo"</strong>,
+                            inserisci il codice (es. <code>OCMSKD20408</code>) e la descrizione, poi salva.</li>
+                        <li><strong>Modificare un modulo:</strong> Clicca l'icona matita ✏️ accanto al modulo per
+                            cambiare codice o descrizione.</li>
+                        <li><strong>Eliminare un modulo:</strong> Clicca l'icona cestino 🗑️. Il modulo viene rimosso
+                            dalla lista per tutte le installazioni future (non tocca i dati salvati).</li>
+                    </ul>
+                </div>
+                <div class="alert alert-warning">
+                    <span class="alert-icon">⚠️</span>
+                    <div>Le modifiche alla lista moduli sono globali e immediate. Le installazioni già salvate con
+                        moduli selezionati mantengono la loro selezione, ma il nome del modulo apparirà aggiornato.
+                    </div>
+                </div>
             </section>
 
-            <footer
-                style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-light); font-size: 0.8rem;">
-                <p>© 2026 Assistenza SK • Sistema Gestionale Tecnico • Versione 2.2.13</p>
+            <!-- ────────────────────────── RUOLI ────────────────────────── -->
+            <section id="ruoli">
+                <h2>🎭 Riepilogo Permessi per Ruolo</h2>
+                <table>
+                    <tr>
+                        <th>Funzione</th>
+                        <th>Utente Base</th>
+                        <th>Admin</th>
+                        <th>SuperAdmin</th>
+                    </tr>
+                    <tr>
+                        <td>Vedere lista ticket</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Creare ticket</td>
+                        <td>In base alle impostazioni</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Prendere in carico ticket</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Chiudere ticket propri</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Spostare/Rilasciare ticket (anche altrui)</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Assegnare ticket in fase di creazione</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Pannello Admin (statistiche, export, aziende)</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Sezione Installazioni</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Gestire utenti e approvare account</td>
+                        <td class="cross">—</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Impostazioni globali (branding, moduli, accessi)</td>
+                        <td class="cross">—</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Configurare lista Moduli Attivabili</td>
+                        <td class="cross">—</td>
+                        <td class="cross">—</td>
+                        <td class="check">✓</td>
+                    </tr>
+                </table>
+            </section>
 
+            <footer>
+                <p>© 2026 Assistenza SK &nbsp;•&nbsp; Sistema Gestionale Tecnico &nbsp;•&nbsp; Versione 2.2.15</p>
+                <p style="margin-top: 0.3rem; font-size: 0.75rem;">Per assistenza tecnica sull'applicazione, contatta il
+                    SuperAdmin del sistema.</p>
             </footer>
+
         </div>
     </div>
 
