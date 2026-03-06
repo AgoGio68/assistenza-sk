@@ -14,10 +14,10 @@ export interface GlobalSettings {
     allowUserTicketCreation: boolean;
     // New v1.8 Settings
     enablePhotos: boolean;
-    // New v1.9 Settings
     enableInstallations: boolean;
     installationsSheetUrl: string;
     serialPrefix: string;
+    installationModules: string[];
     // New v2.1.0 Permissions Settings
     adminCanAssignAtCreation: boolean;
     adminCanReassignOthers: boolean;
@@ -39,6 +39,21 @@ const defaultSettings: GlobalSettings = {
     enableInstallations: false,
     installationsSheetUrl: '',
     serialPrefix: '',
+    installationModules: [
+        "OCMSKD20101 - Upgrade 1 Monitoring channel CPX",
+        "OCMSKD20202 - Multiple tool counter CPX [x1]",
+        "OCMSKD20301 - Monit-module triple profile CPX [x1]",
+        "OCMSKD20304 - Monitoring-module peak force CPX [x1]",
+        "OCMSKD20309 - Monit-module: rollback check CPX [x1]",
+        "OCMSKD20401 - Part data management CPX [x1]",
+        "OCMSKD20402 - User administration CPX [x1]",
+        "OCMSKD20405 - DMI CPX [x1]",
+        "OCMSKD20406 - PTO xpress CPX [x1]",
+        "OCMSKD20408 - Screenshot to USB CPX [x1]",
+        "OCMSKD20305 - TESTA ROTATA",
+        "OCMSKD20309 - ROLLBACK",
+        "OCMSKD20601  - RAIS CPX"
+    ],
     adminCanAssignAtCreation: true,
     adminCanReassignOthers: false,
     adminCanCloseOthers: false,

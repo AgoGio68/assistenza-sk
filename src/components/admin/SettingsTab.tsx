@@ -186,6 +186,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     Questo testo verrà mostrato in modo fisso davanti al campo matricola nel dettaglio installazione.
                                 </p>
                             </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--success-color)' }}>Lista Moduli Attivabili (Uno per riga)</label>
+                                <textarea
+                                    placeholder="Es:&#10;OCMSKD20101 - Upgrade 1&#10;OCMSKD20202 - Multiple tool..."
+                                    value={Array.isArray(localSettings.installationModules) ? localSettings.installationModules.join('\n') : ''}
+                                    onChange={e => {
+                                        setLocalSettings((prev: any) => ({ ...prev, installationModules: e.target.value.split('\n') }));
+                                    }}
+                                    style={{ width: '100%', padding: '0.75rem', minHeight: '180px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                    Inserisci un modulo per ogni riga. Verranno visualizzati come checklist nel Dettaglio Installazione. Le righe vuote verranno ignorate al salvataggio.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>

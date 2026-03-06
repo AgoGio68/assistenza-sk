@@ -212,6 +212,19 @@ export const Login: React.FC = () => {
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.9 - Moduli Dinamici Custom</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Pannello Amministratore:</strong> Configurazione completa e customizzabile per le "Voci Attivabili" del collaudo, gestibili totalmente dall'apposito pannello "Impostazioni Grafica" per l'aggiunta o rimozione rapida.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.8 - Ordinamento Installazioni e Nuovi Moduli</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Ordinamento Installazioni:</strong> Le installazioni con una data di programmata vengono evidenziate e spostate in prima posizione, le altre vengono raggruppate e visualizzate rigorosamente in ordine alfabetico.</li>
+                                        <li><strong>Selezione Moduli Dettaglio:</strong> Aggiunta all'interno del riquadro Dettagli delle Installazioni una nuova pratica checklist con i moduli attivabili al clic.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.7 - Rendering Note Multiriga</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
                                         <li><strong>Fix Compatibilità CSV:</strong> Riscritto completamente il motore di estrazione CSV per supportare l'inclusione di note estremamente complesse e formattate su più righe all'interno della singola cella Google.</li>

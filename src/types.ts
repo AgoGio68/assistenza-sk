@@ -67,5 +67,6 @@ export interface Installation {
     scheduledTime?: string; // HH:mm
     scheduledDate?: string; // Overrides delivery
     applications?: { name: string; checked: boolean; qty?: string }[];
+    selectedFeatures?: string[];
     localOverrides?: Partial<Installation>;
 }

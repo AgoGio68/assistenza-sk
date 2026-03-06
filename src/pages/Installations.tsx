@@ -207,11 +207,23 @@ export const Installations: React.FC = () => {
     const activeInstallations = filteredInstallations
         .filter(inst => !inst.isInvoiced)
         .sort((a, b) => {
+            // 1. Tested items go to the bottom if the toggle is checked
             if (sortVerifiedAtBottom) {
                 if (a.tested && !b.tested) return 1;
                 if (!a.tested && b.tested) return -1;
             }
-            return 0;
+
+            // 2. Installations with a scheduled date (blinking) should go to the top
+            const aHasDate = !!a.scheduledDate;
+            const bHasDate = !!b.scheduledDate;
+
+            if (aHasDate && !bHasDate) return -1;
+            if (!aHasDate && bHasDate) return 1;
+
+            // 3. Otherwise, sort by client alphabetically
+            const aClient = a.client || '';
+            const bClient = b.client || '';
+            return aClient.toLowerCase().localeCompare(bClient.toLowerCase());
         });
 
     const invoicedInstallations = filteredInstallations.filter(inst => inst.isInvoiced);
@@ -537,6 +549,61 @@ export const Installations: React.FC = () => {
                                             Nessun componente aggiuntivo registrato nelle note del Foglio Google.
                                         </div>
                                     )}
+                                </div>
+                            </div>
+
+                            {/* Nuova Selezione Moduli / Opzioni */}
+                            <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f0fdf4', borderRadius: '16px', border: '1px solid #bbf7d0' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#166534', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <ListChecks size={20} /> SELEZIONE MODULI DA ATTIVARE
+                                </label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '0.75rem' }}>
+                                    {(settings.installationModules || []).map((feature: string, idx: number) => {
+                                        const selectedList = editData.localOverrides?.selectedFeatures || [];
+                                        const isSelected = selectedList.includes(feature);
+                                        const hasAnySelected = selectedList.length > 0;
+                                        const isFaint = hasAnySelected && !isSelected;
+
+                                        return (
+                                            <label key={idx} style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                cursor: 'pointer',
+                                                opacity: isFaint ? 0.35 : 1,
+                                                fontWeight: isSelected ? 700 : 500,
+                                                color: isSelected ? '#15803d' : '#166534',
+                                                transition: 'opacity 0.2s, color 0.2s',
+                                                fontSize: '0.85rem',
+                                                padding: '0.4rem',
+                                                borderRadius: '6px',
+                                                backgroundColor: isSelected ? '#dcfce7' : 'transparent'
+                                            }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={(e) => {
+                                                        const current = editData.localOverrides?.selectedFeatures || [];
+                                                        let next;
+                                                        if (e.target.checked) {
+                                                            next = [...current, feature];
+                                                        } else {
+                                                            next = current.filter((f: string) => f !== feature);
+                                                        }
+                                                        setEditData(prev => ({
+                                                            ...prev,
+                                                            localOverrides: {
+                                                                ...(prev.localOverrides || {}),
+                                                                selectedFeatures: next
+                                                            }
+                                                        }));
+                                                    }}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#16a34a' }}
+                                                />
+                                                <span style={{ lineHeight: '1.4' }}>{feature}</span>
+                                            </label>
+                                        )
+                                    })}
                                 </div>
                             </div>
 
