@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manuale Utente Ufficiale - Assistenza SK v1.9.9</title>
+    <title>Manuale Utente Ufficiale - Assistenza SK v2.2.13</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -253,7 +253,7 @@
 
     <div class="header">
         <h1>Manuale Utente Ufficiale</h1>
-        <p>Applicazione Assistenza SK • Versione 1.9.9</p>
+        <p>Applicazione Assistenza SK • Versione 2.2.13</p>
 
     </div>
 
@@ -341,37 +341,24 @@
 
             <section id="installazioni">
                 <h2>Gestione Installazioni <span class="role-badge badge-admin">Admin/SuperAdmin</span></h2>
-                <p>La nuova funzione (introdotta e perfezionata fino alla v1.9.9) permette di sincronizzare una lista di
-                    installazioni direttamente da un Foglio Google condiviso.</p>
+                <p>La funzione Installazioni permette di sincronizzare, gestire e collaudare il parco macchine direttamente da un Foglio Google condiviso.</p>
 
                 <div class="feature-box">
-                    <h3>Pannello Installazioni v1.9.9</h3>
+                    <h3>Pannello Installazioni Base</h3>
                     <ul>
-                        <li><strong>Dati Sincronizzati:</strong> Nomi macchine, clienti e date di consegna vengono letti
-                            dal File Google.</li>
-                        <li><strong>Stati Colorati:</strong> Usa i tasti a forma di cerchio nel Dettaglio (Giallo: Da
-                            Collaudare, Verde: Collaudata). Le schede cambieranno bordo di conseguenza.</li>
-                        <li><strong>Fatturazione:</strong> Contrassegna una macchina come fatturata attivando il
-                            pulsante apposito; apparirà un'icona del dollaro verde.</li>
+                        <li><strong>Ordinamento Intelligente (Novità):</strong> Le installazioni con una data di programmata vengono evidenziate (lampeggianti) e spostate in prima posizione. Le macchine non programmate vengono raggruppate in ordine alfabetico.</li>
+                        <li><strong>Dati Sincronizzati:</strong> Nomi macchine, clienti e date di consegna vengono letti in tempo reale dal File Google.</li>
+                        <li><strong>Stati Colorati:</strong> Usa i tasti a forma di cerchio nel Dettaglio (Giallo: Da Collaudare, Verde: Collaudata). Le schede cambieranno colore e bordo di conseguenza.</li>
+                        <li><strong>Fatturazione:</strong> Contrassegna una macchina come fatturata attivando il pulsante apposito; apparirà un'icona del dollaro verde.</li>
                     </ul>
 
-                    <h3 style="margin-top:1.5rem;">Matricole e Applicazioni</h3>
+                    <h3 style="margin-top:1.5rem;">Matricole e Moduli Attivabili</h3>
                     <ul>
-                        <li><strong>Prefisso Matricole Base:</strong> Il SuperAdmin o Admin può impostare un "Prefisso
-                            Matricole" nelle Impostazioni. Quando apri il popup di un'installazione e clicchi sulla
-                            cella "Matricola", il prefisso entrerà automaticamente nel campo di testo per farti scrivere
-                            più in fretta.</li>
-                        <li><strong>Gestione Applicazioni:</strong> Aggiungi funzionalità o software scrivendole
-                            nell'apposito campo e premendo "Aggiungi". Le applicazioni sono checkabili.</li>
-                        <li><strong>Canali e Quantità (v1.9.9):</strong> Se l'applicazione che aggiungi contiene la
-                            parola "Canali" (es: "10 Canali" o "Licenza Canali"), comparirà a fianco una pratica casella
-                            per inserire le quantità esatte.</li>
-                        <li><strong>Rimozione Veloce:</strong> Le app inserite per errore si possono cancellare premendo
-                            la "X" rossa dedicata.</li>
+                        <li><strong>Prefisso Matricole Base:</strong> Il SuperAdmin può impostare un "Prefisso Matricole" nelle Impostazioni. Quando digiti una matricola, il prefisso entrerà automaticamente nel campo di testo per velocizzare l'inserimento.</li>
+                        <li><strong>Checklist "Moduli da Attivare":</strong> Nel dettaglio dell'installazione è presente una griglia dinamica di moduli (es. Upgrade, Multiple tool). Basta un "click" per spuntare i moduli necessari: quelli selezionati diventeranno verdi, mentre gli altri si sfumeranno visivamente.</li>
+                        <li><strong>Configurazione Moduli (SuperAdmin):</strong> Dal "Pannello Impostazioni" il SuperAdmin ha il totale controllo su questa lista. Può aggiungere o eliminare voci liberamente semplicemente scrivendole e andando a capo.</li>
+                        <li><strong>Sincronizzazione Google Calendar:</strong> Cliccando sull'apposito tasto, potrai aggiungere automaticamente l'intervento di collaudo sul tuo Calendario. Il titolo sarà intelligente, includendo automaticamente il nome del Cliente e la Sede di Installazione.</li>
                     </ul>
-                    <p style="font-size: 0.85em; margin-top: 1rem; color: #64748b;">La videata d'installazione è
-                        pienamente compatibile con l'uso via Cellulare, dove la finestra si espande <strong>fullscreen
-                            fisso</strong> in verticale o orizzontale.</p>
                 </div>
             </section>
 
@@ -424,7 +411,7 @@
 
             <footer
                 style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-light); font-size: 0.8rem;">
-                <p>© 2026 Assistenza SK • Sistema Gestionale Tecnico • Versione 1.9.9</p>
+                <p>© 2026 Assistenza SK • Sistema Gestionale Tecnico • Versione 2.2.13</p>
 
             </footer>
         </div>
