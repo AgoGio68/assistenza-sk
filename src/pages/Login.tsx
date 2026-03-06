@@ -18,7 +18,6 @@ export const Login: React.FC = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
-    const [viewMode, setViewMode] = useState<'guide' | 'changelog'>('guide');
 
     const navigate = useNavigate();
     const { settings } = useSettings();
@@ -155,558 +154,122 @@ export const Login: React.FC = () => {
                     <br />
                     <button
                         type="button"
-                        onClick={() => { setShowGuide(true); setViewMode('guide'); }}
+                        onClick={() => setShowGuide(true)}
                         style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem' }}
                     >
-                        <Info size={14} /> Guida e Versioni
+                        <Info size={14} /> Novità & Changelog
                     </button>
                 </div>
             </div>
 
-            {/* Modale Guida e Versioni */}
+            {/* Modale Changelog Premium */}
             {showGuide && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 1000,
+                    backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000,
                     display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
                 }}>
-                    <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}>
+                    <div style={{
+                        width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto',
+                        background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)',
+                        border: '1px solid rgba(99,102,241,0.25)',
+                        borderRadius: '20px',
+                        padding: '2rem 2rem 2.5rem',
+                        position: 'relative',
+                        boxShadow: '0 25px 60px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(99,102,241,0.08)',
+                    }}>
                         <button
                             onClick={() => setShowGuide(false)}
-                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                            style={{
+                                position: 'absolute', top: '1.25rem', right: '1.25rem',
+                                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '50%', width: '36px', height: '36px',
+                                cursor: 'pointer', color: 'rgba(255,255,255,0.6)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.2s',
+                            }}
                         >
-                            <X size={24} />
+                            <X size={18} />
                         </button>
 
-                        <div style={{
-                            display: 'flex',
-                            position: 'relative',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '999px',
-                            padding: '0.25rem',
-                            marginBottom: '2rem',
-                            justifyContent: 'center',
-                            width: 'fit-content',
-                            margin: '0 auto 2rem',
-                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                        }}>
-                            <button
-                                onClick={() => setViewMode('guide')}
-                                style={{
-                                    flex: 1,
-                                    background: viewMode === 'guide' ? 'var(--primary-color)' : 'transparent',
-                                    color: viewMode === 'guide' ? 'white' : 'var(--text-secondary)',
-                                    border: 'none',
-                                    padding: '0.6rem 1.5rem',
-                                    borderRadius: '999px',
-                                    fontSize: '0.95rem',
-                                    fontWeight: viewMode === 'guide' ? 600 : 500,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: viewMode === 'guide' ? '0 4px 6px -1px rgba(0,0,0,0.2)' : 'none',
-                                }}
-                            >
-                                Manuale
-                            </button>
-                            <button
-                                onClick={() => setViewMode('changelog')}
-                                style={{
-                                    flex: 1,
-                                    background: viewMode === 'changelog' ? 'var(--primary-color)' : 'transparent',
-                                    color: viewMode === 'changelog' ? 'white' : 'var(--text-secondary)',
-                                    border: 'none',
-                                    padding: '0.6rem 1.5rem',
-                                    borderRadius: '999px',
-                                    fontSize: '0.95rem',
-                                    fontWeight: viewMode === 'changelog' ? 600 : 500,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: viewMode === 'changelog' ? '0 4px 6px -1px rgba(0,0,0,0.2)' : 'none',
-                                }}
-                            >
-                                Changelog
-                            </button>
+                        <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#6366f1', boxShadow: '0 0 10px #6366f1' }} />
+                                <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#6366f1' }}>Assistenza SK</span>
+                            </div>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Novit\u00e0 &amp; Aggiornamenti</h2>
+                            <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)' }}>
+                                Cronologia versioni &middot; versione attuale: <strong style={{ color: 'rgba(255,255,255,0.6)' }}>v{__APP_VERSION__}</strong>
+                            </p>
                         </div>
 
-                        {viewMode === 'guide' ? (
-                            <>
-                                <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
-                                    <a
-                                        href={`/manuale.html?v=${__APP_VERSION__}&t=${Date.now()}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="btn btn-primary"
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.5rem',
-                                            padding: '1rem 2rem',
-                                            textDecoration: 'none',
-                                            fontSize: '1.1rem',
-                                            fontWeight: 600,
-                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)',
-                                            width: 'auto',
-                                            maxWidth: '90%'
-                                        }}
-                                    >
-                                        <Info size={24} /> APRI MANUALE UFFICIALE v{__APP_VERSION__}
-                                    </a>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
-                                        Guida professionale dettagliata per Utenti, Admin e Superadmin.
-                                    </p>
-                                </section>
+                        {([
+                            { version: '2.2.15', label: 'UX', color: '#f59e0b', items: ['Changelog accessibile direttamente dal pulsante sotto il form.', 'Rimosso selettore pillola Manuale/Changelog: dedicato ora solo alla cronologia.'] },
+                            { version: '2.2.14', label: 'UI POLISH', color: '#8b5cf6', items: ['Selettore Manuale/Changelog rimpiazzato con pillola Glassmorphism e transizioni fluide.'] },
+                            { version: '2.2.13', label: 'DOC', color: '#0ea5e9', items: ['Manuale utente riscritto: ordinamento installazioni, Google Calendar, moduli SuperAdmin.'] },
+                            { version: '2.2.12', label: 'FIX', color: '#10b981', items: ['Griglia allineata per "Moduli da attivare": colonne proporzionali, ordine visivo garantito.'] },
+                            { version: '2.2.11', label: 'LAYOUT', color: '#f59e0b', items: ['Checklist moduli flex-wrap compatto.', 'Impostazioni Admin: layout a griglia, larghezza piena.'] },
+                            { version: '2.2.10', label: 'FEATURE', color: '#6366f1', items: ['Sede di installazione (Cliente \u2014 Citt\u00e0) nella card e nel titolo evento Google Calendar.'] },
+                            { version: '2.2.9', label: 'SUPERADMIN', color: '#ec4899', items: ['Lista Moduli Attivabili configurabile dal pannello Impostazioni senza toccare codice.'] },
+                            { version: '2.2.8', label: 'FEATURE', color: '#6366f1', items: ['Ordinamento intelligente: installazioni con data evidenziate e in prima posizione.', 'Nuova checklist interattiva Moduli nel Dettaglio Installazione.'] },
+                            { version: '2.2.7', label: 'FIX', color: '#10b981', items: ['Parser CSV riscritto per note multiriga nelle celle Google Sheets.'] },
+                            { version: '2.2.6', label: 'FIX', color: '#10b981', items: ['Componenti Estratti riconosciuti anche con celle vuote nel foglio.'] },
+                            { version: '2.2.5', label: 'LAYOUT', color: '#f59e0b', items: ['Sezione "Applicazioni" rimossa: pi\u00f9 spazio ai Componenti Estratti automatici.'] },
+                            { version: '2.2.4', label: 'FIX', color: '#10b981', items: ['Fix GID Google Sheet per sincronizzazione precisa componenti.'] },
+                            { version: '2.2.3', label: 'FEATURE', color: '#6366f1', items: ['Componenti macchina estratti dai commenti Google Sheet.', 'Script onEdit per aggiornamento real-time.'] },
+                            { version: '2.2.2', label: 'FEATURE', color: '#6366f1', items: ['Google Calendar: evento collaudo con un click.', 'Luce arancione pulsante su schede in attesa verifica.'] },
+                            { version: '2.1.0', label: 'FEATURE', color: '#6366f1', items: ['Assegnazione ticket al collega in fase creazione.', 'Pannello permessi granulari per Admin e Utenti.'] },
+                            { version: '2.0.8', label: 'FIX', color: '#10b981', items: ['Corretto errore credential-already-in-use nella riconnessione Google Calendar.'] },
+                            { version: '2.0.7', label: 'FIX', color: '#10b981', items: ['Google Calendar esteso a tutti gli Admin.', 'Popup se collaudo senza account Google collegato.'] },
+                            { version: '2.0.6', label: 'FIX', color: '#10b981', items: ['"Sposta" sincronizza automaticamente su Google Calendar.', 'Avviso token scaduto, chiusura modal corretta.'] },
+                            { version: '2.0.5', label: 'UX', color: '#f59e0b', items: ['Auto-completamento aziende. Svuotamento form. Orario default 08:00 eventi.'] },
+                            { version: '2.0.0', label: 'BIG RELEASE', color: '#ef4444', items: ['Fatturazione automatica da colonna Consegna.', 'Installazioni fatturate a fondo lista. Firebase migrato.'] },
+                            { version: '1.9.x', label: 'MILESTONE', color: '#64748b', items: ['Installazioni con Google Sheets, dettagli, stati, fix duplicati, cache-busting, mobile ready.'] },
+                        ] as { version: string; label: string; color: string; items: string[] }[]).map(({ version, label, color, items }) => (
+                            <div key={version} style={{
+                                marginBottom: '0.75rem',
+                                background: 'rgba(255,255,255,0.025)',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                                borderLeft: `3px solid ${color}`,
+                                borderRadius: '12px',
+                                padding: '0.9rem 1.1rem',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.5rem' }}>
+                                    <span style={{
+                                        background: `${color}20`,
+                                        color: color,
+                                        fontSize: '0.6rem', fontWeight: 800,
+                                        letterSpacing: '0.08em', textTransform: 'uppercase',
+                                        padding: '0.15rem 0.5rem', borderRadius: '5px',
+                                        border: `1px solid ${color}33`,
+                                    }}>{label}</span>
+                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#cbd5e1' }}>v{version}</span>
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '1.1rem', color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', lineHeight: 1.65 }}>
+                                    {items.map((item, i) => <li key={i} style={{ marginBottom: '0.15rem' }}>{item}</li>)}
+                                </ul>
+                            </div>
+                        ))}
 
-                            </>
-                        ) : (
-                            <>
-                                <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.14 - UI Modal Login</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Design Switch (Pillola):</strong> Sostituiti i basici tab testuali per la selezione tra "Manuale" e "Changelog" con un moderno interruttore "Pill" interattivo con transizioni CSS fluide, in linea con l'aspetto Premium generale dell'app.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.13 - Aggiornamento Manuale Ufficiale</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Documentazione:</strong> Il manuale utente integrato è stato riportato in pari con tutte le ultimissime novità, in particolar modo riguardo l'ordinamento avanzato, il calendario intelligente e la gestione moduli configurabile.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.12 - Allineamento Checklist Moduli</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Checklist Moduli (Layout):</strong> Ripristinata la visualizzazione dinamica per colonne multiple allineate invece della disposizione in singola linea fluida della 2.2.11. Il design conserva la compattezza limitando la larghezza unitaria ma mantenendo ordine visivo in griglia.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.11 - Ottimizzazione Spazi Layout</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Checklist Moduli:</strong> I pulsanti dei moduli attivabili nel dettaglio installazione sono stati resi più compatti, posizionandosi dinamicamente per occupare solo la larghezza del loro testo.</li>
-                                        <li><strong>Impostazioni Admin:</strong> Sfruttata l'intera larghezza della pagina nel pannello Impostazioni per affiancare logicamente i blocchi di opzioni ed evitare una pagina eccessivamente lunga su schermi larghi.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.10 - Sedi nelle Installazioni</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Dettaglio Località:</strong> L'interfaccia delle installazioni adesso espone anche la sede di installazione (es. Cliente - Città) per una rapida identificazione, e questo stesso formato verrà riportato come titolo negli eventi sincronizzati con Google Calendar.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.9 - Moduli Dinamici Custom</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Pannello Amministratore:</strong> Configurazione completa e customizzabile per le "Voci Attivabili" del collaudo, gestibili totalmente dall'apposito pannello "Impostazioni Grafica" per l'aggiunta o rimozione rapida.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.8 - Ordinamento Installazioni e Nuovi Moduli</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Ordinamento Installazioni:</strong> Le installazioni con una data di programmata vengono evidenziate e spostate in prima posizione, le altre vengono raggruppate e visualizzate rigorosamente in ordine alfabetico.</li>
-                                        <li><strong>Selezione Moduli Dettaglio:</strong> Aggiunta all'interno del riquadro Dettagli delle Installazioni una nuova pratica checklist con i moduli attivabili al clic.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.7 - Rendering Note Multiriga</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Fix Compatibilità CSV:</strong> Riscritto completamente il motore di estrazione CSV per supportare l'inclusione di note estremamente complesse e formattate su più righe all'interno della singola cella Google.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.6 - Allineamento Dinamico Colonne</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Motore di Lettura CSV:</strong> Il parser riconosce ora i "Componenti Estratti" in modo fluido, indipendentemente dalla presenza di colonne vuote prima o dopo le Note nel foglio Google originale.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.5 - Riorganizzazione Layout Installazioni</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Nuovo Layout:</strong> La sezione "Applicazioni da aggiungere" è stata rimossa per dare maggiore spazio e risalto ai Componenti Estratti automaticamente dal foglio Google, ottimizzando l'area di lavoro.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.4 - Hotfix Sincronizzazione</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>ID Foglio e GID:</strong> L'app riconosce ora correttamente l'ID del tab specifico (GID) inserito nelle impostazioni per scaricare con precisione millimetrica i codici estratti in background dallo script specchio.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.3 - Sincronizzazione Componenti Macchina (Notes)</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Componenti Estratti:</strong> I codici dei componenti vengono ora estratti automaticamente dai commenti del Google Sheet e visualizzati nel Modale Installazione in un riquadro dedicato.</li>
-                                        <li><strong>Sincronizzazione Background:</strong> Implementata automazione `onEdit` nel Google Sheet per l'aggiornamento real-time e sicuro dei dati verso l'App.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.2 - Sincronizzazione Installazioni</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Calendario Google:</strong> Integrazione con Google Calendar per la pianificazione automatica delle installazioni nella loro scheda di dettaglio.</li>
-                                        <li><strong>Check Visibili:</strong> Aggiunto effetto visivo luminoso (luce arancione pulsante) sulle schede delle installazioni pronte ad essere verificate.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.1.0 - Assegnazioni e Permessi Granulari</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li><strong>Assegnazione Rapida:</strong> Nuova interfaccia opzionale in fase di creazione del ticket per smistare subito il lavoro a un collega senza dover passare dalla vista dettagli.</li>
-                                        <li><strong>Poteri Granulari:</strong> Nuovo pannello dedicato in Impostazioni per il controllo capillare dei permessi: si può decidere se gli admin possono spostare o forzare la chiusura di ticket altrui, e se gli utenti possono auto-assegnare assistenza.</li>
-                                        <li><strong>Tracciamento Spostamenti:</strong> Integrazione tra presa in carico, calendario e permessi per una gestione team più snella.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.8 - Google Auth Fix</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Corretto l'errore tecnico (credential-already-in-use) che si verificava cercando di riconnettere il Calendario a Google. Adesso puoi cliccare "Collega Google" in modo sicuro anche se precedentemente interrotto.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.7 - Sblocco Sincronizzazione</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Risolto il blocco "Invisibile" del calendario: i pulsanti per autorizzare Google erano precedentemente bloccati ed esclusivi per il solo SuperAdmin. Ora tutti gli Admin possono utilizzare la funzionalità se collegati a Google!</li>
-                                        <li>Aggiunto un popup di avviso per quando l'utente prova a calendarizzare un intervento dimenticando di collegare prima l'account Google.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.6 - Hotfix Sincronizzazione</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Risolto bug che impediva al tasto "Sposta" di attivare la sincronizzazione a Google Calendar automaticamente.</li>
-                                        <li>Avviso automatico quando il collegamento a Google Calendar è scaduto (richiede ricollegamento per sicurezza fuso orario).</li>
-                                        <li>I Ticket aperti in dettaglio si chiudono finalmente anche cliccando Rilascia o Sposta.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.5 - UX e Fix Minori</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Le aziende "Nuove" vengono ora salvate direttamente nell'autocompletamento generale.</li>
-                                        <li>Il modulo nuovo ticket viene svuotato correttamente dopo l'invio.</li>
-                                        <li>Chiusura automatica dei modali su click di "Rilascia".</li>
-                                        <li>Orario di default impostato alle 08:00 quando si assegna un giorno all'intervento.</li>
-                                        <li>Format Data Calendar ritoccato per compatibilità assoluta con il timezone.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.3 - Versione Dinamica</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Centralizzazione automatica della versione (da package.json).</li>
-                                        <li>Risolto bug persistenza visualizzazione versione.</li>
-                                        <li>Allineamento totale tra codice e interfaccia.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.2 - Fix Icone Vista Compatta</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Aggiunto tasto "Zap" anche nella vista compatta (Griglia).</li>
-                                        <li>Migliorata la reattività dell'animazione di lampeggio.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.1 - Evidenziazione Ticket</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Nuova funzione "Zap" per far lampeggiare i ticket prioritari.</li>
-                                        <li>Persistenza dell'evidenziazione su database Firebase.</li>
-                                        <li>Miglioramenti alla sicurezza delle chiavi API.</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.0.0 - Automazione Fatturazione</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Riconoscimento automatico delle righe fatturate dalla colonna "Consegna" del foglio Google.</li>
-                                        <li>Raggruppamento visivo delle installazioni fatturate in fondo alla lista (Grigio).</li>
-                                        <li>Rimozione gestione manuale della fatturazione per maggiore efficienza.</li>
-                                        <li>Aggiornamento progetto Firebase a "assistenza-sk".</li>
-                                    </ul>
-                                </div>
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.9 - Prefisso Compilabile e App Avanzate</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Il Prefisso Matricola ora entra direttamente nel campo allo scatto del focus.</li>
-                                        <li>Possibilità di eliminare singolarmente le applicazioni aggiunte al volo.</li>
-                                        <li>Comparsa di un campo "Quantità" automatico se l'applicazione contiene la parola "Canali".</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.8 - Mobile Ready & Prefissi</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Risolto il problema di visualizzazione (overflow) su cellulari in modalità verticale.</li>
-                                        <li>Aggiunta la possibilità per l'Admin di impostare un Prefisso Matricola fisso.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.7 - Cache Force Update</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Implementato sistema di aggiornamento forzato della cache (Cache-Busting).</li>
-                                        <li>Riorganizzazione finale del layout modal per massima usabilità.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.6 - Ottimizzazione Layout</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Riorganizzato layout modal: stati di collaudo e fatturazione spostati in basso.</li>
-                                        <li>Checklist applicazioni spostata in primo piano sopra le note.</li>
-                                        <li>Corretto allineamento campi "Dati Macchina" per evitare sovrapposizioni.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.5 - Layout Professionale</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Restyling completo del modal dettaglio: più spazio per le note e design premium.</li>
-                                        <li>Risolto bug dei duplicati tramite identificazione univoca delle righe (rowId).</li>
-                                        <li>Migliorata la logica di ricerca e filtraggio clienti.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.4 - Risoluzione Duplicati</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Corretto bug critico che causava la visualizzazione di schede duplicate per ordini multi-macchina.</li>
-                                        <li>Implementata chiave univoca composta (Ordine + Matricola + Modello) per ogni singola riga.</li>
-                                        <li>Migliorata la stabilità del rendering della lista installazioni.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.3 - Fix Duplicati e Persistenza</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Risolto bug che mostrava schede duplicate in caso di dati ridondanti nel foglio.</li>
-                                        <li>Migliorata la logica di sincronizzazione Firestore/Google Sheets.</li>
-                                        <li>Confermata la protezione delle modifiche locali durante il ricaricamento dei dati.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.2 - Gestione Dinamica Avanzata</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Implementati stati colorati: Blu (Attesa), Giallo (Da Collaudare), Verde (Collaudata).</li>
-                                        <li>Nuova checklist "Applicazioni da aggiungere" con gestione automatica colori.</li>
-                                        <li>Possibilità di pianificare Data e Ora precisa per le installazioni.</li>
-                                        <li>Aggiunta gestione Fatturazione e Eliminazione schede.</li>
-                                        <li>Editing completo di tutti i campi dell'installazione.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.1 - Dettagli e Note</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Aggiunto popup di dettaglio cliccando sulle schede installazione.</li>
-                                        <li>Possibilità per gli Admin di salvare note extra persistenti su Firestore.</li>
-                                        <li>Sincronizzazione automatica e indicatore visivo delle note presenti.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.9.0 - Gestione Installazioni</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Nuova sezione "Installazioni" integrata con Google Sheets.</li>
-                                        <li>Dashboard dedicata con ricerca e monitoraggio consegne.</li>
-                                        <li>Controllo attivazione sezione dal Pannello Admin.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.8.0 - Milestone Stable</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Versione stabile di riferimento per nuove funzionalità.</li>
-                                        <li>Include tutte le ottimizzazioni UX e bugfix della serie 1.7.x.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.9 - UX & Persistenza</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Chiusura ticket istantanea nella lista (UI ottimistica).</li>
-                                        <li>Salvataggio automatico dei dati azienda per i nuovi ticket.</li>
-                                        <li>Migliorata la centratura della guida su dispositivi mobili.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.8 - Formattazione Report</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Report CSV: unificata colonna durata (formato HH:mm).</li>
-                                        <li>Report CSV: testi convertiti automaticamente in tutto MAIUSCOLO.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.7 - Correzioni Report</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Corretto bug nell'export CSV che disallineava le colonne.</li>
-                                        <li>Migliorata la compatibilità del report con Microsoft Excel.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.6 - Report e Profilo</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Nuova Pagina Profilo con statistiche personali e gestione nome.</li>
-                                        <li>Export CSV potenziato con durata interventi e nomi completi.</li>
-                                        <li>Statistiche tempo totale interventi nella dashboard amministratore.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.5 - Dettagli Admin</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Aggiunti nomi e date completa (apertura/chiusura) nei dettagli ticket admin.</li>
-                                        <li>Migliorata la visibilità del flusso di gestione del ticket.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.4 - Durata Intervento</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Aggiunta possibilità di inserire la durata dell'intervento alla chiusura.</li>
-                                        <li>Visualizzazione durata nel Pannello Admin.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.3 - Diagnostica</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Migliorati i messaggi di errore per la sincronizzazione del calendario.</li>
-                                        <li>Ottimizzata la creazione degli eventi Google.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.2 - Hotfix Import</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Risolto errore di caricamento modulo `firebase/auth`.</li>
-                                        <li>Corretta gestione dei permessi per il collegamento account.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.1 - Stabilità Google</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Utilizzo di `linkWithPopup` per una migliore gestione della sessione.</li>
-                                        <li>Risolti potenziali conflitti di account durante il collegamento.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.7.0 - Permessi & Debug</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Integrazione Calendario ristretta ai soli Superadmin.</li>
-                                        <li>Migliorato il logging degli errori per il collegamento Google.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.6.9 - Calendario Google</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
-                                        <li>Integrazione con Google Calendar per la pianificazione degli interventi.</li>
-                                        <li>Nuovo modal "Prendi in Carico" con scelta data/ora.</li>
-                                        <li>Pulsante per collegare/scollegare l'account Google.</li>
-                                        <li>Visibilità creatore ticket estesa a tutte le viste.</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 1.6.8 - Refactoring & Visibilità</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Refactoring:</strong> Suddivisione del Pannello Admin in componenti modulari per una migliore manutenibilità.</li>
-                                        <li><strong>Visibilità:</strong> Visualizzazione immediata del creatore e dell'assegnatario su ogni ticket.</li>
-                                    </ul>
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.7 (Activation Hash Fix)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Bug Fix:</strong> Risolto il fallimento nella riattivazione manuale legato al disallineamento dell'ambiente di calcolo.</li>
-                                    </ul>
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.6 (Activation Bypass)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Fix Login:</strong> Modificata la validazione della licenza per consentire l'accesso immediato anche in caso di variazioni ritardate nell'ambiente server.</li>
-                                    </ul>
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.5 (Hotfix: Activation Loop)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Fix Attivazione:</strong> Risolto il problema che richiedeva l'inserimento continuo del codice ad ogni refresh della pagina a causa di un timeout server.</li>
-                                    </ul>
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.3 (Pulizia Dati)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Eliminazione Mensile:</strong> Gli amministratori possono ora eliminare massivamente tutti i ticket vecchi filtrandoli per anno e mese.</li>
-                                        <li><strong>Eliminazione Singola:</strong> Aggiunto pulsante nei dettagli del pannello admin per rimuovere definitivamente un singolo ticket.</li>
-                                    </ul>
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.2 (Bugfix Assegnazioni)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Bug Fix:</strong> Corretto un difetto visivo che mostrava l'ID utente invece del nome nel campo "In carico a" e nei dettagli del referente senza telefono.</li>
-                                    </ul>
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.1 (Photo Sync & Note Admin)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Upload Foto:</strong> Aggiunta la possibilità di inserire fino a 3 foto durante la creazione dei ticket con compressione intelligente.</li>
-                                        <li><strong>Poteri Admin:</strong> Gli amministratori possono ora modificare le note/appunti di qualsiasi ticket in qualsiasi momento (anche non assegnato a loro).</li>
-                                        <li><strong>Storage Alert:</strong> Inserito modulo SuperAdmin per alert limiti Firebase Storage (5GB Gratuiti).</li>
-                                    </ul>
-
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.6.0 (Security & Licensing)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Licensing System:</strong> Nuovo blocco di attivazione basato su Codice Richiesta unico per ogni Istanza Firebase.</li>
-                                        <li><strong>Code Obfuscation:</strong> Implementato sistema di protezione del codice sorgente (JS Obfuscator) per prevenire il reverse engineering.</li>
-                                        <li><strong>Provisioning Autonomo:</strong> Script automatico per la creazione istantanea dell'account SuperAdmin e configurazione iniziale del Database.</li>
-                                    </ul>
-
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.4 (UI & Mobile optimization)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Mobile Lock:</strong> Impedito lo zoom involontario su dispositivi mobile per un'esperienza più vicina a un'app nativa.</li>
-                                        <li><strong>Documentation:</strong> Ristrutturazione completa della guida utente e sezione changelog dedicata.</li>
-                                        <li><strong>UX Professional:</strong> Migliorata la leggibilità dei pannelli informativi alla login.</li>
-                                    </ul>
-
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.3 (Bug Fix & stability)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li>Ottimizzazione caricamento iniziale e correzioni minori al layout.</li>
-                                    </ul>
-
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.2 (Permessi Granulari)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Ticket Delegation:</strong> Ora gli Admin possono abilitare la creazione ticket per singoli utenti specifici dal pannello gestione utenti.</li>
-                                    </ul>
-
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.1 (Personalizzazione Avanzata)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Riassegnazione:</strong> Nuovo sistema per spostare ticket tra colleghi con obbligo di motivazione e tracciabilità.</li>
-                                        <li><strong>CSV Pro:</strong> Correzione codifica per Excel (caratteri accentati ora visibili).</li>
-                                        <li><strong>Visibilità:</strong> Opzione Admin per restringere la vista degli utenti ai soli ticket assegnati.</li>
-                                        <li><strong>Layout Compatto:</strong> Nuova modalità "Griglia" per gestire grandi volumi di lavoro su PC/Tablet.</li>
-                                    </ul>
-
-                                    <h4 style={{ color: 'var(--secondary-color)' }}>v1.5.0 (Global Settings)</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                                        <li><strong>Global Settings:</strong> Modifica Colori Globali e Logo in tempo reale (Solo SuperAdmin).</li>
-                                        <li><strong>Ottimizzazione:</strong> Schermo intero sfruttato senza limiti laterali.</li>
-                                        <li><strong>Ricerca & Analitiche:</strong> Dashboard con barra di ricerca, filtri e grafici visuali.</li>
-                                    </ul>
-
-                                    <div style={{ textAlign: 'center', fontStyle: 'italic', color: 'var(--text-secondary)', marginTop: '1rem' }}>
-                                        Vedere versioni precedenti nel database di assistenza SK.
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
-                            <button onClick={() => setShowGuide(false)} className="btn btn-primary" style={{ width: '100%' }}>
-                                Chiudi
-                            </button>
-
-                            <button
-                                onClick={() => setViewMode(viewMode === 'guide' ? 'changelog' : 'guide')}
-                                className="btn"
+                        <div style={{ marginTop: '1.25rem', textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                            <a
+                                href={`/manuale.html?v=${__APP_VERSION__}&t=${Date.now()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 style={{
-                                    width: '100%',
-                                    backgroundColor: 'transparent',
-                                    border: '1px solid var(--primary-color)',
-                                    color: 'var(--primary-color)'
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                    color: '#818cf8', textDecoration: 'none', fontSize: '0.83rem', fontWeight: 600,
+                                    padding: '0.55rem 1.1rem', borderRadius: '99px',
+                                    border: '1px solid rgba(99,102,241,0.25)',
+                                    background: 'rgba(99,102,241,0.07)',
                                 }}
                             >
-                                {viewMode === 'guide' ? 'Visualizza Changelog' : 'Torna alla Guida'}
-                            </button>
+                                <Info size={13} /> Apri Manuale Ufficiale v{__APP_VERSION__}
+                            </a>
                         </div>
                     </div>
                 </div>
-            )
-            }
-        </div >
+            )}
+        </div>
     );
 };
