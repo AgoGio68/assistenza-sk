@@ -178,16 +178,52 @@ export const Login: React.FC = () => {
                             <X size={24} />
                         </button>
 
-                        <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', justifyContent: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                        <div style={{
+                            display: 'flex',
+                            position: 'relative',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '999px',
+                            padding: '0.25rem',
+                            marginBottom: '2rem',
+                            justifyContent: 'center',
+                            width: 'fit-content',
+                            margin: '0 auto 2rem',
+                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
                             <button
                                 onClick={() => setViewMode('guide')}
-                                style={{ background: 'none', border: 'none', fontSize: '1.1rem', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: viewMode === 'guide' ? 700 : 400, color: viewMode === 'guide' ? 'var(--primary-color)' : 'var(--text-secondary)', borderBottom: viewMode === 'guide' ? '3px solid var(--primary-color)' : '3px solid transparent' }}
+                                style={{
+                                    flex: 1,
+                                    background: viewMode === 'guide' ? 'var(--primary-color)' : 'transparent',
+                                    color: viewMode === 'guide' ? 'white' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    padding: '0.6rem 1.5rem',
+                                    borderRadius: '999px',
+                                    fontSize: '0.95rem',
+                                    fontWeight: viewMode === 'guide' ? 600 : 500,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: viewMode === 'guide' ? '0 4px 6px -1px rgba(0,0,0,0.2)' : 'none',
+                                }}
                             >
                                 Manuale
                             </button>
                             <button
                                 onClick={() => setViewMode('changelog')}
-                                style={{ background: 'none', border: 'none', fontSize: '1.1rem', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: viewMode === 'changelog' ? 700 : 400, color: viewMode === 'changelog' ? 'var(--primary-color)' : 'var(--text-secondary)', borderBottom: viewMode === 'changelog' ? '3px solid var(--primary-color)' : '3px solid transparent' }}
+                                style={{
+                                    flex: 1,
+                                    background: viewMode === 'changelog' ? 'var(--primary-color)' : 'transparent',
+                                    color: viewMode === 'changelog' ? 'white' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    padding: '0.6rem 1.5rem',
+                                    borderRadius: '999px',
+                                    fontSize: '0.95rem',
+                                    fontWeight: viewMode === 'changelog' ? 600 : 500,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: viewMode === 'changelog' ? '0 4px 6px -1px rgba(0,0,0,0.2)' : 'none',
+                                }}
                             >
                                 Changelog
                             </button>
@@ -226,6 +262,12 @@ export const Login: React.FC = () => {
                         ) : (
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.14 - UI Modal Login</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Design Switch (Pillola):</strong> Sostituiti i basici tab testuali per la selezione tra "Manuale" e "Changelog" con un moderno interruttore "Pill" interattivo con transizioni CSS fluide, in linea con l'aspetto Premium generale dell'app.</li>
+                                    </ul>
+                                </div>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.13 - Aggiornamento Manuale Ufficiale</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
