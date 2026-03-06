@@ -178,6 +178,21 @@ export const Login: React.FC = () => {
                             <X size={24} />
                         </button>
 
+                        <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', justifyContent: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                            <button
+                                onClick={() => setViewMode('guide')}
+                                style={{ background: 'none', border: 'none', fontSize: '1.1rem', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: viewMode === 'guide' ? 700 : 400, color: viewMode === 'guide' ? 'var(--primary-color)' : 'var(--text-secondary)', borderBottom: viewMode === 'guide' ? '3px solid var(--primary-color)' : '3px solid transparent' }}
+                            >
+                                Manuale
+                            </button>
+                            <button
+                                onClick={() => setViewMode('changelog')}
+                                style={{ background: 'none', border: 'none', fontSize: '1.1rem', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: viewMode === 'changelog' ? 700 : 400, color: viewMode === 'changelog' ? 'var(--primary-color)' : 'var(--text-secondary)', borderBottom: viewMode === 'changelog' ? '3px solid var(--primary-color)' : '3px solid transparent' }}
+                            >
+                                Changelog
+                            </button>
+                        </div>
+
                         {viewMode === 'guide' ? (
                             <>
                                 <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '2rem', width: '100%', gap: '1rem' }}>
