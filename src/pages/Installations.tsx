@@ -573,7 +573,7 @@ export const Installations: React.FC = () => {
                                 <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#166534', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <ListChecks size={20} /> SELEZIONE MODULI DA ATTIVARE
                                 </label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
                                     {(settings.installationModules || []).map((feature: string, idx: number) => {
                                         const selectedList = editData.localOverrides?.selectedFeatures || [];
                                         const isSelected = selectedList.includes(feature);

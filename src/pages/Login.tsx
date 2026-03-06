@@ -212,6 +212,13 @@ export const Login: React.FC = () => {
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.11 - Ottimizzazione Spazi Layout</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Checklist Moduli:</strong> I pulsanti dei moduli attivabili nel dettaglio installazione sono stati resi più compatti, posizionandosi dinamicamente per occupare solo la larghezza del loro testo.</li>
+                                        <li><strong>Impostazioni Admin:</strong> Sfruttata l'intera larghezza della pagina nel pannello Impostazioni per affiancare logicamente i blocchi di opzioni ed evitare una pagina eccessivamente lunga su schermi larghi.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.10 - Sedi nelle Installazioni</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
                                         <li><strong>Dettaglio Località:</strong> L'interfaccia delle installazioni adesso espone anche la sede di installazione (es. Cliente - Città) per una rapida identificazione, e questo stesso formato verrà riportato come titolo negli eventi sincronizzati con Google Calendar.</li>
