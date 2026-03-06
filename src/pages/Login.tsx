@@ -212,6 +212,12 @@ export const Login: React.FC = () => {
                             <>
                                 <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', textAlign: 'center' }}>Cronologia Aggiornamenti (Changelog)</h3>
                                 <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.12 - Allineamento Checklist Moduli</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
+                                        <li><strong>Checklist Moduli (Layout):</strong> Ripristinata la visualizzazione dinamica per colonne multiple allineate invece della disposizione in singola linea fluida della 2.2.11. Il design conserva la compattezza limitando la larghezza unitaria ma mantenendo ordine visivo in griglia.</li>
+                                    </ul>
+                                </div>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--secondary-color)', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary-color)' }}>Versione 2.2.11 - Ottimizzazione Spazi Layout</h4>
                                     <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.875rem' }}>
                                         <li><strong>Checklist Moduli:</strong> I pulsanti dei moduli attivabili nel dettaglio installazione sono stati resi più compatti, posizionandosi dinamicamente per occupare solo la larghezza del loro testo.</li>
