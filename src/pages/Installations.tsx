@@ -500,6 +500,31 @@ export const Installations: React.FC = () => {
                                                     onChange={e => setEditData(prev => ({ ...prev, scheduledTime: e.target.value }))}
                                                 />
                                             </div>
+                                            <div style={{ flex: '1 1 100%', display: 'flex', justifyContent: 'flex-end', marginTop: '0.2rem' }}>
+                                                {editData.scheduledDate && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditData(prev => ({ ...prev, scheduledDate: '', scheduledTime: '' }))}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: 'var(--danger-color)',
+                                                            fontSize: '0.75rem',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.3rem',
+                                                            padding: '0.3rem 0.5rem',
+                                                            borderRadius: '4px',
+                                                            transition: 'background 0.2s'
+                                                        }}
+                                                        onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                                                        onMouseOut={e => e.currentTarget.style.background = 'none'}
+                                                    >
+                                                        <X size={14} /> Rimuovi Data
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         <div>
                                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Sito / Destinazione</label>
