@@ -177,7 +177,21 @@ export const Installations: React.FC = () => {
             }
 
             await createGoogleCalendarEvent(googleToken, googleEvent);
-            alert('Evento creato con successo in Google Calendar!');
+
+            // Auto-salvataggio su Firebase per evitare che la data vada persa
+            if (selectedInst) {
+                const id = getInstId(selectedInst);
+                const docRef = doc(db, 'installation_data', id);
+                await setDoc(docRef, {
+                    ...editData,
+                    updatedAt: Date.now(),
+                    updatedBy: isAdmin ? 'admin' : 'superadmin'
+                }, { merge: true });
+            }
+
+            alert('Evento aggiunto a Google Calendar e data salvata con successo!');
+            // Chiudiamo il modale per confermare l'azione completata
+            setSelectedInst(null);
 
         } catch (error: any) {
             console.error('Google Calendar Sync Error:', error);
