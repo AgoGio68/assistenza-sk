@@ -69,4 +69,5 @@ export interface Installation {
     applications?: { name: string; checked: boolean; qty?: string }[];
     selectedFeatures?: string[];
     localOverrides?: Partial<Installation>;
+    orderDfv?: string; // N. ordine DFV personalizzato
 }

@@ -486,6 +486,15 @@ export const Installations: React.FC = () => {
                                                     }}
                                                 />
                                             </div>
+                                            <div style={{ flex: '1 1 100px' }}>
+                                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>N. ordine DFV</label>
+                                                <input
+                                                    placeholder="N. ordine DFV"
+                                                    className="form-control"
+                                                    value={editData.localOverrides?.orderDfv ?? selectedInst.orderDfv ?? ''}
+                                                    onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, orderDfv: e.target.value } }))}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
