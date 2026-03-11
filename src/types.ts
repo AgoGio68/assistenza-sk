@@ -15,6 +15,22 @@ export interface UserProfile {
 export type UrgencyLevel = 'urgente' | 'non_urgente';
 export type TicketStatus = 'aperto' | 'preso_in_carico' | 'chiuso';
 
+export interface GlobalSettings {
+    settingsSheetUrl: string;
+    appName?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    logoUrl?: string;
+    visibilityMode?: 'all' | 'assigned_only';
+    layoutMode?: 'default' | 'compact';
+    installationsLayoutMode?: 'default' | 'list';
+    applyCompactToAll?: boolean;
+    telegramToken?: string;
+    enablePhotos?: boolean;
+    photoInstructions?: string;
+    telegramChatIds?: string[]; // Assuming TelegramChatId is a string
+}
+
 export interface Ticket {
     id?: string;
     urgency: UrgencyLevel;

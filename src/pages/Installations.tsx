@@ -309,48 +309,97 @@ export const Installations: React.FC = () => {
                         <h4 style={{ marginBottom: '1rem', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Box size={20} /> Installazioni Attive ({activeInstallations.length})
                         </h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
+                        <div style={
+                            (settings as any).installationsLayoutMode === 'list'
+                                ? { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
+                                : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }
+                        }>
                             {activeInstallations.map((inst) => (
-                                <div
-                                    key={getInstId(inst)}
-                                    onClick={() => handleOpenDetail(inst)}
-                                    className={`glass-panel card-hover ${inst.scheduledDate ? 'scheduled-glow' : ''}`}
-                                    style={{
-                                        padding: '1.25rem',
-                                        borderLeft: `6px solid ${getCardColor(inst)}`,
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
-                                        position: 'relative',
-                                        ...(inst.scheduledDate ? {
-                                            animation: 'glowPulseOrange 2s infinite',
-                                            borderColor: 'rgba(249, 115, 22, 0.5)' // Tailwind orange-500 equivalent color
-                                        } : {})
-                                    }}
-                                >
-                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
-                                        {inst.client}
-                                        {inst.installationSite && (
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
-                                                {' - '}{inst.installationSite}
-                                            </span>
-                                        )}
-                                    </h3>
-                                    <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                            <Box size={14} /> <strong>{inst.machine}</strong>
+                                (settings as any).installationsLayoutMode === 'list' ? (
+                                    /* Layout a Lista Compatta */
+                                    <div
+                                        key={getInstId(inst)}
+                                        onClick={() => handleOpenDetail(inst)}
+                                        className={`glass-panel card-hover ${inst.scheduledDate ? 'scheduled-glow' : ''}`}
+                                        style={{
+                                            padding: '0.75rem 1rem',
+                                            borderLeft: `6px solid ${getCardColor(inst)}`,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '1rem',
+                                            transition: 'transform 0.1s, box-shadow 0.1s, border-color 0.2s',
+                                            ...(inst.scheduledDate ? {
+                                                animation: 'glowPulseOrange 2s infinite',
+                                                borderColor: 'rgba(249, 115, 22, 0.5)'
+                                            } : {})
+                                        }}
+                                    >
+                                        <div style={{ flex: '2', minWidth: '150px' }}>
+                                            <h3 style={{ margin: 0, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {inst.client}
+                                                {inst.installationSite && (
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                                                        {' - '}{inst.installationSite}
+                                                    </span>
+                                                )}
+                                            </h3>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                            <Calendar size={14} /> {inst.scheduledDate || inst.deliveryDate} {inst.scheduledTime && `alle ${inst.scheduledTime}`}
+                                        <div style={{ flex: '1', minWidth: '120px', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                            <Box size={14} /> <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inst.machine}</strong>
+                                        </div>
+                                        <div style={{ flex: '1', minWidth: '150px', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                                            <Calendar size={14} /> <span style={{ whiteSpace: 'nowrap' }}>{inst.scheduledDate || inst.deliveryDate} {inst.scheduledTime && `alle ${inst.scheduledTime}`}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                                            {inst.comments && <MessageSquare size={16} color="var(--text-secondary)" />}
+                                            {inst.applications?.some(a => a.checked) && <ListChecks size={16} color="var(--success-color)" />}
                                         </div>
                                     </div>
-                                    <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>Ordine {inst.orderNumber}</span>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            {inst.comments && <MessageSquare size={14} />}
-                                            {inst.applications?.some(a => a.checked) && <ListChecks size={14} color="var(--success-color)" />}
+                                ) : (
+                                    /* Layout a Griglia Standard */
+                                    <div
+                                        key={getInstId(inst)}
+                                        onClick={() => handleOpenDetail(inst)}
+                                        className={`glass-panel card-hover ${inst.scheduledDate ? 'scheduled-glow' : ''}`}
+                                        style={{
+                                            padding: '1.25rem',
+                                            borderLeft: `6px solid ${getCardColor(inst)}`,
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                                            position: 'relative',
+                                            ...(inst.scheduledDate ? {
+                                                animation: 'glowPulseOrange 2s infinite',
+                                                borderColor: 'rgba(249, 115, 22, 0.5)'
+                                            } : {})
+                                        }}
+                                    >
+                                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
+                                            {inst.client}
+                                            {inst.installationSite && (
+                                                <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                                                    {' - '}{inst.installationSite}
+                                                </span>
+                                            )}
+                                        </h3>
+                                        <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Box size={14} /> <strong>{inst.machine}</strong>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Calendar size={14} /> {inst.scheduledDate || inst.deliveryDate} {inst.scheduledTime && `alle ${inst.scheduledTime}`}
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Ordine {inst.orderNumber}</span>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                {inst.comments && <MessageSquare size={14} />}
+                                                {inst.applications?.some(a => a.checked) && <ListChecks size={14} color="var(--success-color)" />}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )
                             ))}
                         </div>
                     </div>
@@ -361,43 +410,88 @@ export const Installations: React.FC = () => {
                             <h4 style={{ marginBottom: '1rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <CheckCircle2 size={20} /> Installazioni Fatturate ({invoicedInstallations.length})
                             </h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
+                            <div style={
+                                (settings as any).installationsLayoutMode === 'list'
+                                    ? { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
+                                    : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }
+                            }>
                                 {invoicedInstallations.map((inst) => (
-                                    <div
-                                        key={getInstId(inst)}
-                                        onClick={() => handleOpenDetail(inst)}
-                                        className="glass-panel"
-                                        style={{
-                                            padding: '1.25rem',
-                                            borderLeft: `6px solid ${getCardColor(inst)}`,
-                                            cursor: 'pointer',
-                                            opacity: 0.8,
-                                            backgroundColor: '#f8fafc'
-                                        }}
-                                    >
-                                        <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#94a3b8' }}>
-                                            <DollarSign size={20} />
-                                        </div>
-                                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#64748b' }}>
-                                            {inst.client}
-                                            {inst.installationSite && (
-                                                <span style={{ fontSize: '0.9rem', fontWeight: 'normal', opacity: 0.8 }}>
-                                                    {' - '}{inst.installationSite}
-                                                </span>
-                                            )}
-                                        </h3>
-                                        <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                <Box size={14} /> <strong>{inst.machine}</strong>
+                                    (settings as any).installationsLayoutMode === 'list' ? (
+                                        /* Layout a Lista Compatta */
+                                        <div
+                                            key={getInstId(inst)}
+                                            onClick={() => handleOpenDetail(inst)}
+                                            className="glass-panel"
+                                            style={{
+                                                padding: '0.75rem 1rem',
+                                                borderLeft: `6px solid ${getCardColor(inst)}`,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                gap: '1rem',
+                                                opacity: 0.8,
+                                                backgroundColor: '#f8fafc'
+                                            }}
+                                        >
+                                            <div style={{ flex: '2', minWidth: '150px' }}>
+                                                <h3 style={{ margin: 0, fontSize: '1rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {inst.client}
+                                                    {inst.installationSite && (
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 'normal', opacity: 0.8 }}>
+                                                            {' - '}{inst.installationSite}
+                                                        </span>
+                                                    )}
+                                                </h3>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                <Calendar size={14} /> {inst.deliveryDate}
+                                            <div style={{ flex: '1', minWidth: '120px', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#94a3b8' }}>
+                                                <Box size={14} /> <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inst.machine}</strong>
+                                            </div>
+                                            <div style={{ flex: '1', minWidth: '150px', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#94a3b8' }}>
+                                                <Calendar size={14} /> <span style={{ whiteSpace: 'nowrap' }}>{inst.deliveryDate}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, color: '#94a3b8' }}>
+                                                <DollarSign size={16} />
                                             </div>
                                         </div>
-                                        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
-                                            <span>Ordine {inst.orderNumber}</span>
+                                    ) : (
+                                        /* Layout a Griglia Standard */
+                                        <div
+                                            key={getInstId(inst)}
+                                            onClick={() => handleOpenDetail(inst)}
+                                            className="glass-panel"
+                                            style={{
+                                                padding: '1.25rem',
+                                                borderLeft: `6px solid ${getCardColor(inst)}`,
+                                                cursor: 'pointer',
+                                                opacity: 0.8,
+                                                backgroundColor: '#f8fafc'
+                                            }}
+                                        >
+                                            <div style={{ position: 'absolute', top: '10px', right: '10px', color: '#94a3b8' }}>
+                                                <DollarSign size={20} />
+                                            </div>
+                                            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#64748b' }}>
+                                                {inst.client}
+                                                {inst.installationSite && (
+                                                    <span style={{ fontSize: '0.9rem', fontWeight: 'normal', opacity: 0.8 }}>
+                                                        {' - '}{inst.installationSite}
+                                                    </span>
+                                                )}
+                                            </h3>
+                                            <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <Box size={14} /> <strong>{inst.machine}</strong>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <Calendar size={14} /> {inst.deliveryDate}
+                                                </div>
+                                            </div>
+                                            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                                                <span>Ordine {inst.orderNumber}</span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )
                                 ))}
                             </div>
                         </div>
@@ -682,7 +776,7 @@ export const Installations: React.FC = () => {
                                     value={editData.comments || ''}
                                     onChange={e => setEditData(prev => ({ ...prev, comments: e.target.value }))}
                                     style={{
-                                        minHeight: '280px',
+                                        minHeight: '120px',
                                         width: '100%',
                                         padding: '1.5rem',
                                         fontSize: '1rem',

@@ -86,6 +86,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </div>
                             )}
                         </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Modalità Visualizzazione Installazioni</label>
+                            <select
+                                value={localSettings.installationsLayoutMode || 'default'}
+                                onChange={e => setLocalSettings((prev: any) => ({ ...prev, installationsLayoutMode: e.target.value as any }))}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            >
+                                <option value="default">Griglia Estesa (Riquadri attuali)</option>
+                                <option value="list">Lista Compatta (Riga singola)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
