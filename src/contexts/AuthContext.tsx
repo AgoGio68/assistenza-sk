@@ -4,7 +4,9 @@ import {
     onAuthStateChanged,
     signOut,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    linkWithPopup,
+    reauthenticateWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
@@ -21,8 +23,10 @@ interface AuthContextType {
     isApproved: boolean;
     updateDisplayName: (newName: string) => Promise<void>;
     connectGoogle: () => Promise<string | null>;
+    signInWithGoogle: () => Promise<void>;
     disconnectGoogle: () => void;
     googleToken: string | null;
+    userSections: ('sk' | 's2')[];
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -103,6 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isSuperadmin = userProfile?.role === 'superadmin';
     const isAdmin = userProfile?.role === 'admin' || isSuperadmin;
     const isApproved = userProfile?.status === 'approved' || isSuperadmin;
+    const userSections: ('sk' | 's2')[] = isSuperadmin 
+        ? ['sk', 's2'] 
+        : (userProfile?.sections || ['sk']);
 
     const updateDisplayName = async (newName: string) => {
         if (!currentUser) return;
@@ -116,16 +123,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const provider = new GoogleAuthProvider();
             provider.addScope('https://www.googleapis.com/auth/calendar.events');
+            provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+            provider.setCustomParameters({ prompt: 'consent' });
 
             if (!currentUser) {
                 alert("Devi essere loggato per collegare Google.");
                 return null;
             }
 
-            // Usiamo signInWithPopup per loggare Google (non linkWithPopup per evitare errore user already exists/credential-already-in-use)
-            const result = await signInWithPopup(auth, provider);
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            const token = credential?.accessToken;
+            let token: string | undefined = undefined;
+
+            const isGoogleLinked = currentUser.providerData.some(p => p.providerId === 'google.com');
+
+            try {
+                if (isGoogleLinked) {
+                    const result = await reauthenticateWithPopup(currentUser, provider);
+                    const credential = GoogleAuthProvider.credentialFromResult(result);
+                    token = credential?.accessToken;
+                } else {
+                    const result = await linkWithPopup(currentUser, provider);
+                    const credential = GoogleAuthProvider.credentialFromResult(result);
+                    token = credential?.accessToken;
+                }
+            } catch (err: any) {
+                if (err.code === 'auth/credential-already-in-use') {
+                    // L'account Google è già usato da un'altra entità Firebase.
+                    // Poiché ci serve solo il Token OAuth per le chiamate API Calendar/Sheets, 
+                    // estraiamo pacificamente le credenziali dall'errore, senza loggare l'utente fuori/dentro.
+                    const credential = GoogleAuthProvider.credentialFromError(err);
+                    token = credential?.accessToken;
+                } else {
+                    throw err;
+                }
+            }
 
             if (token) {
                 setGoogleToken(token);
@@ -137,6 +167,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error("Error connecting to Google:", error);
             alert("Errore durante il collegamento a Google: " + (error.message || "Verifica la console del browser."));
             return null;
+        }
+    };
+
+    const signInWithGoogle = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            provider.addScope('https://www.googleapis.com/auth/calendar.events');
+            provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+            provider.setCustomParameters({ prompt: 'consent' });
+
+            const result = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential?.accessToken;
+
+            if (token) {
+                setGoogleToken(token);
+                localStorage.setItem('google_calendar_token', token);
+            }
+        } catch (error: any) {
+            console.error("Error signing in with Google:", error);
+            throw error;
         }
     };
 
@@ -155,8 +206,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isApproved,
         updateDisplayName,
         connectGoogle,
+        signInWithGoogle,
         disconnectGoogle,
-        googleToken
+        googleToken,
+        userSections
     };
 
     return (

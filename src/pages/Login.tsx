@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { LogIn, UserPlus, Info, X, Mail, ArrowLeft } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Login: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -21,6 +22,7 @@ export const Login: React.FC = () => {
 
     const navigate = useNavigate();
     const { settings } = useSettings();
+    const { signInWithGoogle } = useAuth();
 
     const appName = import.meta.env.VITE_APP_NAME || 'ASSISTENZA SK';
 
@@ -48,6 +50,20 @@ export const Login: React.FC = () => {
             if (err.code === 'auth/user-not-found') errorMessage = 'Nessun utente trovato con questa email.';
             if (err.code === 'auth/wrong-password') errorMessage = 'Password errata.';
             setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            await signInWithGoogle();
+            navigate('/');
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || 'Errore durante l\'accesso con Google');
         } finally {
             setLoading(false);
         }
@@ -134,6 +150,49 @@ export const Login: React.FC = () => {
                         )}
                     </button>
                 </form>
+
+                {isLogin && !isForgotPassword && (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '1rem' }}>
+                            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Oppure</span>
+                            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            disabled={loading}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.75rem',
+                                padding: '0.85rem',
+                                borderRadius: 'var(--border-radius-md)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'var(--text-primary)',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseOver={e => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                            }}
+                            onMouseOut={e => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                            }}
+                        >
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
+                            Continua con Google
+                        </button>
+                    </>
+                )}
+
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     {isForgotPassword ? (
@@ -222,6 +281,116 @@ export const Login: React.FC = () => {
                         </div>
 
                         {([
+                            {
+                                version: '3.1.9',
+                                label: 'FIX ROLES',
+                                color: '#10b981',
+                                items: [
+                                    'Fix: Ripristinata la possibilità di assegnare ticket ai semplici Utenti (es. Vlad).',
+                                    'Integrità: Mantenuto il blocco totale solo per i Superadmin.'
+                                ]
+                            },
+                            {
+                                version: '3.1.8',
+                                label: 'PRIVACY & FILTERS',
+                                color: '#6366f1',
+                                items: [
+                                    'Privacy: I Superadmin sono stati rimossi da tutte le liste utenti (Gestione, Assegnazione).',
+                                    'Assegnazione: Disabilitata la possibilità di assegnare ticket ai Superadmin.'
+                                ]
+                            },
+                            {
+                                version: '3.1.7',
+                                label: 'CUSTOM DFV & CLEANUP',
+                                color: '#ec4899',
+                                items: [
+                                    'Feature: Campi del dettaglio installazione ora configurabili per la sezione DFV.',
+                                    'Cleanup: Rimossi file residui e database temporanei dal progetto.'
+                                ]
+                            },
+                            {
+                                version: '3.1.6',
+                                label: 'FIX VISIBILITY',
+                                color: '#10b981',
+                                items: [
+                                    'Fixed: Ripristinata la visibilità delle installazioni manuali (come PIPPO).',
+                                    'Migliorato il filtro di pulizia per essere più preciso.'
+                                ]
+                            },
+                            {
+                                version: '3.1.5',
+                                label: 'CLEANUP',
+                                color: '#6366f1',
+                                items: [
+                                    'Pulizia automatica: nascosti i record "fantasma" o vuoti che apparivano per errore.',
+                                    'Migliorata la logica di sincronizzazione "Orphan" per una transizione più fluida.'
+                                ]
+                            },
+                            {
+                                version: '3.1.4',
+                                label: 'STABILITY FIX',
+                                color: '#ef4444',
+                                items: [
+                                    'Fixed: Risolto crash della pagina se i dati su Google Sheets sono malformati o hanno intestazioni errate.',
+                                    'Maggiore resilienza: l\'app ora ignora righe incomplete senza bloccarsi.'
+                                ]
+                            },
+                            {
+                                version: '3.1.3',
+                                label: 'STABLE IDS',
+                                color: '#8b5cf6',
+                                items: [
+                                    'ID Stabili: ogni riga su Sheets ora ha un ID unico (colonna J) che previene la perdita di note se le righe vengono spostate.',
+                                    'Anti-Sparizione: i record manuali non spariscono più durante il caricamento verso Google Sheets.'
+                                ]
+                            },
+                            {
+                                version: '3.1.2',
+                                label: 'SHEET & DELETE',
+                                color: '#f59e0b',
+                                items: [
+                                    'Possibilità di inserire nuove esportazioni manuali in cima al foglio Google (Riga 2).',
+                                    'Implementata la cancellazione definitiva: eliminando un record sparirà sia da Firestore che dal Foglio Google.'
+                                ]
+                            },
+                            {
+                                version: '3.1.1',
+                                label: 'FIX & SYNC',
+                                color: '#10b981',
+                                items: [
+                                    'Possibilità di esportare e sincronizzare manualmente le Installazioni create tramite tasto Nuovo verso il foglio Google Sheets.',
+                                    'Risolto il problema di collisione account Firebase durante il collegamento col Calendario Google che esponeva le Sezioni agli utenti standard.'
+                                ]
+                            },
+                            {
+                                version: '3.1.0',
+                                label: 'FEATURE', // Added label for consistency
+                                color: '#6366f1', // Added color for consistency
+                                items: [ // Renamed 'changes' to 'items' for consistency
+                                    'Aggiunta gestione Installazioni indipendente per la Seconda Sezione (v. Dfv/S2).',
+                                    'Supporto all\'inserimento puramente manuale delle installazioni senza limitarsi al Foglio Google.',
+                                    'Nuovo pulsante "Nuova Installazione" per aggiunte on-the-fly.',
+                                ]
+                            },
+                            { version: '3.0.0', label: 'MAJOR RELEASE', color: '#ef4444', items: ['Aggiunta gestione multi-sezione configurabile (es. Assistenza SK vs Installazioni Esterne).', 'Fix doppi tag stato su file Google Sheets.', 'Rimosso prompt infinito di consenso Google.'] },
+                            { version: '2.2.37', label: 'STABLE', color: '#10b981', items: ['Risolto problema Milani 653: stabilizzato ID univoco e corretto parsing date.', 'Rifinito ordinamento gerarchico: Arancione (Top), Blu (Centro), Giallo/Verde (Coda).'] },
+                            { version: '2.2.36', label: 'FINAL', color: '#10b981', items: ['Implementata logica glow multi-colore: Arancione (Pianificate), Giallo (Da collaudare), Verde (Collaudate).', 'Ordinamento prioritario secondo gerarchia cliente.'] },
+                            { version: '2.2.35', label: 'STABLE', color: '#10b981', items: ['Fix definitivo lampeggio casuale e ordinamento intelligente basato sull\'attualità delle date.'] },
+                            { version: '2.2.34', label: 'FIX', color: '#10b981', items: ['Risolto problema lampeggio e ordinamento per installazioni in collaudo.', 'Implementata formattazione Calibri 16 automatica sul foglio Google.'] },
+                            { version: '2.2.33', label: 'UI', color: '#6366f1', items: ['Regolati colori Google Sheets per una maggiore visibilità (Giallo e Verde vivaci).'] },
+                            { version: '2.2.32', label: 'FIX', color: '#10b981', items: ['Rilevamento intelligente del foglio ORDINI per la colorazione automatica.'] },
+                            { version: '2.2.31', label: 'FIX', color: '#10b981', items: ['Ottimizzazione colorazione righe e debug sincronizzazione fogli Google.'] },
+                            { version: '2.2.30', label: 'FEATURE', color: '#6366f1', items: ['Colorazione automatica righe: il foglio Google diventa Giallo al salvataggio e Verde al collaudo.'] },
+                            { version: '2.2.29', label: 'FIX', color: '#10b981', items: ['Ricerca potenziata: ora puoi cercare anche per Modello SK e Luogo di Installazione.', 'Risolto problema dei record duplicati nel rendering.'] },
+                            { version: '2.2.28', label: 'FIX', color: '#10b981', items: ['Forzata schermata di consenso Google per garantire l\'attivazione dei permessi Sheets.'] },
+                            { version: '2.2.27', label: 'FIX', color: '#10b981', items: ['Risolto slittamento dati: l\'app ora identifica le righe in modo intelligente anche se ne vengono aggiunte di nuove nel foglio.'] },
+                            { version: '2.2.26', label: 'FIX', color: '#10b981', items: ['Correzione definitiva permessi Google Sheets (scopes).'] },
+                            { version: '2.2.25', label: 'FIX', color: '#10b981', items: ['Risolto definitivamente errore di autorizzazione per la scrittura sui fogli Google.'] },
+                            { version: '2.2.24', label: 'FIX', color: '#10b981', items: ['Risolto errore di autorizzazione (insufficient scopes) per la scrittura sui fogli Google.'] },
+                            { version: '2.2.23', label: 'FEATURE', color: '#6366f1', items: ['Sincronizzazione bidirezionale: salvataggio dati (Data, Matricola, Commenti) direttamente sul foglio Google.'] },
+                            { version: '2.2.22', label: 'FEATURE', color: '#6366f1', items: ['Importazione note integrali: se la colonna Modello SK inizia con ***, la nota viene importata completamente.'] },
+                            { version: '2.2.21', label: 'FEATURE', color: '#6366f1', items: ['Pulsante "Accedi con Google" nella pagina iniziale.', 'Login e collegamento Calendario in un unico click.'] },
+                            { version: '2.2.20', label: 'UX', color: '#f59e0b', items: ['Aggiunta modalità "Lista Compatta a 2 Colonne" per le Installazioni.', 'Allineamento perfetto layout a griglia interno.'] },
                             { version: '2.2.15', label: 'UX', color: '#f59e0b', items: ['Changelog accessibile direttamente dal pulsante sotto il form.', 'Rimosso selettore pillola Manuale/Changelog: dedicato ora solo alla cronologia.'] },
                             { version: '2.2.14', label: 'UI POLISH', color: '#8b5cf6', items: ['Selettore Manuale/Changelog rimpiazzato con pillola Glassmorphism e transizioni fluide.'] },
                             { version: '2.2.13', label: 'DOC', color: '#0ea5e9', items: ['Manuale utente riscritto: ordinamento installazioni, Google Calendar, moduli SuperAdmin.'] },

@@ -39,6 +39,19 @@ function App() {
                                     <Route path="/profile" element={<Profile />} />
                                     <Route path="/installations" element={<Installations />} />
                                 </Route>
+                                
+                                <Route element={
+                                    <div className="app-container">
+                                        <Navigation />
+                                        <main className="app-content">
+                                            <Outlet />
+                                        </main>
+                                    </div>
+                                }>
+                                    <Route path="/s2" element={<TicketList section="s2" />} />
+                                    <Route path="/s2/installations" element={<Installations section="s2" />} />
+                                    <Route path="/s2/create" element={<CreateTicket section="s2" />} />
+                                </Route>
                             </Route>
 
                             <Route element={<ProtectedRoute requireAdmin={true} />}>

@@ -1,32 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-
-export interface GlobalSettings {
-    primaryColor: string;
-    secondaryColor: string;
-    logoUrl: string;
-    appName: string;
-    // New v1.5.1 Settings
-    visibilityMode: 'all' | 'assigned_only';
-    layoutMode: 'default' | 'compact';
-    applyCompactToAll: boolean;
-    allowUserTicketCreation: boolean;
-    // New v1.8 Settings
-    enablePhotos: boolean;
-    enableInstallations: boolean;
-    installationsSheetUrl: string;
-    serialPrefix: string;
-    installationModules: string[];
-    // New v2.1.0 Permissions Settings
-    adminCanAssignAtCreation: boolean;
-    adminCanReassignOthers: boolean;
-    adminCanCloseOthers: boolean;
-    userCanAssignAtCreation: boolean;
-    userCanCloseOwnTickets: boolean;
-}
+import { GlobalSettings } from '../types';
 
 const defaultSettings: GlobalSettings = {
+    settingsSheetUrl: '',
     primaryColor: '#0f172a', /* Default slate-900 */
     secondaryColor: '#3b82f6', /* Default blue-500 */
     logoUrl: '',
@@ -37,6 +15,7 @@ const defaultSettings: GlobalSettings = {
     allowUserTicketCreation: true,
     enablePhotos: false,
     enableInstallations: false,
+    insertInstallationsAtTop: false,
     installationsSheetUrl: '',
     serialPrefix: '',
     installationModules: [
@@ -58,7 +37,9 @@ const defaultSettings: GlobalSettings = {
     adminCanReassignOthers: false,
     adminCanCloseOthers: false,
     userCanAssignAtCreation: false,
-    userCanCloseOwnTickets: true
+    userCanCloseOwnTickets: true,
+    // Note: Section 2 settings are optional in the type, so we don't need to define them here
+    // unless we want default values for them.
 };
 
 interface SettingsContextType {

@@ -10,6 +10,7 @@ export interface UserProfile {
     createdAt: number;
     canCreateTickets?: boolean;
     fcmToken?: string;
+    sections?: ('sk' | 's2')[];
 }
 
 export type UrgencyLevel = 'urgente' | 'non_urgente';
@@ -23,12 +24,47 @@ export interface GlobalSettings {
     logoUrl?: string;
     visibilityMode?: 'all' | 'assigned_only';
     layoutMode?: 'default' | 'compact';
-    installationsLayoutMode?: 'default' | 'list';
+    installationsLayoutMode?: 'default' | 'list' | 'list-2col';
     applyCompactToAll?: boolean;
     telegramToken?: string;
     enablePhotos?: boolean;
     photoInstructions?: string;
     telegramChatIds?: string[]; // Assuming TelegramChatId is a string
+    
+    // Feature C: Second Section Settings
+    section2Enabled?: boolean;
+    section2Name?: string;
+    section2Color?: string;
+    section2SheetUrl?: string;
+
+    // Feature C Addon: Section 2 Installations
+    section2InstallationsEnabled?: boolean;
+    section2InstallationsSheetUrl?: string;
+
+    // Permissions
+    allowUserTicketCreation?: boolean;
+    adminCanAssignAtCreation?: boolean;
+    userCanAssignAtCreation?: boolean;
+    adminCanCloseOthers?: boolean;
+    userCanCloseOwnTickets?: boolean;
+    adminCanReassignOthers?: boolean;
+    enableInstallations?: boolean;
+    insertInstallationsAtTop?: boolean;
+    installationsSheetUrl?: string;
+    serialPrefix?: string;
+    installationModules?: string[];
+
+    // New: Granular Field Configuration for Installations
+    section2InstallationsFields?: {
+        showModelSK?: boolean;
+        showSerialSK?: boolean;
+        showOrderNumber?: boolean;
+        showOrderDfv?: boolean;
+        showPlanning?: boolean;
+        showModules?: boolean;
+        showExtractedNotes?: boolean;
+        showTechnicalNotes?: boolean;
+    };
 }
 
 export interface Ticket {
@@ -53,6 +89,7 @@ export interface Ticket {
     durationMinutes?: number;
     highlighted?: boolean;
     scheduledDate?: string; // ISO string o YYYY-MM-DDTHH:mm
+    section?: 'sk' | 's2'; // Which section this ticket belongs to
 }
 
 export interface Company {
@@ -82,8 +119,13 @@ export interface Installation {
     tested?: boolean; // Green state: "collaudata"
     scheduledTime?: string; // HH:mm
     scheduledDate?: string; // Overrides delivery
+    section?: 'sk' | 's2';
+    isManual?: boolean;
+    createdAt?: number;
     applications?: { name: string; checked: boolean; qty?: string }[];
     selectedFeatures?: string[];
     localOverrides?: Partial<Installation>;
     orderDfv?: string; // N. ordine DFV personalizzato
+    originalRowIndex?: string; // Indice riga per aggiornamento Sheets
+    _firestoreId?: string;    // ID stabile calcolato al merge, usato per save/delete
 }

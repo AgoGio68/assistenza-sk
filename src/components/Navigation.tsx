@@ -1,11 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, PlusCircle, Settings, LogOut, User, Truck } from 'lucide-react';
+import { Home, PlusCircle, Settings, LogOut, User, Truck, Ticket } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export const Navigation: React.FC = () => {
-    const { logout, isAdmin, userProfile } = useAuth();
+    const { logout, isAdmin, userProfile, userSections } = useAuth();
     const { settings } = useSettings();
     const appName = settings.appName || 'ASSISTENZA SK';
 
@@ -63,13 +63,38 @@ export const Navigation: React.FC = () => {
                     <User size={16} /> <span className="hide-mobile">Profilo</span>
                 </NavLink>
 
-                <NavLink to="/" end className={navClass} title="Torna alla Home">
-                    <Home size={16} /> <span className="hide-mobile">Home</span>
-                </NavLink>
+                {/* Collegamenti condizionali per le Sezioni */}
+                {userSections.includes('sk') && (
+                    <NavLink to="/" end className={navClass} title="Ticket Assistenza SK">
+                        <Home size={16} /> <span className="hide-mobile">Assistenza SK</span>
+                    </NavLink>
+                )}
+
+                {settings.section2Enabled && userSections.includes('s2') && (
+                    <NavLink 
+                        to="/s2" 
+                        className={navClass} 
+                        title={`Ticket ${settings.section2Name || 'Sezione 2'}`}
+                        style={({ isActive }) => isActive ? { color: settings.section2Color || 'var(--accent-teal)', borderColor: settings.section2Color || 'var(--accent-teal)' } : {}}
+                    >
+                        <Ticket size={16} /> <span className="hide-mobile">{settings.section2Name || 'Sezione 2'}</span>
+                    </NavLink>
+                )}
 
                 {(settings.enableInstallations || isAdmin) && (
                     <NavLink to="/installations" className={navClass} title="Gestione Installazioni Macchine">
                         <Truck size={16} /> <span className="hide-mobile">Installazioni</span>
+                    </NavLink>
+                )}
+
+                {settings.section2Enabled && settings.section2InstallationsEnabled && userSections.includes('s2') && (
+                    <NavLink 
+                        to="/s2/installations" 
+                        className={navClass} 
+                        title={`Installazioni ${settings.section2Name || 'Sezione 2'}`}
+                        style={({ isActive }) => isActive ? { color: settings.section2Color || 'var(--accent-teal)', borderColor: settings.section2Color || 'var(--accent-teal)' } : {}}
+                    >
+                        <Truck size={16} /> <span className="hide-mobile">Inst. {settings.section2Name || 'S2'}</span>
                     </NavLink>
                 )}
 

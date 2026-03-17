@@ -7,7 +7,9 @@ interface UserManagementTabProps {
     isSuperadmin: boolean;
     onUpdateStatus: (uid: string, status: UserStatus) => Promise<void>;
     onTogglePermission: (uid: string, currentVal: boolean) => Promise<void>;
+    onUpdateSections: (uid: string, currentSections: ('sk'|'s2')[], toggleSection: 'sk'|'s2') => Promise<void>;
     onRemoveUser: (uid: string) => Promise<void>;
+    localSettings: any;
 }
 
 export const UserManagementTab: React.FC<UserManagementTabProps> = ({
@@ -16,7 +18,9 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({
     isSuperadmin,
     onUpdateStatus,
     onTogglePermission,
-    onRemoveUser
+    onUpdateSections,
+    onRemoveUser,
+    localSettings
 }) => {
     return (
         <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto' }}>
@@ -28,8 +32,8 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({
                         <th style={{ padding: '0.75rem 0' }}>Nome</th>
                         <th>Email</th>
                         <th>Ruolo</th>
-                        <th>Permessi</th>
-                        <th>Stato</th>
+                        <th>Permessi/Stato</th>
+                        <th>Sezioni (App)</th>
                         <th>Azioni</th>
                     </tr>
                 </thead>
@@ -42,28 +46,54 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({
                             <td>{user.email}</td>
                             <td>{user.role}</td>
                             <td>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={!!user.canCreateTickets}
-                                        onChange={() => onTogglePermission(user.uid, !!user.canCreateTickets)}
-                                        disabled={user.role === 'admin' || user.role === 'superadmin'} // Gli admin possono sempre creare
-                                    />
-                                    <span style={{ fontSize: '0.8rem' }}>Crea Ticket</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={!!user.canCreateTickets}
+                                            onChange={() => onTogglePermission(user.uid, !!user.canCreateTickets)}
+                                            disabled={user.role === 'admin' || user.role === 'superadmin'} // Gli admin possono sempre creare
+                                        />
+                                        <span style={{ fontSize: '0.8rem' }}>Crea Ticket</span>
+                                    </div>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '0.2rem 0.4rem',
+                                        borderRadius: '4px',
+                                        background: user.status === 'approved' ? 'rgba(16,185,129,0.12)' : user.status === 'pending' ? 'rgba(245,158,11,0.12)' : 'rgba(244,63,94,0.12)',
+                                        color: user.status === 'approved' ? 'var(--success-color)' : user.status === 'pending' ? 'var(--warning-color)' : 'var(--danger-color)',
+                                        border: `1px solid ${user.status === 'approved' ? 'rgba(16,185,129,0.25)' : user.status === 'pending' ? 'rgba(245,158,11,0.25)' : 'rgba(244,63,94,0.25)'}`,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 600,
+                                        width: 'max-content'
+                                    }}>
+                                        {user.status.toUpperCase()}
+                                    </span>
                                 </div>
                             </td>
                             <td>
-                                <span style={{
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '4px',
-                                    background: user.status === 'approved' ? 'rgba(16,185,129,0.12)' : user.status === 'pending' ? 'rgba(245,158,11,0.12)' : 'rgba(244,63,94,0.12)',
-                                    color: user.status === 'approved' ? 'var(--success-color)' : user.status === 'pending' ? 'var(--warning-color)' : 'var(--danger-color)',
-                                    border: `1px solid ${user.status === 'approved' ? 'rgba(16,185,129,0.25)' : user.status === 'pending' ? 'rgba(245,158,11,0.25)' : 'rgba(244,63,94,0.25)'}`,
-                                    fontSize: '0.8rem',
-                                    fontWeight: 600
-                                }}>
-                                    {user.status}
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={user.sections?.includes('sk') ?? true}
+                                            onChange={() => onUpdateSections(user.uid, user.sections || ['sk'], 'sk')}
+                                        />
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Assistenza SK</span>
+                                    </div>
+                                    {localSettings.section2Enabled && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={user.sections?.includes('s2') || false}
+                                                onChange={() => onUpdateSections(user.uid, user.sections || ['sk'], 's2')}
+                                            />
+                                            <span style={{ fontSize: '0.8rem', color: localSettings.section2Color || 'var(--accent-teal)', fontWeight: 600 }}>
+                                                {localSettings.section2Name || 'Sezione 2'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </td>
                             <td>
                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

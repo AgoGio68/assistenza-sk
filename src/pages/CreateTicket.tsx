@@ -9,7 +9,7 @@ import imageCompression from 'browser-image-compression';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 
-export const CreateTicket: React.FC = () => {
+export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk' }) => {
     const navigate = useNavigate();
     const { isAdmin, userProfile } = useAuth();
     const { settings } = useSettings();
@@ -42,8 +42,8 @@ export const CreateTicket: React.FC = () => {
                 const fetched: UserProfile[] = [];
                 snap.forEach(d => {
                     const data = d.data() as UserProfile;
-                    // Solo admin o superadmin possono prendere in carico un ticket in genere
-                    if (data.role === 'admin' || data.role === 'superadmin') {
+                    // Tutti tranne i superadmin possono essere assegnatari (inclusi semplici utenti)
+                    if (data.role !== 'superadmin') {
                         fetched.push({ ...data, uid: d.id });
                     }
                 });
@@ -167,7 +167,8 @@ export const CreateTicket: React.FC = () => {
                 ...(assignedTo && assigneeUser && {
                     assignedTo: assignedTo,
                     assigneeName: assigneeUser.displayName || assigneeUser.email || 'Tecnico'
-                })
+                }),
+                section // Save the section the ticket belongs to
             };
 
             await setDoc(newTicketRef, newTicket);
@@ -208,7 +209,9 @@ export const CreateTicket: React.FC = () => {
     return (
         <div style={{ paddingBottom: '2rem' }}>
             <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Nuova Assistenza</h2>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: section === 's2' ? (settings.section2Color || 'var(--accent-teal)') : 'var(--text-primary)' }}>
+                    Nuova Assistenza {section === 's2' ? (settings.section2Name || 'Sezione 2') : ''}
+                </h2>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Compila il form per aprire un nuovo ticket di supporto</p>
             </div>
 

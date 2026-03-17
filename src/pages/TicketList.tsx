@@ -10,7 +10,7 @@ import { getCreatorName, getAssigneeName } from '../utils/nameUtils';
 import { createGoogleCalendarEvent, formatTicketToEvent } from '../utils/calendarUtils';
 import { CloseTicketModal } from '../components/CloseTicketModal';
 
-export const TicketList: React.FC = () => {
+export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk' }) => {
     const { currentUser, isAdmin, userProfile, connectGoogle, googleToken, disconnectGoogle } = useAuth();
     const { settings } = useSettings();
     const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -48,10 +48,12 @@ export const TicketList: React.FC = () => {
                 const uid = doc.id;
                 userData.uid = uid; // Ensure uid is present
                 const name = userData.displayName || userData.email || 'Utente Sconosciuto';
-
-                namesMap[uid] = name;
-                if (userData.status === 'approved') {
-                    usersList.push(userData);
+                
+                if (userData.role !== 'superadmin') {
+                    namesMap[uid] = name;
+                    if (userData.status === 'approved') {
+                        usersList.push(userData);
+                    }
                 }
             });
 
@@ -67,10 +69,17 @@ export const TicketList: React.FC = () => {
         if (!currentUser) return;
 
         // View open or in-progress tickets
-        const q = query(
-            collection(db, 'tickets'),
+        const conditions: any[] = [
             where('status', 'in', ['aperto', 'preso_in_carico'])
-        );
+        ];
+
+        // Se siamo nella section2 fissa il filtro, altrimenti (sk) usiamo filtro lato client
+        // per retrocompatibilità coi vecchi ticket senza campo "section"
+        if (section === 's2') {
+            conditions.push(where('section', '==', 's2'));
+        }
+
+        const q = query(collection(db, 'tickets'), ...conditions);
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedTickets: Ticket[] = [];
@@ -80,8 +89,14 @@ export const TicketList: React.FC = () => {
 
             // Filtro Visibilità v1.5.1
             let finalTickets = fetchedTickets;
+
+            // Filtro retrocompatibilità per Assistenza SK (ticket con section='sk' oppure senza campo section)
+            if (section === 'sk') {
+                finalTickets = finalTickets.filter(t => !t.section || t.section === 'sk');
+            }
+
             if (settings.visibilityMode === 'assigned_only' && !isAdmin) {
-                finalTickets = fetchedTickets.filter(t => t.assignedTo === currentUser?.uid);
+                finalTickets = finalTickets.filter(t => t.assignedTo === currentUser?.uid);
             }
 
             // Ordiniamo lato client: prima i miei in carico (priorità massima), poi gli altri ordinati per data
@@ -324,7 +339,9 @@ export const TicketList: React.FC = () => {
         <div style={{ paddingBottom: '2rem' }}>
             <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.1rem' }}>Assistenze Attive</h2>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: section === 's2' ? (settings.section2Color || 'var(--accent-teal)') : 'var(--text-primary)', marginBottom: '0.1rem' }}>
+                        {section === 's2' ? (settings.section2Name || 'Assistenze Sezione 2') : 'Assistenze Attive'}
+                    </h2>
                     {isCompact && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>VISTA COMPATTA</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -391,7 +408,7 @@ export const TicketList: React.FC = () => {
                                     cursor: 'pointer',
                                     background: 'var(--bg-surface)',
                                     border: '1px solid var(--border-subtle)',
-                                    borderTop: `3px solid ${isUrgent ? 'var(--danger-color)' : isTakenByMe ? 'var(--accent-teal)' : 'var(--primary-color)'}`,
+                                    borderTop: `3px solid ${isUrgent ? 'var(--danger-color)' : isTakenByMe ? 'var(--accent-teal)' : (section === 's2' ? (settings.section2Color || 'var(--primary-color)') : 'var(--primary-color)')}`,
                                     borderRadius: 'var(--border-radius-md)',
                                     opacity: isTakenByOthers ? 0.55 : 1,
                                     animation: ticket.highlighted ? 'glowPulse 1.4s ease-in-out infinite' : 'slideInUp 0.3s ease forwards',
@@ -471,7 +488,7 @@ export const TicketList: React.FC = () => {
                                 background: 'var(--bg-surface)',
                                 borderRadius: 'var(--border-radius-lg)',
                                 border: '1px solid var(--border-subtle)',
-                                borderLeft: `4px solid ${isUrgent ? 'var(--danger-color)' : isTakenByMe ? 'var(--accent-teal)' : 'var(--primary-color)'}`,
+                                borderLeft: `4px solid ${isUrgent ? 'var(--danger-color)' : isTakenByMe ? 'var(--accent-teal)' : (section === 's2' ? (settings.section2Color || 'var(--primary-color)') : 'var(--primary-color)')}`,
                                 opacity: isTakenByOthers ? 0.55 : 1,
                                 boxShadow: ticket.highlighted ? '0 0 20px rgba(245,158,11,0.35), var(--shadow-sm)' : 'var(--shadow-sm)',
                                 animation: ticket.highlighted ? 'glowPulse 1.4s ease-in-out infinite' : 'slideInUp 0.3s ease forwards',

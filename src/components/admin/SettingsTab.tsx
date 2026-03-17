@@ -95,6 +95,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             >
                                 <option value="default">Griglia Estesa (Riquadri attuali)</option>
                                 <option value="list">Lista Compatta (Riga singola)</option>
+                                <option value="list-2col">Lista Compatta (2 Colonne)</option>
                             </select>
                         </div>
                     </div>
@@ -205,6 +206,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </p>
                             </div>
                             <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--success-color)' }}>Modalità Esportazione Voci Manuali</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        id="insertInstallationsAtTop"
+                                        checked={localSettings.insertInstallationsAtTop || false}
+                                        onChange={e => setLocalSettings((prev: any) => ({ ...prev, insertInstallationsAtTop: e.target.checked }))}
+                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                    <label htmlFor="insertInstallationsAtTop" style={{ fontSize: '0.9rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                                        Inserisci le nuove installazioni esportate <strong>in CIMA</strong> (Riga 2) invece che in fondo.
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--success-color)' }}>Prefisso Matricola (Opzionale)</label>
                                 <input
                                     type="text"
@@ -232,6 +248,127 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </p>
                             </div>
                         </div>
+                    )}
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '0' }} />
+
+                {/* 6. Gestione Seconda Sezione Assistenza (v3.0.0) */}
+                <h4 style={{ margin: '0', color: 'var(--accent-teal)' }}>Gestione Seconda Sezione Assistenza</h4>
+                <div style={{ background: 'rgba(45,212,191,0.06)', padding: '1.5rem', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input
+                            type="checkbox"
+                            id="section2Enabled"
+                            checked={localSettings.section2Enabled || false}
+                            onChange={e => setLocalSettings((prev: any) => ({ ...prev, section2Enabled: e.target.checked }))}
+                            style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="section2Enabled" style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--accent-teal)', cursor: 'pointer' }}>
+                            Abilita una Seconda Sezione (Tickets separati)
+                        </label>
+                    </div>
+
+                    {localSettings.section2Enabled && (
+                        <>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--accent-teal)' }}>Nome Sezione (Es. Assistenza SK 2)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Es. Assistenza Macchine X"
+                                        value={localSettings.section2Name || ''}
+                                        onChange={e => setLocalSettings((prev: any) => ({ ...prev, section2Name: e.target.value }))}
+                                        style={{ width: '100%', padding: '0.75rem' }}
+                                    />
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                        Questo nome apparirà nel menu laterale per gli utenti abilitati.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--accent-teal)' }}>Colore Distintivo Sezione (Badge/Bottoni)</label>
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                        <input 
+                                            type="color" 
+                                            value={localSettings.section2Color || '#f59e0b'} 
+                                            onChange={e => setLocalSettings((prev: any) => ({ ...prev, section2Color: e.target.value }))} 
+                                            style={{ width: '50px', height: '50px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }} 
+                                        />
+                                        <span>{localSettings.section2Color || '#f59e0b'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr style={{ border: 'none', borderTop: '1px solid rgba(45,212,191,0.2)', margin: '1.5rem 0' }} />
+                            
+                            <h5 style={{ color: 'var(--accent-teal)', marginBottom: '1rem', fontSize: '1.05rem' }}>Installazioni per la Seconda Sezione</h5>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                <input
+                                    type="checkbox"
+                                    id="section2InstallationsEnabled"
+                                    checked={localSettings.section2InstallationsEnabled || false}
+                                    onChange={e => setLocalSettings((prev: any) => ({ ...prev, section2InstallationsEnabled: e.target.checked }))}
+                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="section2InstallationsEnabled" style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-teal)', cursor: 'pointer' }}>
+                                    Abilita vista Installazioni separata per questa Sezione
+                                </label>
+                            </div>
+                            
+                            {localSettings.section2InstallationsEnabled && (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--accent-teal)' }}>URL Foglio Google Installazioni (Opzionale)</label>
+                                        <input
+                                            type="url"
+                                            placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                                            value={localSettings.section2InstallationsSheetUrl || ''}
+                                            onChange={e => setLocalSettings((prev: any) => ({ ...prev, section2InstallationsSheetUrl: e.target.value }))}
+                                            style={{ width: '100%', padding: '0.75rem' }}
+                                        />
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                            Se non inserisci l'URL, le installazioni per questa sezione potranno solo essere aggiunte manualmente.
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(45,212,191,0.2)' }}>
+                                        <h6 style={{ color: 'var(--accent-teal)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>Visibilità Campi nel Dettaglio (Sezione 2)</h6>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                                            {[
+                                                { id: 'showModelSK', label: 'Modello SK' },
+                                                { id: 'showSerialSK', label: 'Matricola' },
+                                                { id: 'showOrderNumber', label: 'N. Ordine Principale' },
+                                                { id: 'showOrderDfv', label: 'N. Ordine DFV' },
+                                                { id: 'showPlanning', label: 'Pianificazione (Data/Ora/Sito)' },
+                                                { id: 'showModules', label: 'Moduli da Attivare' },
+                                                { id: 'showExtractedNotes', label: 'Componenti Estratti' },
+                                                { id: 'showTechnicalNotes', label: 'Note Tecniche' }
+                                            ].map(field => (
+                                                <div key={field.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        id={field.id}
+                                                        /* @ts-ignore */
+                                                        checked={localSettings.section2InstallationsFields?.[field.id] !== false}
+                                                        onChange={e => setLocalSettings((prev: any) => ({
+                                                            ...prev,
+                                                            section2InstallationsFields: {
+                                                                ...(prev.section2InstallationsFields || {}),
+                                                                [field.id]: e.target.checked
+                                                            }
+                                                        }))}
+                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                    />
+                                                    <label htmlFor={field.id} style={{ fontSize: '0.85rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                                                        {field.label}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

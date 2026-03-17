@@ -70,7 +70,12 @@ export const AdminDashboard: React.FC = () => {
             const q = query(collection(db, 'users'));
             const snapshot = await getDocs(q);
             const fetched: UserProfile[] = [];
-            snapshot.forEach(doc => fetched.push({ ...doc.data() as UserProfile, uid: doc.id }));
+            snapshot.forEach(doc => {
+                const data = doc.data() as UserProfile;
+                if (data.role !== 'superadmin') {
+                    fetched.push({ ...data, uid: doc.id });
+                }
+            });
             setUsers(fetched);
         } catch (err) {
             console.error(err);
@@ -166,6 +171,24 @@ export const AdminDashboard: React.FC = () => {
             const newVal = !currentVal;
             await updateDoc(doc(db, 'users', uid), { canCreateTickets: newVal });
             setUsers(users.map(u => u.uid === uid ? { ...u, canCreateTickets: newVal } : u));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const updateSections = async (uid: string, currentSections: ('sk'|'s2')[], toggleSection: 'sk'|'s2') => {
+        if (!isSuperadmin) return;
+        try {
+            let newSections = [...(currentSections || ['sk'])];
+            if (newSections.includes(toggleSection)) {
+                newSections = newSections.filter(s => s !== toggleSection);
+            } else {
+                newSections.push(toggleSection);
+            }
+            if (newSections.length === 0) newSections = ['sk']; // fallback sicurezza
+
+            await updateDoc(doc(db, 'users', uid), { sections: newSections });
+            setUsers(users.map(u => u.uid === uid ? { ...u, sections: newSections } : u));
         } catch (err) {
             console.error(err);
         }
@@ -451,7 +474,9 @@ export const AdminDashboard: React.FC = () => {
                     isSuperadmin={isSuperadmin}
                     onUpdateStatus={updateUserStatus}
                     onTogglePermission={toggleTicketPermission}
+                    onUpdateSections={updateSections}
                     onRemoveUser={removeUser}
+                    localSettings={localSettings}
                 />
             )}
 
