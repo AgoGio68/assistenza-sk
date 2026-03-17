@@ -282,6 +282,15 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.14',
+                                label: 'ACCURACY FIX',
+                                color: '#38bdf8',
+                                items: [
+                                    'Precisione: Rimosso il lampeggio automatico basato sulla "Data Consegna" (Colonna E) per evitare falsi positivi dalla logica logistica.',
+                                    'Focus: Il lampeggio arancione ora si attiva esclusivamente con le date confermate inserite in App o nella colonna specifica di installazione.'
+                                ]
+                            },
+                            {
                                 version: '3.1.13',
                                 label: 'GLOW ENGINE RESTORED',
                                 color: '#f97316',

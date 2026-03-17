@@ -487,10 +487,9 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
         // 3. ARANCIONE: Nessuna spunta manuale, ma ha una data pianificata oggi o in futuro
         const sDate = parseAnyDate(inst.scheduledDate);
-        const dDate = parseAnyDate(inst.deliveryDate); // Colonna E (Data consegna foglio)
         const iDate = parseAnyDate(inst.installDate);
         
-        const hasValidFutureDate = (sDate && sDate >= now) || (dDate && dDate >= now) || (iDate && iDate >= now);
+        const hasValidFutureDate = (sDate && sDate >= now) || (iDate && iDate >= now);
         
         if (hasValidFutureDate) return 'orange';
 
