@@ -97,10 +97,11 @@ const parseCSV = (csvText: string): Installation[] => {
             comments: parts[8] || '',
             extractedNotes: (parts[5] && parts[5].trim().startsWith('***')) 
                 ? parts[5].trim() 
-                : (parts.slice(9, -1).find(p => p.trim() !== '') || ''),
+                // Consideriamo appunti sparsi fino alla colonna Y (index 24), escludendo Z (index 25) che è riservata all'ID stabile
+                : (parts.slice(9, 25).find(p => p.trim() !== '' && !p.startsWith('inst-') && !p.startsWith('manual-')) || ''),
 
             originalRowIndex: detectedRowIndex,
-            _firestoreId: parts[9] || undefined, 
+            _firestoreId: parts[25] || undefined, // Colonna Z: Stable ID
             isInvoiced: autoInvoiced 
         };
     }).filter((inst): inst is Installation => inst !== null && !!inst.client);
@@ -213,7 +214,7 @@ export const updateInstallationOnSheet = async (
                                     startRowIndex: intRow,
                                     endRowIndex: intRow + 1,
                                     startColumnIndex: 0,
-                                    endColumnIndex: 10 // Colonne A-J
+                                    endColumnIndex: 26 // Colonne A-Z
                                 },
                                 cell: {
                                     userEnteredFormat: {
@@ -277,7 +278,7 @@ export const appendInstallationToSheet = async (
             console.warn("Could not fetch sheet metadata", e);
         }
 
-        const values = [[
+        const baseRow = [
             data.orderNumber || '',
             data.client || '',
             data.machine || '',
@@ -286,9 +287,18 @@ export const appendInstallationToSheet = async (
             data.modelSK || '',
             data.serialSK || '',
             data.installDate || '',
-            data.comments || '',
-            data._firestoreId || '' // Colonna J: Stable ID
-        ]];
+            data.comments || ''
+        ];
+
+        // Pad the row with empty strings up to index 24 (Column Y)
+        while (baseRow.length < 25) {
+            baseRow.push('');
+        }
+        
+        // Colonna Z (index 25): Stable ID
+        baseRow.push(data._firestoreId || '');
+
+        const values = [baseRow];
 
         if (insertAtTop) {
             // 1. Inseriamo una riga vuota alla posizione 2 (index 1)
@@ -320,7 +330,7 @@ export const appendInstallationToSheet = async (
 
             // 2. Scriviamo i valori in A2:J2
             const updateReq = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/ORDINI!A2:J2?valueInputOption=USER_ENTERED`,
+                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/ORDINI!A2:Z2?valueInputOption=USER_ENTERED`,
                 {
                     method: 'PUT',
                     headers: {
@@ -350,7 +360,7 @@ export const appendInstallationToSheet = async (
                                     startRowIndex: 1,
                                     endRowIndex: 2,
                                     startColumnIndex: 0,
-                                    endColumnIndex: 10
+                                    endColumnIndex: 26
                                 },
                                 cell: {
                                     userEnteredFormat: {
@@ -369,7 +379,7 @@ export const appendInstallationToSheet = async (
         } else {
             // Logica append standard
             const appendResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/ORDINI!A:J:append?valueInputOption=USER_ENTERED`,
+                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/ORDINI!A:Z:append?valueInputOption=USER_ENTERED`,
                 {
                     method: 'POST',
                     headers: {

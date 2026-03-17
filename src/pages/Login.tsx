@@ -282,6 +282,16 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.10',
+                                label: 'DATA VAULT & RESILIENCE',
+                                color: '#f97316',
+                                items: [
+                                    'Database: Nuovo ID Semantico puro per rendere invulnerabili i dati caricati (immuni a sposta/copia righe).',
+                                    'Feature: Aggiunta "Camera di Sicurezza" per recuperare e ricollegare i dati orfani (solo Admin).',
+                                    'Fix: Spostata la colonna dello Stable ID alla colonna Z per evitare conflitti con note manuali.'
+                                ]
+                            },
+                            {
                                 version: '3.1.9',
                                 label: 'FIX ROLES',
                                 color: '#10b981',

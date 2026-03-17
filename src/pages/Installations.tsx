@@ -44,6 +44,12 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
     const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
     const [exportToSheet, setExportToSheet] = useState(false);
 
+    // Dati Orfani
+    const [orphanedData, setOrphanedData] = useState<Installation[]>([]);
+    const [showOrphanVault, setShowOrphanVault] = useState(false);
+    const [orphanToRelink, setOrphanToRelink] = useState<Installation | null>(null);
+    const [relinkTargetId, setRelinkTargetId] = useState('');
+
     // Load Google Sheets Data
     const loadSheetData = async () => {
         const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
@@ -83,55 +89,80 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
         loadSheetData();
     }, [settings.installationsSheetUrl, settings.section2InstallationsSheetUrl, section]);
 
-    // v2.2.37: ID univoco e STABILE (trim + lowercase + indice riga prioritario)
-    const getInstId = (inst: Installation) => {
-        if (inst._firestoreId) return inst._firestoreId; // Priorità ID Stabile letto dal foglio
+    // v3.1.10: ID Semantico Puro o ID Stabile da Colonna Z
+    const generateSemanticId = (inst: Installation) => {
+        if (inst._firestoreId) return inst._firestoreId; // Priorità ID Stabile colonna Z
 
         const clean = (s: string) => (s || '').trim().toLowerCase()
-            .replace(/\//g, '-')   // slash non valido negli ID Firestore (es. date come "06/02/2026")
+            .replace(/\//g, '-')   
             .replace(/\s+/g, '_');
         const order = clean(inst.orderNumber);
         const client = clean(inst.client);
         const machine = clean(inst.machine);
-        const pos = inst.originalRowIndex || inst.rowId;
-        return `inst-${order}-${client}-${machine}-${pos}`;
+        // Costruzione HASH puramente sui dati, senza indice di riga!
+        return `inst-${order}-${client}-${machine}`;
     };
 
     // Merge Sheet Data with Firestore Data
     useEffect(() => {
         // 1. Elaboriamo i dati del foglio (Sheet Data)
         const sheetIdsSeen = new Set<string>();
+        const semanticCounts: Record<string, number> = {};
+
         const sheetMerged = sheetData.map(inst => {
-            const id = getInstId(inst); 
+            let id = inst._firestoreId;
+
+            if (!id || id.trim() === '') {
+                const baseId = generateSemanticId(inst);
+                semanticCounts[baseId] = (semanticCounts[baseId] || 0) + 1;
+                const count = semanticCounts[baseId];
+                // Gestione duplicati: suffix solo dal secondo elemento uguale in poi
+                id = count > 1 ? `${baseId}_${count}` : baseId;
+            }
+
             sheetIdsSeen.add(id);
             const extra = dbData[id] || {};
             return {
                 ...inst,
                 ...extra,
                 ...(extra.localOverrides || {}),
-                _firestoreId: id
+                _firestoreId: id // Assicuriamoci che l'ID calcolato sia scritto qui per l'intero lifecycle
             };
         }).filter(inst => !inst.isDeleted);
 
-        const pendingManualItems = Object.entries(dbData)
+        const pendingManual: Installation[] = [];
+        const orphans: Installation[] = [];
+
+        Object.entries(dbData)
             .filter(([id, doc]) => {
                 const isCorrectSection = doc.section === section || (!doc.section && section === 'sk');
                 const isOrphan = !sheetIdsSeen.has(id);
                 const isNotDeleted = !doc.isDeleted;
+                return isCorrectSection && isOrphan && isNotDeleted;
+            })
+            .forEach(([id, doc]) => {
                 const client = doc.client || doc.localOverrides?.client;
                 const machine = doc.machine || doc.localOverrides?.machine;
                 const hasContent = (client && client.trim() !== '') || (machine && machine.trim() !== '');
                 
-                return isCorrectSection && isOrphan && isNotDeleted && hasContent;
-            })
-            .map(([id, doc]) => ({
-                ...(doc as Installation),
-                ...(doc.localOverrides || {}),
-                rowId: (doc as any).rowId || 'manual',
-                _firestoreId: id
-            }));
+                if (hasContent) {
+                    const instObj = {
+                        ...(doc as Installation),
+                        ...(doc.localOverrides || {}),
+                        rowId: (doc as any).rowId || 'manual',
+                        _firestoreId: id
+                    };
+                    
+                    if (doc.isManual) {
+                        pendingManual.push(instObj);
+                    } else if (doc.comments || doc.tested || doc.toTest || doc.scheduledDate || doc.applications?.length) {
+                        orphans.push(instObj);
+                    }
+                }
+            });
 
-        setInstallations([...sheetMerged, ...pendingManualItems]);
+        setInstallations([...sheetMerged, ...pendingManual]);
+        setOrphanedData(orphans);
     }, [sheetData, dbData, section]);
 
     const handleAddManual = () => {
@@ -196,7 +227,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
         setSaving(true);
         try {
             const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
-            let finalDocId = selectedInst._firestoreId || getInstId(selectedInst);
+            let finalDocId = selectedInst._firestoreId || generateSemanticId(selectedInst);
             let mergedEditData = { ...editData };
 
             // Esportazione nuovo record manuale in Google Sheets
@@ -276,7 +307,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
         setSaving(true);
         try {
-            const id = selectedInst._firestoreId || getInstId(selectedInst);
+            const id = selectedInst._firestoreId || generateSemanticId(selectedInst);
             const docRef = doc(db, 'installation_data', id);
             const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
 
@@ -344,7 +375,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
             // Auto-salvataggio su Firebase per evitare che la data vada persa
             if (selectedInst) {
-                const id = getInstId(selectedInst);
+                const id = generateSemanticId(selectedInst);
                 const docRef = doc(db, 'installation_data', id);
                 await setDoc(docRef, {
                     ...editData,
@@ -420,6 +451,37 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
         // 4. BLU (null): tutto fermo, nessun flag, nessuna data
         return null;
+    };
+
+    const handleRelink = async (orphanId: string, targetId: string) => {
+        if (!targetId || !orphanId) return;
+        try {
+            const orphan = orphanedData.find(o => o._firestoreId === orphanId);
+            if (!orphan) return;
+
+            const targetRef = doc(db, 'installation_data', targetId);
+            const orphanRef = doc(db, 'installation_data', orphanId);
+
+            await setDoc(targetRef, {
+                comments: orphan.comments,
+                tested: orphan.tested,
+                toTest: orphan.toTest,
+                scheduledDate: orphan.scheduledDate,
+                scheduledTime: orphan.scheduledTime,
+                applications: orphan.applications,
+                updatedAt: Date.now(),
+                updatedBy: 'admin_relink'
+            }, { merge: true });
+
+            await setDoc(orphanRef, { isDeleted: true }, { merge: true });
+            
+            setOrphanToRelink(null);
+            setRelinkTargetId('');
+            if (orphanedData.length <= 1) setShowOrphanVault(false);
+        } catch(err) {
+            console.error(err);
+            alert("Errore durante il recupero dei dati.");
+        }
     };
 
     const filteredInstallations = [...installations]
@@ -503,6 +565,15 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                             style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                         />
                     </div>
+                    {isAdmin && orphanedData.length > 0 && (
+                        <button
+                            onClick={() => setShowOrphanVault(true)}
+                            className="btn"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.4rem 0.8rem', fontSize: '0.85rem', borderRadius: 'var(--border-radius-sm)', fontWeight: 600 }}
+                        >
+                            <AlertTriangle size={15} /> <span className="hide-mobile">Dati Scollegati ({orphanedData.length})</span>
+                        </button>
+                    )}
                     <button onClick={handleAddManual} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem' }}>
                         <PlusCircle size={18} /> <span className="hide-mobile">Nuova</span>
                     </button>
@@ -550,7 +621,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 ((settings as any).installationsLayoutMode === 'list' || (settings as any).installationsLayoutMode === 'list-2col') ? (
                                     /* Layout a Lista Compatta */
                                     <div
-                                        key={getInstId(inst)}
+                                        key={generateSemanticId(inst)}
                                         onClick={() => handleOpenDetail(inst)}
                                         className={`glass-panel card-hover ${getGlowType(inst) ? `glow-${getGlowType(inst)}` : ''}`}
                                         style={{
@@ -598,7 +669,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 ) : (
                                     /* Layout a Griglia Standard */
                                     <div
-                                        key={getInstId(inst)}
+                                        key={generateSemanticId(inst)}
                                         onClick={() => handleOpenDetail(inst)}
                                         className={`glass-panel card-hover ${getGlowType(inst) ? `glow-${getGlowType(inst)}` : ''}`}
                                         style={{
@@ -665,7 +736,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     ((settings as any).installationsLayoutMode === 'list' || (settings as any).installationsLayoutMode === 'list-2col') ? (
                                         /* Layout a Lista Compatta */
                                         <div
-                                            key={getInstId(inst)}
+                                            key={generateSemanticId(inst)}
                                             onClick={() => handleOpenDetail(inst)}
                                             className="glass-panel"
                                             style={{
@@ -703,7 +774,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     ) : (
                                         /* Layout a Griglia Standard */
                                         <div
-                                            key={getInstId(inst)}
+                                            key={generateSemanticId(inst)}
                                             onClick={() => handleOpenDetail(inst)}
                                             className="glass-panel"
                                             style={{
@@ -1102,6 +1173,94 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODALE CAMERA DI SICUREZZA ORPHAN VAULT */}
+            {showOrphanVault && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="glass-panel" style={{ background: '#fff', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+                            <h3 style={{ margin: 0, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <AlertTriangle size={24} /> Dati Scollegati (Camera di Sicurezza)
+                            </h3>
+                            <button onClick={() => { setShowOrphanVault(false); setOrphanToRelink(null); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        <div style={{ backgroundColor: '#fff8f1', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', borderLeft: '4px solid #f97316', fontSize: '0.9rem', color: '#9a3412' }}>
+                            Qui trovi i dati inseriti dall'App (appunti, collaudi, pianificazioni) che <strong>non corrispondono più a nessuna riga sul foglio Google</strong> a causa di rinomine, cancellazioni o errori nel foglio. Puoi ricollegarli a un'installazione esistente per non perdere il lavoro fatto!
+                        </div>
+
+                        {orphanedData.map(orphan => (
+                            <div key={orphan._firestoreId} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem', marginBottom: '1rem', background: '#f8fafc' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                                    <div>
+                                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{orphan.client || 'Cliente Sconosciuto'}</h4>
+                                        <div style={{ fontSize: '0.85rem', color: '#475569', display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1rem', rowGap: '0.2rem' }}>
+                                            <strong>Macchina/SN:</strong> <span>{orphan.machine || '-'} / {orphan.serialSK || '-'}</span>
+                                            <strong>Dati App:</strong> <span>
+                                                {orphan.comments ? '📝 Note presenti  ' : ''}
+                                                {orphan.tested ? '🟢 Collaudata  ' : ''}
+                                                {orphan.toTest ? '🟡 Da Collaudare  ' : ''}
+                                                {orphan.scheduledDate ? '📅 Pianificata' : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    {orphanToRelink?._firestoreId !== orphan._firestoreId ? (
+                                        <button 
+                                            className="btn btn-primary" 
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', gap: '0.4rem', alignItems: 'center' }}
+                                            onClick={() => { setOrphanToRelink(orphan); setRelinkTargetId(''); }}
+                                        >
+                                            <LinkIcon size={14} /> Ricollega Dati
+                                        </button>
+                                    ) : null}
+                                </div>
+
+                                {/* Area di Ricollegamento */}
+                                {orphanToRelink?._firestoreId === orphan._firestoreId && (
+                                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#fff', border: '1px solid #bfdbfe', borderRadius: '8px' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600, color: '#1d4ed8' }}>
+                                            Scegli l'installazione corrente a cui unire questi dati:
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            <select 
+                                                className="form-control" 
+                                                style={{ flex: 1, minWidth: '250px' }}
+                                                value={relinkTargetId}
+                                                onChange={e => setRelinkTargetId(e.target.value)}
+                                            >
+                                                <option value="">-- Seleziona Riga Target --</option>
+                                                {installations.map(i => (
+                                                    <option key={i._firestoreId} value={i._firestoreId}>
+                                                        {i.client} - {i.machine} (Ord: {i.orderNumber})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <button 
+                                                className="btn btn-primary" 
+                                                disabled={!relinkTargetId}
+                                                onClick={() => handleRelink(orphan._firestoreId!, relinkTargetId)}
+                                                style={{ whiteSpace: 'nowrap' }}
+                                            >
+                                                Conferma Fusione
+                                            </button>
+                                            <button 
+                                                className="btn btn-secondary"
+                                                onClick={() => setOrphanToRelink(null)}
+                                            >
+                                                Annulla
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
