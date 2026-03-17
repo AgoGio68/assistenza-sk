@@ -94,6 +94,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
                             >
                                 <option value="default">Griglia Estesa (Riquadri attuali)</option>
+                                <option value="grid-compact">Griglia Compatta (Riquadri piccoli)</option>
                                 <option value="list">Lista Compatta (Riga singola)</option>
                                 <option value="list-2col">Lista Compatta (2 Colonne)</option>
                             </select>

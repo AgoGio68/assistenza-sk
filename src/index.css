@@ -28,8 +28,8 @@
 
   /* Text */
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
+  --text-secondary: #cbd5e1; /* Boosted Contrast (Slate 300) */
+  --text-muted: #94a3b8; /* Boosted Contrast (Slate 400) */
 
   /* Surfaces */
   --surface-color: #0d1526;

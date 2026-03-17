@@ -282,6 +282,15 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.11',
+                                label: 'UI COMPACT & CONTRAST',
+                                color: '#38bdf8',
+                                items: [
+                                    'UI/UX: Aggiunta opzione "Griglia Compatta" per visualizzare le card installazioni a metà grandezza.',
+                                    'Leggibilità: Migliorato il contrasto di tutti i testi secondari su sfondo scuro (più luminosi e nitidi).'
+                                ]
+                            },
+                            {
                                 version: '3.1.10',
                                 label: 'DATA VAULT & RESILIENCE',
                                 color: '#f97316',

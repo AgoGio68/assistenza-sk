@@ -615,6 +615,8 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '0.75rem' }
                                 : (settings as any).installationsLayoutMode === 'list'
                                     ? { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
+                                : (settings as any).installationsLayoutMode === 'grid-compact'
+                                    ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: '0.75rem' }
                                     : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }
                         }>
                             {activeInstallations.map((inst: Installation) => (
@@ -664,6 +666,49 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                         <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                                             {inst.comments && <MessageSquare size={16} color="var(--text-secondary)" />}
                                             {inst.applications?.some(a => a.checked) && <ListChecks size={16} color="var(--success-color)" />}
+                                        </div>
+                                    </div>
+                                ) : (settings as any).installationsLayoutMode === 'grid-compact' ? (
+                                    /* Layout a Griglia Compatta */
+                                    <div
+                                        key={generateSemanticId(inst)}
+                                        onClick={() => handleOpenDetail(inst)}
+                                        className={`glass-panel card-hover ${getGlowType(inst) ? `glow-${getGlowType(inst)}` : ''}`}
+                                        style={{
+                                            padding: '0.75rem',
+                                            borderLeft: `5px solid ${getCardColor(inst)}`,
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                                            position: 'relative',
+                                            ...(getGlowType(inst) === 'orange' ? {
+                                                animation: 'glowPulseOrange 2s infinite',
+                                                borderColor: 'rgba(249, 115, 22, 0.5)'
+                                            } : getGlowType(inst) === 'yellow' ? {
+                                                animation: 'glowPulseYellow 2s infinite',
+                                                borderColor: 'rgba(234, 179, 8, 0.5)'
+                                            } : getGlowType(inst) === 'green' ? {
+                                                animation: 'glowPulseGreen 2s infinite',
+                                                borderColor: 'rgba(16, 185, 129, 0.5)'
+                                            } : {})
+                                        }}
+                                    >
+                                        <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                            {inst.client}
+                                        </h3>
+                                        <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-secondary)' }}>
+                                                <Box size={12} style={{ flexShrink: 0 }} /> <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inst.machine}</strong>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-secondary)' }}>
+                                                <Calendar size={12} style={{ flexShrink: 0 }} /> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inst.scheduledDate || inst.deliveryDate}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Ord. {inst.orderNumber}</span>
+                                            <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                                                {inst.comments && <MessageSquare size={12} color="currentcolor" />}
+                                                {inst.applications?.some(a => a.checked) && <ListChecks size={12} color="var(--success-color)" />}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -730,7 +775,9 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '0.75rem' }
                                     : (settings as any).installationsLayoutMode === 'list'
                                         ? { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
-                                        : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }
+                                        : (settings as any).installationsLayoutMode === 'grid-compact'
+                                            ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: '0.75rem' }
+                                            : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }
                             }>
                                 {invoicedInstallations.map((inst: Installation) => (
                                     ((settings as any).installationsLayoutMode === 'list' || (settings as any).installationsLayoutMode === 'list-2col') ? (
@@ -769,6 +816,36 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, color: '#94a3b8' }}>
                                                 <DollarSign size={16} />
+                                            </div>
+                                        </div>
+                                    ) : (settings as any).installationsLayoutMode === 'grid-compact' ? (
+                                        /* Layout a Griglia Compatta */
+                                        <div
+                                            key={generateSemanticId(inst)}
+                                            onClick={() => handleOpenDetail(inst)}
+                                            className="glass-panel"
+                                            style={{
+                                                padding: '0.75rem',
+                                                borderLeft: `5px solid ${getCardColor(inst)}`,
+                                                cursor: 'pointer',
+                                                opacity: 0.8,
+                                                backgroundColor: '#f8fafc',
+                                                position: 'relative'
+                                            }}
+                                        >
+                                            <div style={{ position: 'absolute', top: '8px', right: '8px', color: '#94a3b8' }}>
+                                                <DollarSign size={14} />
+                                            </div>
+                                            <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem', lineHeight: '1.2', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', paddingRight: '1rem' }}>
+                                                {inst.client}
+                                            </h3>
+                                            <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8' }}>
+                                                    <Box size={12} style={{ flexShrink: 0 }} /> <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inst.machine}</strong>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8' }}>
+                                                    <Calendar size={12} style={{ flexShrink: 0 }} /> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inst.deliveryDate}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (

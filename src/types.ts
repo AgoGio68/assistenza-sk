@@ -24,7 +24,7 @@ export interface GlobalSettings {
     logoUrl?: string;
     visibilityMode?: 'all' | 'assigned_only';
     layoutMode?: 'default' | 'compact';
-    installationsLayoutMode?: 'default' | 'list' | 'list-2col';
+    installationsLayoutMode?: 'default' | 'list' | 'list-2col' | 'grid-compact';
     applyCompactToAll?: boolean;
     telegramToken?: string;
     enablePhotos?: boolean;
