@@ -487,8 +487,12 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
         // 3. ARANCIONE: Nessuna spunta manuale, ma ha una data pianificata oggi o in futuro
         const sDate = parseAnyDate(inst.scheduledDate);
+        const dDate = parseAnyDate(inst.deliveryDate); // Colonna E (Data consegna foglio)
         const iDate = parseAnyDate(inst.installDate);
-        if ((sDate && sDate >= now) || (iDate && iDate >= now)) return 'orange';
+        
+        const hasValidFutureDate = (sDate && sDate >= now) || (dDate && dDate >= now) || (iDate && iDate >= now);
+        
+        if (hasValidFutureDate) return 'orange';
 
         // 4. BLU (null): tutto fermo, nessun flag, nessuna data
         return null;

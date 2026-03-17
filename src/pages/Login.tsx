@@ -282,6 +282,15 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.13',
+                                label: 'GLOW ENGINE RESTORED',
+                                color: '#f97316',
+                                items: [
+                                    'Fix: Ripristinato il lampeggio arancione (Pianificate) e giallo (Da collaudare) che non apparivano più per mancanza di stili CSS.',
+                                    'Integrazione: La "Data Consegna" del foglio Google (Colonna E) ora attiva correttamente il lampeggio arancione se la data è oggi o futura.'
+                                ]
+                            },
+                            {
                                 version: '3.1.12',
                                 label: 'DB CLEANUP & FIX',
                                 color: '#ef4444',
