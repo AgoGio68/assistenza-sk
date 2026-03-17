@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchInstallations, updateInstallationOnSheet, appendInstallationToSheet, deleteInstallationFromSheet } from '../services/InstallationService';
 import { Installation } from '../types';
 import { Truck, Calendar, Box, AlertTriangle, RefreshCw, X, Save, MessageSquare, Trash2, CheckCircle2, DollarSign, ListChecks, ArrowDownWideNarrow, MapPin, User, Link as LinkIcon, PlusCircle } from 'lucide-react';
-import { setDoc, collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { setDoc, collection, onSnapshot, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 import { createGoogleCalendarEvent, formatTicketToEvent, CalendarEvent } from '../utils/calendarUtils';
 
@@ -265,9 +265,13 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                     ? "[COLLAUDATA]"
                     : (editData.toTest ? "[DA COLLAUDARE]" : "");
 
+                let cleanComments = editData.comments || "";
+                // Rimuoviamo tag esistenti per evitare duplicazioni (sostituzione)
+                cleanComments = cleanComments.replace(/\[COLLAUDATA\]/gi, "").replace(/\[DA COLLAUDARE\]/gi, "").trim();
+
                 const finalComments = statusComment
-                    ? `${statusComment} ${editData.comments}`.trim()
-                    : editData.comments;
+                    ? `${statusComment} ${cleanComments}`.trim()
+                    : cleanComments;
 
                 try {
                     await updateInstallationOnSheet(
@@ -331,6 +335,43 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
             alert("Errore durante l'eliminazione.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleHardResetDB = async () => {
+        if (!isSuperadmin) return;
+        const msg = "⚠️ ATTENZIONE ADMINISTRATOR!\n\nSei sicuro di voler PULIRE LA CACHE DEL DATABASE (salvataggi in app) per le macchine attualmente in coda o orfane?\n\nQuesta azione CANCELLERÀ appunti interni, date manuali e flag non ancora esportati, forzando un ricalcolo pulito dal solo foglio Google.\n\nLe macchine già fatturate/storicizzate (grigie) non verranno toccate in alcun modo.\n\nVuoi procedere?";
+        
+        if (!window.confirm(msg)) return;
+
+        try {
+            const batch = writeBatch(db);
+            let count = 0;
+
+            activeInstallations.forEach(inst => {
+                if (inst._firestoreId && !inst.isManual) {
+                    batch.delete(doc(db, 'installation_data', inst._firestoreId));
+                    count++;
+                }
+            });
+
+            orphanedData.forEach(inst => {
+                if (inst._firestoreId) {
+                    batch.delete(doc(db, 'installation_data', inst._firestoreId));
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                await batch.commit();
+                alert(`DB ripulito con successo! Eliminati ${count} conflitti locali. La pagina si ricaricherà.`);
+                window.location.reload();
+            } else {
+                alert("Nessun dato locale da eliminare trovato per le installazioni in corso.");
+            }
+        } catch (e) {
+            console.error("Errore reset", e);
+            alert("Errore durante la pulizia del DB!");
         }
     };
 
@@ -572,6 +613,11 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '0.4rem 0.8rem', fontSize: '0.85rem', borderRadius: 'var(--border-radius-sm)', fontWeight: 600 }}
                         >
                             <AlertTriangle size={15} /> <span className="hide-mobile">Dati Scollegati ({orphanedData.length})</span>
+                        </button>
+                    )}
+                    {isSuperadmin && (
+                        <button onClick={handleHardResetDB} className="btn" title="Pulisci Cache DB Firestore per le installazioni non fatturate" style={{ padding: '0.5rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                            <Trash2 size={16} /> <span className="hide-mobile" style={{fontSize: '0.85rem', fontWeight: 600}}>Fix</span>
                         </button>
                     )}
                     <button onClick={handleAddManual} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem' }}>

@@ -282,6 +282,15 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.12',
+                                label: 'DB CLEANUP & FIX',
+                                color: '#ef4444',
+                                items: [
+                                    'Feature: Aggiunto tasto "FIX" (Hard Reset) per Superadmin per ricalcolare i lampeggi date ed eliminare conflitti nel database locale.',
+                                    'Fix: Risolto un bug che duplicava le scritte [COLLAUDATA] o [DA COLLAUDARE] nei commenti durante il salvataggio.'
+                                ]
+                            },
+                            {
                                 version: '3.1.11',
                                 label: 'UI COMPACT & CONTRAST',
                                 color: '#38bdf8',
