@@ -282,6 +282,52 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.19',
+                                label: 'UI FINAL POLISH',
+                                color: '#6366f1',
+                                items: [
+                                    'Fix Visibilità: Corretto l\'ultimo sfondo chiaro residuo nella sezione Dati Macchina.',
+                                    'GitHub: Sincronizzazione completa di tutti i fix (Glow Engine, Firestore Overwrite, UI Contrast).'
+                                ]
+                            },
+                            {
+                                version: '3.1.18',
+                                label: 'UI CONTRAST FIX',
+                                color: '#6366f1',
+                                items: [
+                                    'Fix Visibilità: Rimosso il testo bianco su sfondo bianco nelle note tecniche.',
+                                    'Fix Contrasto: Sostituiti tutti gli sfondi chiari nel modale con il tema scuro premium per garantire la leggibilità.',
+                                    'Fix Input: Corretta la visibilità del calendario e dei selettori orari (ora bianchi su scuro).'
+                                ]
+                            },
+                            {
+                                version: '3.1.17',
+                                label: 'SAVE TOTAL OVERWRITE',
+                                color: '#10b981',
+                                items: [
+                                    'Refactoring: Il salvataggio ora SOVRASCRIVE completamente il database (no merge). Dati vecchi o corrotti vengono eliminati ad ogni salvataggio.',
+                                    'Sicurezza: Bloccata definitivamente la funzione di cancellazione righe dal foglio Google. L\'App non elimina mai più nulla dal foglio.',
+                                    'Sicurezza: Il foglio viene aggiornato SOLO nelle colonne G (matricola), H (data), I (commenti) — mai altro.'
+                                ]
+                            },
+                            {
+                                version: '3.1.16',
+                                label: 'GLOW ENGINE v2',
+                                color: '#f97316',
+                                items: [
+                                    'Refactoring Radicale: Il sistema di lampeggio ora legge i dati direttamente da Firestore invece del sistema di merge con il foglio Google, eliminando definitivamente i falsi positivi e i mancati lampeggi.',
+                                    'Fix: Il pulsante Google Calendar non chiude più il modale, permettendo di cliccare Salva subito dopo.'
+                                ]
+                            },
+                            {
+                                version: '3.1.15',
+                                label: 'GLOW FINAL FIX',
+                                color: '#f97316',
+                                items: [
+                                    'Fix Definitivo: Il lampeggio arancione ora si attiva SOLO con la data inserita esplicitamente in App (Pianificazione). Le date del foglio Google (Colonne E e H) non causano più falsi lampeggi.'
+                                ]
+                            },
+                            {
                                 version: '3.1.14',
                                 label: 'ACCURACY FIX',
                                 color: '#38bdf8',

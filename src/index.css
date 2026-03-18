@@ -708,28 +708,6 @@ input[type="checkbox"] {
   }
 }
 
-@keyframes glowPulseOrange {
-  0%, 100% {
-    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3);
-    border-color: rgba(249, 115, 22, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 16px rgba(249, 115, 22, 0.6), 0 0 32px rgba(249, 115, 22, 0.2);
-    border-color: rgba(249, 115, 22, 0.7);
-  }
-}
-
-@keyframes glowPulseYellow {
-  0%, 100% {
-    box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.3);
-    border-color: rgba(234, 179, 8, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 16px rgba(234, 179, 8, 0.6), 0 0 32px rgba(234, 179, 8, 0.2);
-    border-color: rgba(234, 179, 8, 0.7);
-  }
-}
-
 @keyframes dotPulse {
 
   0%,

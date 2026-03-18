@@ -122,11 +122,15 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
             sheetIdsSeen.add(id);
             const extra = dbData[id] || {};
+            // I localOverrides contengono solo campi di visualizzazione (cliente, macchina, matricola, ecc.)
+            // NON devono mai sovrascrivere i campi di stato (scheduledDate, tested, toTest, comments)
+            // che vivono al top-level del documento Firestore.
+            const { scheduledDate, scheduledTime, tested, toTest, comments, isInvoiced, ...safeLocalOverrides } = extra.localOverrides || {};
             return {
                 ...inst,
                 ...extra,
-                ...(extra.localOverrides || {}),
-                _firestoreId: id // Assicuriamoci che l'ID calcolato sia scritto qui per l'intero lifecycle
+                ...safeLocalOverrides,  // solo i campi di lookup (modelSK, serialSK, ecc.)
+                _firestoreId: id
             };
         }).filter(inst => !inst.isDeleted);
 
@@ -250,12 +254,29 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
             const docRef = doc(db, 'installation_data', finalDocId as string);
 
-            // 1. Salvataggio su Firestore (sempre eseguito)
-            await setDoc(docRef, {
-                ...mergedEditData,
-                updatedAt: Date.now(),
-                updatedBy: isAdmin ? 'admin' : 'superadmin'
-            }, { merge: true });
+            // 1. Salvataggio su Firestore — SOVRASCRITTURA COMPLETA (no merge)
+            // Costruiamo il documento da zero con tutti i campi espliciti.
+            // Questo garantisce che dati vecchi o corrotti vengano sempre eliminati al salvataggio.
+            const firestoreDoc = {
+                // Campi di stato (dalla form)
+                scheduledDate:  editData.scheduledDate  || '',
+                scheduledTime:  editData.scheduledTime  || '',
+                tested:         editData.tested         || false,
+                toTest:         editData.toTest         || false,
+                comments:       editData.comments       || '',
+                isInvoiced:     editData.isInvoiced     || false,
+                applications:   editData.applications   || [],
+                localOverrides: editData.localOverrides || {},
+                // Metadati immutabili (dall'installazione)
+                section:        mergedEditData.section  || section,
+                isManual:       mergedEditData.isManual || selectedInst.isManual || false,
+                originalRowIndex: mergedEditData.originalRowIndex || selectedInst.originalRowIndex || '',
+                _firestoreId:   finalDocId,
+                // Timestamp
+                updatedAt:      Date.now(),
+                updatedBy:      isAdmin ? 'admin' : 'superadmin'
+            };
+            await setDoc(docRef, firestoreDoc); // NESSUN merge: true
 
             // 2. Sincronizzazione con Google Sheets (Opzionale, sulle modifiche di record già esistenti sul foglio)
             // Usiamo mergedEditData.originalRowIndex nel caso lo abbiamo appena esportato!
@@ -279,7 +300,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                         googleToken,
                         targetRowIndex,
                         {
-                            installDate: editData.scheduledDate || selectedInst.deliveryDate,
+                            installDate: editData.scheduledDate || '',
                             serialSK: editData.localOverrides?.serialSK ?? selectedInst.serialSK,
                             comments: finalComments,
                             tested: editData.tested
@@ -414,20 +435,29 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
             await createGoogleCalendarEvent(googleToken, googleEvent);
 
-            // Auto-salvataggio su Firebase per evitare che la data vada persa
+            // Auto-salvataggio su Firebase - SOVRASCRITTURA COMPLETA (no merge) per coerenza con handleSave
             if (selectedInst) {
-                const id = generateSemanticId(selectedInst);
-                const docRef = doc(db, 'installation_data', id);
+                const calDocId = selectedInst._firestoreId || generateSemanticId(selectedInst);
+                const docRef = doc(db, 'installation_data', calDocId);
                 await setDoc(docRef, {
-                    ...editData,
-                    updatedAt: Date.now(),
-                    updatedBy: isAdmin ? 'admin' : 'superadmin'
-                }, { merge: true });
+                    scheduledDate:   editData.scheduledDate  || '',
+                    scheduledTime:   editData.scheduledTime  || '',
+                    tested:          editData.tested         || false,
+                    toTest:          editData.toTest         || false,
+                    comments:        editData.comments       || '',
+                    isInvoiced:      editData.isInvoiced     || false,
+                    applications:    editData.applications   || [],
+                    localOverrides:  editData.localOverrides || {},
+                    section:         section,
+                    isManual:        selectedInst.isManual   || false,
+                    originalRowIndex: selectedInst.originalRowIndex || '',
+                    _firestoreId:    calDocId,
+                    updatedAt:       Date.now(),
+                    updatedBy:       isAdmin ? 'admin' : 'superadmin'
+                }); // NESSUN merge: true
             }
 
-            alert('Evento aggiunto a Google Calendar e data salvata con successo!');
-            // Chiudiamo il modale per confermare l'azione completata
-            setSelectedInst(null);
+            alert('Evento aggiunto a Google Calendar e data salvata!');
 
         } catch (error: any) {
             console.error('Google Calendar Sync Error:', error);
@@ -446,17 +476,22 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
     };
 
     // Determinazione del tipo di "Glow" (lampeggio)
-    // Priorità: Verde > Giallo > Arancione > Blu(null)
-    // Le spunte manuali (tested, toTest) sono INDIPENDENTI dalla data.
+    // LEGGE DIRETTAMENTE DA dbData (Firestore grezzo) per massima affidabilità
+    // e usa inst come fallback per i campi non ancora in Firestore.
     const getGlowType = (inst: Installation): 'orange' | 'yellow' | 'green' | null => {
         if (inst.isInvoiced) return null;
+
+        // Leggi i dati più aggiornati direttamente da Firestore (bypassiamo il merge)
+        const firestoreData = inst._firestoreId ? dbData[inst._firestoreId] : null;
+        const tested   = firestoreData?.tested   ?? inst.tested;
+        const toTest   = firestoreData?.toTest   ?? inst.toTest;
+        const sDateStr = firestoreData?.scheduledDate || inst.scheduledDate;
 
         const now = new Date();
         now.setHours(0, 0, 0, 0);
 
         const parseAnyDate = (dateStr: string | undefined): Date | null => {
             if (!dateStr) return null;
-            // Gestione YYYY-MM-DD
             if (dateStr.includes('-')) {
                 const parts = dateStr.split('-');
                 if (parts.length === 3) {
@@ -465,7 +500,6 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                     return new Date(y, parseInt(parts[1]) - 1, parseInt(parts[2]));
                 }
             }
-            // Gestione DD/MM/YYYY o DD/MM/YY
             if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
                 if (parts.length === 3) {
@@ -479,21 +513,14 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
             return null;
         };
 
-        // 1. VERDE: Collaudata (azione manuale, massima priorità dopo fatturato)
-        if (inst.tested) return 'green';
+        // 1. VERDE
+        if (tested) return 'green';
+        // 2. GIALLO
+        if (toTest) return 'yellow';
+        // 3. ARANCIONE: solo scheduledDate esplicitamente impostata in App
+        const sDate = parseAnyDate(sDateStr);
+        if (sDate && sDate >= now) return 'orange';
 
-        // 2. GIALLO: Da collaudare (azione manuale, indipendente dalla data)
-        if (inst.toTest) return 'yellow';
-
-        // 3. ARANCIONE: Nessuna spunta manuale, ma ha una data pianificata oggi o in futuro
-        const sDate = parseAnyDate(inst.scheduledDate);
-        const iDate = parseAnyDate(inst.installDate);
-        
-        const hasValidFutureDate = (sDate && sDate >= now) || (iDate && iDate >= now);
-        
-        if (hasValidFutureDate) return 'orange';
-
-        // 4. BLU (null): tutto fermo, nessun flag, nessuna data
         return null;
     };
 
@@ -982,7 +1009,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
                             {/* Info Macchina e Pianificazione Grid */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                                <div className="glass-panel" style={{ padding: '1.25rem', background: '#f8fafc' }}>
+                                <div className="glass-panel" style={{ padding: '1.25rem', background: 'rgba(255, 255, 255, 0.03)' }}>
                                     <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                         <Box size={14} /> DATI MACCHINA
                                     </label>
@@ -992,7 +1019,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             className="form-control"
                                             value={editData.localOverrides?.machine ?? selectedInst.machine}
                                             onChange={e => setEditData(prev => ({ ...prev, localOverrides: { ...prev.localOverrides, machine: e.target.value } }))}
-                                            style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}
+                                            style={{ border: '1px solid var(--border-subtle)', padding: '0.6rem' }}
                                         />
                                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                                             {fieldConfig.showModelSK !== false && (
@@ -1054,20 +1081,25 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 </div>
 
                                 {fieldConfig.showPlanning !== false && (
-                                    <div className="glass-panel" style={{ padding: '1.25rem', background: '#f8fafc' }}>
+                                    <div className="glass-panel" style={{ padding: '1.25rem', background: 'rgba(255, 255, 255, 0.03)' }}>
                                         <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                             <Calendar size={14} /> PIANIFICAZIONE
                                         </label>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                                                 <div style={{ flex: '1 1 120px' }}>
-                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Data Installazione</label>
+                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Data Pianificata (App)</label>
                                                     <input
                                                         type="date"
                                                         className="form-control"
-                                                        value={editData.scheduledDate || selectedInst.deliveryDate}
+                                                        value={editData.scheduledDate || ''}
                                                         onChange={e => setEditData(prev => ({ ...prev, scheduledDate: e.target.value }))}
                                                     />
+                                                    {selectedInst.deliveryDate && !editData.scheduledDate && (
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                                            📋 Foglio: {selectedInst.deliveryDate}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div style={{ flex: '1 1 100px' }}>
                                                     <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Ora Locale</label>
@@ -1130,9 +1162,9 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                         justifyContent: 'center',
                                                         gap: '0.5rem',
                                                         padding: '0.65rem',
-                                                        backgroundColor: googleToken ? (editData.scheduledDate ? '#f0fdfa' : '#f1f5f9') : '#f8fafc',
-                                                        color: googleToken ? (editData.scheduledDate ? '#0f766e' : '#94a3b8') : '#64748b',
-                                                        border: `1px solid ${googleToken ? (editData.scheduledDate ? '#14b8a6' : '#cbd5e1') : '#e2e8f0'}`,
+                                                        backgroundColor: googleToken ? (editData.scheduledDate ? 'rgba(20, 184, 166, 0.1)' : 'rgba(255, 255, 255, 0.05)') : 'rgba(255, 255, 255, 0.02)',
+                                                        color: googleToken ? (editData.scheduledDate ? 'var(--accent-teal)' : 'var(--text-secondary)') : 'var(--text-muted)',
+                                                        border: `1px solid ${googleToken ? (editData.scheduledDate ? 'var(--accent-teal)' : 'var(--border-subtle)') : 'var(--border-subtle)'}`,
                                                         transition: 'all 0.2s',
                                                         cursor: (isSyncingCalendar || (!editData.scheduledDate && googleToken)) ? 'not-allowed' : 'pointer'
                                                     }}
@@ -1154,11 +1186,11 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
                             {/* Componenti Estratti (Al posto di Applicazioni) */}
                             {fieldConfig.showExtractedNotes !== false && (
-                                <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#fdf4ff', borderRadius: '16px', border: '1px solid #fbcfe8' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#9d174d', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'rgba(236, 72, 153, 0.05)', borderRadius: '16px', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f472b6', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <Truck size={20} /> COMPONENTI ESTRATTI (CODICI DALLE NOTE)
                                     </label>
-                                    <div style={{ backgroundColor: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #fce7f3', minHeight: '120px' }}>
+                                    <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(236, 72, 153, 0.1)', minHeight: '120px' }}>
                                         {selectedInst.extractedNotes ? (
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', color: '#831843', fontSize: '0.95rem', lineHeight: '1.6' }}>
                                                 {selectedInst.extractedNotes.split('\n').filter(line => line.trim() !== '').map((line, idx) => (
@@ -1176,8 +1208,8 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
                             {/* Nuova Selezione Moduli / Opzioni */}
                             {fieldConfig.showModules !== false && (
-                                <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f0fdf4', borderRadius: '16px', border: '1px solid #bbf7d0' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#166534', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#34d399', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <ListChecks size={20} /> SELEZIONE MODULI DA ATTIVARE
                                     </label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.6rem' }}>
@@ -1195,12 +1227,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                     cursor: 'pointer',
                                                     opacity: isFaint ? 0.35 : 1,
                                                     fontWeight: isSelected ? 700 : 500,
-                                                    color: isSelected ? '#15803d' : '#166534',
-                                                    transition: 'opacity 0.2s, color 0.2s',
-                                                    fontSize: '0.85rem',
-                                                    padding: '0.4rem',
-                                                    borderRadius: '6px',
-                                                    backgroundColor: isSelected ? '#dcfce7' : 'transparent'
+                                                    backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.1)' : 'transparent'
                                                 }}>
                                                     <input
                                                         type="checkbox"
@@ -1249,9 +1276,10 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             fontSize: '1rem',
                                             lineHeight: '1.6',
                                             borderRadius: '16px',
-                                            border: '1px solid #cbd5e1',
-                                            backgroundColor: '#fff',
-                                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
+                                            border: '1px solid var(--border-subtle)',
+                                            backgroundColor: 'var(--bg-elevated)',
+                                            color: 'var(--text-primary)',
+                                            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.2)',
                                             resize: 'vertical'
                                         }}
                                     />
@@ -1259,7 +1287,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                             )}
 
                             {/* Stati (Fatturato, Da collaudare, Collaudata) - SPOSTATI IN BASSO */}
-                            <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '1rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
                                         <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: editData.toTest ? 1 : 0.5 }}>
@@ -1276,7 +1304,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                         </div>
 
                         {/* Footer Azioni */}
-                        <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', flexWrap: 'wrap', gap: '1rem' }}>
                             <button onClick={handleDelete} className="btn" style={{ backgroundColor: 'transparent', borderColor: '#ef4444', color: '#ef4444', padding: '0.5rem 1rem' }}>
                                 <Trash2 size={18} /> {deleteConfirm ? 'Conferma eliminazione?' : 'Elimina scheda'}
                             </button>
@@ -1305,10 +1333,10 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
             {/* MODALE CAMERA DI SICUREZZA ORPHAN VAULT */}
             {showOrphanVault && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                    <div className="glass-panel" style={{ background: '#fff', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
-                            <h3 style={{ margin: 0, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="glass-panel" style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
+                            <h3 style={{ margin: 0, color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <AlertTriangle size={24} /> Dati Scollegati (Camera di Sicurezza)
                             </h3>
                             <button onClick={() => { setShowOrphanVault(false); setOrphanToRelink(null); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>

@@ -125,7 +125,7 @@ export const updateInstallationOnSheet = async (
     try {
         const sheetIdMatch = spreadsheetUrl.match(/\/d\/([^/]+)/);
         if (!sheetIdMatch) throw new Error("URL foglio non valido.");
-        const spreadsheetId = sheetIdMatch[1];
+        const spreadsheetId = sheetIdMatch![1];
 
         // Cattura il GID dal link fornito per operare sul tab corretto
 
@@ -260,7 +260,7 @@ export const appendInstallationToSheet = async (
     try {
         const sheetIdMatch = spreadsheetUrl.match(/\/d\/([^/]+)/);
         if (!sheetIdMatch) throw new Error("URL foglio non valido.");
-        const spreadsheetId = sheetIdMatch[1];
+        const spreadsheetId = sheetIdMatch![1];
 
         // Recuperiamo il GID del foglio "ORDINI"
         let targetGid = 0;
@@ -430,10 +430,15 @@ export const deleteInstallationFromSheet = async (
     googleToken: string,
     rowIndex: string
 ): Promise<void> => {
+    // ⛔ SICUREZZA: cancellazione righe dal foglio disabilitata temporaneamente
+    // per evitare perdite accidentali di dati. Riabilitare manualmente quando sicuro.
+    console.warn('[SAFETY] deleteInstallationFromSheet chiamata ma BLOCCATA per sicurezza. RowIndex:', rowIndex);
+    return;
+
     try {
         const sheetIdMatch = spreadsheetUrl.match(/\/d\/([^/]+)/);
         if (!sheetIdMatch) throw new Error("URL foglio non valido.");
-        const spreadsheetId = sheetIdMatch[1];
+        const spreadsheetId = sheetIdMatch![1];
 
         let targetGid = 0;
         try {
