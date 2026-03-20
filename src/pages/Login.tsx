@@ -282,6 +282,142 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.34',
+                                label: 'UNIFIED CALENDAR SYNC',
+                                color: '#6366f1',
+                                items: [
+                                    'Sincronizzazione Installazioni: Anche le installazioni ordinarie ora supportano data e ora unificate.',
+                                    'Dettaglio Avanzato: Il modal di modifica in dashboard ora pre-carica correttamente data e ora anche per le nuove installazioni.',
+                                    'Ottimizzazione Database: Migliorata la consistenza tra i dati del Foglio Google e i dati locali.'
+                                ]
+                            },
+                            {
+                                version: '3.1.33',
+                                label: 'TIME & INPUT SYNC',
+                                color: '#6366f1',
+                                items: [
+                                    'Orario Collaudo: Inserita la possibilità di specificare l\'ora per i collaudi tecnici.',
+                                    'Quick Edit UX: Il modal di modifica ora propone automaticamente la data e l\'ora correnti.',
+                                    'PWA Sync: Migliorata la gestione dei campi datetime-local per una migliore compatibilità.'
+                                ]
+                            },
+                            {
+                                version: '3.1.32',
+                                label: 'STABILITY FINALIZE',
+                                color: '#6366f1',
+                                items: [
+                                    'Fix Collaudi: Risolto errore nel salvataggio della data per i collaudi tecnici.',
+                                    'ID Refactoring: Ottimizzata la gestione dei prefissi per evitare conflitti con il database.'
+                                ]
+                            },
+                            {
+                                version: '3.1.31',
+                                label: 'BUGFIX DATA DASHBOARD',
+                                color: '#6366f1',
+                                items: [
+                                    'Fix Aggiornamento Data: Risolto errore critico nel salvataggio delle date dei ticket dalla dashboard.',
+                                    'Stabilità Database: Corretto il mapping degli ID per garantire la persistenza dei cambiamenti.'
+                                ]
+                            },
+                            {
+                                version: '3.1.30',
+                                label: 'UI COMPRESS & BLINK BOOST',
+                                color: '#6366f1',
+                                items: [
+                                    'Design Compattato: Ridotta l\'altezza delle card e ottimizzati gli spazi interni.',
+                                    'Collaudo Blink: Animazione più rapida ed evidente per i collaudi.',
+                                    'Ottimizzazione Mobile: Migliorato il layout delle card su schermi piccoli.'
+                                ]
+                            },
+                            {
+                                version: '3.1.29',
+                                label: 'UI REFINEMENT & CONTRAST',
+                                color: '#6366f1',
+                                items: [
+                                    'Visibilità Ora: Orario in dashboard ora in bianco per miglior contrasto.',
+                                    'Animazione Collaudo: Lampeggio spostato sul badge principale in alto a sinistra.',
+                                    'Ticket UI: Migliorato contrasto del tasto "Riassegna" per gli Admin.',
+                                    'Clean UI: Rimossa etichetta "Installatore" per un design più essenziale.'
+                                ]
+                            },
+                            {
+                                version: '3.1.28',
+                                label: 'VERIFIED STABILITY',
+                                color: '#6366f1',
+                                items: [
+                                    'Sincronizzazione Totale: Allineamento manuale di tutti i riferimenti di versione nel sistema.',
+                                    'Dashboard Fix: Confermata la rimozione delle installazioni prive di data collaudo.',
+                                    'UI Refresh: Perfezionamento visivo pulsanti e icone stato.'
+                                ]
+                            },
+                            {
+                                version: '3.1.27',
+                                label: 'DASHBOARD LOGIC FIX',
+                                color: '#6366f1',
+                                items: [
+                                    'Fix Filtraggio: Le installazioni "Da Collaudare" rimangono nascoste finché non viene impostata la data specifica di collaudo.',
+                                    'Priorità Date: La data di collaudo ora ha la precedenza assoluta per gli item in stato tecnico.'
+                                ]
+                            },
+                            {
+                                version: '3.1.26',
+                                label: 'STABILITY & DEPLOY FIX',
+                                color: '#6366f1',
+                                items: [
+                                    'Fix Deploy: Forzato aggiornamento versione e svuotamento cache di build.',
+                                    'Refinement Dashboard: Logica collaudi con data e lampeggio giallo consolidata.',
+                                    'UI Alta Visibilità: Pulsanti filtro migliorati per la visualizzazione all\'esterno.'
+                                ]
+                            },
+                            {
+                                version: '3.1.25',
+                                label: 'COLLAUDO & UI REFINEMENT',
+                                color: '#6366f1',
+                                items: [
+                                    'Logica Collaudi: Le installazioni appaiono in Dashboard solo se hanno una data di collaudo inserita.',
+                                    'Lampeggio Giallo: Aggiunta animazione specifica per le attività di collaudo programmate.',
+                                    'UI Filtri: Migliorata drasticamente la leggibilità dei pulsanti filtro quando attivi.'
+                                ]
+                            },
+                            {
+                                version: '3.1.24',
+                                label: 'PRODUCTION DEPLOY',
+                                color: '#6366f1',
+                                items: [
+                                    'Versione Finale: Deploy stabile con tutte le rifiniture di layout e visibilità.',
+                                    'Performance: Ottimizzazione del build per caricamenti più rapidi su mobile.'
+                                ]
+                            },
+                            {
+                                version: '3.1.23',
+                                label: 'COLLAUDO & HIGH VISIBILITY',
+                                color: '#10b981',
+                                items: [
+                                    'Data Collaudo: Inserito campo specifico nelle installazioni per pianificare il collaudo separatamente.',
+                                    'Filtri Dashboard: Esclusione automatica delle attività collaudate o già fatturate.',
+                                    'Alta Visibilità: Font-weight 900 e contrasti potenziati per una leggibilità estrema da cellulare.'
+                                ]
+                            },
+                            {
+                                version: '3.1.22',
+                                label: 'MOBILE DASHBOARD',
+                                color: '#f97316',
+                                items: [
+                                    'Home Page: Nuova landing page mobile-first che aggrega Ticket e Installazioni in un\'unica vista.',
+                                    'Quick Edit: Modifica delle date di pianificazione direttamente dalle card della dashboard.',
+                                    'Sorting: Ordinamento cronologico intelligente per tutte le attività programmate.'
+                                ]
+                            },
+                            {
+                                version: '3.1.21',
+                                label: 'COLLAUDO REFINEMENT',
+                                color: '#38bdf8',
+                                items: [
+                                    'Integrazione: Prime basi per la distinzione tra installazione standard e collaudo tecnico.',
+                                    'Sync: Migliorato il collegamento tra i flag di stato e la visualizzazione in dashboard.'
+                                ]
+                            },
+                            {
                                 version: '3.1.20',
                                 label: 'GOOGLE AUTO-LOGIN',
                                 color: '#10b981',

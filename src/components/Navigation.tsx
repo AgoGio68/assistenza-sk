@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, PlusCircle, Settings, LogOut, User, Truck, Ticket } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings, LogOut, User, Truck, Ticket } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export const Navigation: React.FC = () => {
@@ -64,9 +64,13 @@ export const Navigation: React.FC = () => {
                 </NavLink>
 
                 {/* Collegamenti condizionali per le Sezioni */}
+                <NavLink to="/" end className={navClass} title="Dashboard Attività">
+                    <LayoutDashboard size={16} /> <span className="hide-mobile">Dashboard</span>
+                </NavLink>
+
                 {userSections.includes('sk') && (
-                    <NavLink to="/" end className={navClass} title="Ticket Assistenza SK">
-                        <Home size={16} /> <span className="hide-mobile">Assistenza SK</span>
+                    <NavLink to="/tickets" className={navClass} title="Ticket Assistenza SK">
+                        <Ticket rotate={-90} size={16} /> <span className="hide-mobile">Assistenze SK</span>
                     </NavLink>
                 )}
 

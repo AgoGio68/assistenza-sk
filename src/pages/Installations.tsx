@@ -219,6 +219,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
             tested: inst.tested || false,
             scheduledTime: inst.scheduledTime || '',
             scheduledDate: inst.scheduledDate || '',
+            testDate: inst.testDate || '',
             applications: inst.applications || [],
             localOverrides: inst.localOverrides || {}
         });
@@ -263,6 +264,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                 scheduledTime:  editData.scheduledTime  || '',
                 tested:         editData.tested         || false,
                 toTest:         editData.toTest         || false,
+                testDate:       editData.testDate       || '',
                 comments:       editData.comments       || '',
                 isInvoiced:     editData.isInvoiced     || false,
                 applications:   editData.applications   || [],
@@ -444,6 +446,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                     scheduledTime:   editData.scheduledTime  || '',
                     tested:          editData.tested         || false,
                     toTest:          editData.toTest         || false,
+                    testDate:        editData.testDate       || '',
                     comments:        editData.comments       || '',
                     isInvoiced:      editData.isInvoiced     || false,
                     applications:    editData.applications   || [],
@@ -1087,28 +1090,25 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                         </label>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                                <div style={{ flex: '1 1 120px' }}>
-                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Data Pianificata (App)</label>
+                                                <div style={{ flex: '1 1 220px' }}>
+                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Programmazione (Data e Ora)</label>
                                                     <input
-                                                        type="date"
+                                                        type="datetime-local"
                                                         className="form-control"
-                                                        value={editData.scheduledDate || ''}
-                                                        onChange={e => setEditData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                                                        value={editData.scheduledDate ? (editData.scheduledDate.includes('T') ? editData.scheduledDate : (editData.scheduledTime ? `${editData.scheduledDate}T${editData.scheduledTime}` : editData.scheduledDate)) : ''}
+                                                            onChange={e => { const val = e.target.value; if (val.includes('T')) {
+                                                                const [, t] = val.split('T');
+                                                                setEditData(prev => ({ ...prev, scheduledDate: val, scheduledTime: t }));
+                                                            } else {
+                                                                setEditData(prev => ({ ...prev, scheduledDate: val }));
+                                                            }
+                                                        }}
                                                     />
                                                     {selectedInst.deliveryDate && !editData.scheduledDate && (
                                                         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                                                             📋 Foglio: {selectedInst.deliveryDate}
                                                         </div>
                                                     )}
-                                                </div>
-                                                <div style={{ flex: '1 1 100px' }}>
-                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', display: 'block' }}>Ora Locale</label>
-                                                    <input
-                                                        type="time"
-                                                        className="form-control"
-                                                        value={editData.scheduledTime || ''}
-                                                        onChange={e => setEditData(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                                                    />
                                                 </div>
                                                 <div style={{ flex: '1 1 100%', display: 'flex', justifyContent: 'flex-end', marginTop: '0.2rem' }}>
                                                     {editData.scheduledDate && (
@@ -1289,14 +1289,30 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                             {/* Stati (Fatturato, Da collaudare, Collaudata) - SPOSTATI IN BASSO */}
                             <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                        <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: editData.toTest ? 1 : 0.5 }}>
-                                            <input type="checkbox" checked={editData.toTest || false} onChange={e => setEditData(prev => ({ ...prev, toTest: e.target.checked, tested: e.target.checked ? prev.tested : false }))} style={{ width: '28px', height: '28px' }} />
-                                            <span style={{ fontWeight: 700, color: '#b45309', fontSize: '0.85rem' }}>🟡 DA COLLAUDARE</span>
-                                        </label>
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: editData.toTest ? 1 : 0.5 }}>
+                                                <input type="checkbox" checked={editData.toTest || false} onChange={e => setEditData(prev => ({ ...prev, toTest: e.target.checked, tested: e.target.checked ? prev.tested : false }))} style={{ width: '28px', height: '28px' }} />
+                                                <span style={{ fontWeight: 800, color: '#b45309', fontSize: '0.85rem' }}>🟡 DA COLLAUDARE</span>
+                                            </label>
+                                            
+                                            {editData.toTest && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: '150px', padding: '0.5rem', background: 'rgba(234, 179, 8, 0.1)', borderRadius: '8px', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                                                    <label style={{ fontSize: '0.7rem', fontWeight: 900, color: '#92400e', textTransform: 'uppercase' }}>Data Collaudo</label>
+                                                    <input 
+                                                        type="datetime-local" 
+                                                        value={editData.testDate || ''} 
+                                                        onChange={e => setEditData(prev => ({ ...prev, testDate: e.target.value }))}
+                                                        className="form-control"
+                                                        style={{ padding: '0.4rem', fontSize: '0.9rem', border: '1px solid #d97706' }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: editData.tested ? 1 : 0.5 }}>
                                             <input type="checkbox" checked={editData.tested || false} onChange={e => setEditData(prev => ({ ...prev, tested: e.target.checked, toTest: e.target.checked ? true : prev.toTest }))} style={{ width: '28px', height: '28px' }} />
-                                            <span style={{ fontWeight: 700, color: '#15803d', fontSize: '0.85rem' }}>🟢 COLLAUDATA</span>
+                                            <span style={{ fontWeight: 800, color: '#15803d', fontSize: '0.85rem' }}>🟢 COLLAUDATA</span>
                                         </label>
                                     </div>
                                 </div>

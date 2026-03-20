@@ -87,7 +87,7 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                 fetchedTickets.push({ id: doc.id, ...doc.data() } as Ticket);
             });
 
-            // Filtro Visibilità v1.5.1
+            // Filtro Visibilità v3.1.24
             let finalTickets = fetchedTickets;
 
             // Filtro retrocompatibilità per Assistenza SK (ticket con section='sk' oppure senza campo section)
@@ -260,6 +260,22 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
         } catch (err) {
             console.error(err);
             alert('Errore aggiornamento evidenziazione');
+        }
+    };
+
+    const handleToggleCollaudo = async (ticketId: string, currentStatus: boolean) => {
+        try {
+            const ticketRef = doc(db, 'tickets', ticketId);
+            await updateDoc(ticketRef, {
+                isCollaudo: !currentStatus,
+                updatedAt: Date.now()
+            });
+            if (selectedTicket && selectedTicket.id === ticketId) {
+                setSelectedTicket({ ...selectedTicket, isCollaudo: !currentStatus });
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore aggiornamento collaudo');
         }
     };
 
@@ -472,6 +488,11 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                         >
                                             <Zap size={14} fill={ticket.highlighted ? "#d97706" : "none"} />
                                         </button>
+                                        {ticket.isCollaudo && (
+                                            <div style={{ color: '#facc15', animation: 'fadeIn 0.5s infinite alternate' }} title="COLLAUDO">
+                                                <Zap size={14} fill="#facc15" />
+                                            </div>
+                                        )}
                                         {isTakenByOthers && <span title={assigneeName}><UserPlus size={14} color="var(--warning-color)" /></span>}
                                         {isTakenByMe && <Check size={14} color="var(--success-color)" />}
                                     </div>
@@ -548,19 +569,34 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                         </button>
                                     )}
 
-                                    <button
-                                        onClick={() => handleToggleHighlight(ticket.id!, !!ticket.highlighted)}
-                                        className="btn"
-                                        title={ticket.highlighted ? "Rimuovi evidenziazione" : "Evidenzia ticket (Lampeggio)"}
-                                        style={{
-                                            padding: '0.65rem 0.75rem',
-                                            background: ticket.highlighted ? 'rgba(245,158,11,0.12)' : 'transparent',
-                                            color: ticket.highlighted ? '#fbbf24' : 'var(--text-muted)',
-                                            border: `1px solid ${ticket.highlighted ? 'rgba(245,158,11,0.3)' : 'var(--border-subtle)'}`,
-                                        }}
-                                    >
-                                        <Zap size={17} fill={ticket.highlighted ? "#fbbf24" : "none"} />
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => handleToggleHighlight(ticket.id!, !!ticket.highlighted)}
+                                            className="btn"
+                                            title={ticket.highlighted ? "Rimuovi evidenziazione" : "Evidenzia ticket (Lampeggio)"}
+                                            style={{
+                                                padding: '0.65rem 0.75rem',
+                                                background: ticket.highlighted ? 'rgba(245,158,11,0.12)' : 'transparent',
+                                                color: ticket.highlighted ? '#fbbf24' : 'var(--text-muted)',
+                                                border: `1px solid ${ticket.highlighted ? 'rgba(245,158,11,0.3)' : 'var(--border-subtle)'}`,
+                                            }}
+                                        >
+                                            <Zap size={17} fill={ticket.highlighted ? "#fbbf24" : "none"} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleToggleCollaudo(ticket.id!, !!ticket.isCollaudo)}
+                                            className="btn"
+                                            title={ticket.isCollaudo ? "Rimuovi Collaudo" : "Segna come Collaudo"}
+                                            style={{
+                                                padding: '0.65rem 0.75rem',
+                                                background: ticket.isCollaudo ? 'rgba(250,204,21,0.15)' : 'transparent',
+                                                color: ticket.isCollaudo ? '#facc15' : 'var(--text-muted)',
+                                                border: `1px solid ${ticket.isCollaudo ? 'rgba(250,204,21,0.4)' : 'var(--border-subtle)'}`,
+                                            }}
+                                        >
+                                            <Zap size={17} fill={ticket.isCollaudo ? "#facc15" : "none"} /> {ticket.isCollaudo ? 'Collaudo' : 'Segna Collaudo'}
+                                        </button>
+                                    </div>
 
                                     {(isTakenByMe || (isTakenByOthers && isAdmin && settings.adminCanReassignOthers)) && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
@@ -625,11 +661,14 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                         </button>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', paddingRight: '2rem' }}>
-                            <div style={{ width: 4, height: 36, borderRadius: 4, background: selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : selectedTicket.assignedTo === currentUser?.uid ? 'var(--accent-teal)' : 'var(--primary-color)', flexShrink: 0 }} />
+                            <div style={{ width: 4, height: 36, borderRadius: 4, background: selectedTicket.isCollaudo ? '#facc15' : (selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : selectedTicket.assignedTo === currentUser?.uid ? 'var(--accent-teal)' : 'var(--primary-color)'), flexShrink: 0 }} />
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : 'var(--text-primary)' }}>
-                                    {selectedTicket.companyName}
-                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: selectedTicket.isCollaudo ? '#facc15' : (selectedTicket.urgency === 'urgente' ? 'var(--danger-color)' : 'var(--text-primary)') }}>
+                                        {selectedTicket.companyName}
+                                    </h3>
+                                    {selectedTicket.isCollaudo && <Zap size={16} fill="#facc15" color="#facc15" />}
+                                </div>
                                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{new Date(selectedTicket.createdAt).toLocaleString()}</div>
                             </div>
                         </div>
@@ -692,7 +731,7 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                 </button>
                             )}
                             {isAdmin && selectedTicket.status === 'preso_in_carico' && selectedTicket.assignedTo !== currentUser?.uid && settings.adminCanReassignOthers && (
-                                <button onClick={() => setReassignTarget({ ticketId: selectedTicket.id!, oldAssigneeName: userNames[selectedTicket.assignedTo!] || selectedTicket.assignedTo! })} className="btn" style={{ flex: 1, border: '1px solid rgba(99,102,241,0.35)', color: 'var(--primary-color)', background: 'rgba(99,102,241,0.08)' }}>Riassegna Collega</button>
+                                <button onClick={() => setReassignTarget({ ticketId: selectedTicket.id!, oldAssigneeName: userNames[selectedTicket.assignedTo!] || selectedTicket.assignedTo! })} className="btn" style={{ flex: 1, border: '1px solid rgba(165, 180, 252, 0.4)', color: '#a5b4fc', background: 'rgba(99,102,241,0.12)' }}>Riassegna Collega</button>
                             )}
                         </div>
                     </div>

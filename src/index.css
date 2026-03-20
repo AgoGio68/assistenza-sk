@@ -616,6 +616,10 @@ input[type="checkbox"] {
   animation: glowPulse 1.4s ease-in-out infinite;
 }
 
+.blink-yellow-glow {
+  animation: blinkFast 0.8s ease-in-out infinite alternate;
+}
+
 /* ─── ANIMATIONS ─────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from {
@@ -684,6 +688,11 @@ input[type="checkbox"] {
     box-shadow: 0 0 16px rgba(249, 115, 22, 0.6), 0 0 32px rgba(249, 115, 22, 0.2);
     border-color: rgba(249, 115, 22, 0.7);
   }
+}
+
+@keyframes blinkFast {
+  0% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.4; transform: scale(1); }
 }
 
 @keyframes glowPulseYellow {

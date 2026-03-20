@@ -4,7 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { db, storage } from '../firebase';
 import { UrgencyLevel, Ticket, Company, UserProfile } from '../types';
-import { AlertCircle, CheckCircle2, Camera, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Camera, X, Zap } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -23,6 +23,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [photos, setPhotos] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+    const [isCollaudo, setIsCollaudo] = useState(false);
 
     // Gestione Pre-Assegnazione
     const { isSuperadmin } = useAuth();
@@ -161,6 +162,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 description: description.trim(),
                 status: assignedTo ? 'preso_in_carico' : 'aperto',
                 createdAt: Date.now(),
+                isCollaudo: isCollaudo,
                 ...(uploadedPhotoUrls.length > 0 && { photoUrls: uploadedPhotoUrls }),
                 createdBy: userProfile?.uid,
                 creatorName: userProfile?.displayName || userProfile?.email || 'Anonimo',
@@ -195,6 +197,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
             setUrgency(null);
             setPhotos([]);
             setAssignedTo('');
+            setIsCollaudo(false);
 
             navigate('/');
         } catch (err) {
@@ -260,6 +263,32 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                     >
                         <CheckCircle2 size={22} /> NORMALE
                     </button>
+                </div>
+
+                {/* Collaudo Flag */}
+                <div 
+                    onClick={() => setIsCollaudo(!isCollaudo)}
+                    style={{
+                        padding: '1rem',
+                        borderRadius: 'var(--border-radius-md)',
+                        border: `2px solid ${isCollaudo ? '#facc15' : 'rgba(250,204,21,0.1)'}`,
+                        background: isCollaudo ? 'rgba(250,204,21,0.1)' : 'transparent',
+                        color: isCollaudo ? '#facc15' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        transition: 'all 0.2s',
+                        fontWeight: 700
+                    }}
+                >
+                    <div style={{
+                        width: '24px', height: '24px', borderRadius: '4px',
+                        border: '2px solid ' + (isCollaudo ? '#facc15' : 'var(--border-subtle)'),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: isCollaudo ? '#facc15' : 'transparent',
+                    }}>
+                        {isCollaudo && <Zap size={14} color="black" fill="black" />}
+                    </div>
+                    <span>SEGNA COME COLLAUDO</span>
                 </div>
 
                 {/* Company AutoComplete */}

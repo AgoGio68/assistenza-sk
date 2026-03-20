@@ -83,11 +83,13 @@ export interface Ticket {
     assigneeName?: string | null; // nome del collega (per denormalizzazione/cache)
     closedBy?: string | null;
     closedAt?: number | null;
+    testDate?: string;
     notes?: string;
     photoUrls?: string[];
     durationHours?: number;
     durationMinutes?: number;
     highlighted?: boolean;
+    isCollaudo?: boolean;
     scheduledDate?: string; // ISO string o YYYY-MM-DDTHH:mm
     section?: 'sk' | 's2'; // Which section this ticket belongs to
 }
@@ -127,5 +129,6 @@ export interface Installation {
     localOverrides?: Partial<Installation>;
     orderDfv?: string; // N. ordine DFV personalizzato
     originalRowIndex?: string; // Indice riga per aggiornamento Sheets
+    testDate?: string; // Data di collaudo specifica
     _firestoreId?: string;    // ID stabile calcolato al merge, usato per save/delete
 }

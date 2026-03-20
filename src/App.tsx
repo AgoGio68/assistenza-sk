@@ -12,6 +12,7 @@ import { TicketList } from './pages/TicketList';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Profile } from './pages/Profile';
 import { Installations } from './pages/Installations';
+import { Home as Dashboard } from './pages/Home';
 
 // Placeholders for main pages
 
@@ -34,7 +35,8 @@ function App() {
                                         </main>
                                     </div>
                                 }>
-                                    <Route path="/" element={<TicketList />} />
+                                    <Route path="/" element={<Dashboard />} />
+                                    <Route path="/tickets" element={<TicketList />} />
                                     <Route path="/create" element={<CreateTicket />} />
                                     <Route path="/profile" element={<Profile />} />
                                     <Route path="/installations" element={<Installations />} />
