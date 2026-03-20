@@ -13,6 +13,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { Profile } from './pages/Profile';
 import { Installations } from './pages/Installations';
 import { Home as Dashboard } from './pages/Home';
+import { CalendarPage } from './pages/CalendarPage';
 
 // Placeholders for main pages
 
@@ -36,6 +37,7 @@ function App() {
                                     </div>
                                 }>
                                     <Route path="/" element={<Dashboard />} />
+                                    <Route path="/calendar" element={<CalendarPage />} />
                                     <Route path="/tickets" element={<TicketList />} />
                                     <Route path="/create" element={<CreateTicket />} />
                                     <Route path="/profile" element={<Profile />} />

@@ -282,6 +282,36 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.37',
+                                label: 'CALENDAR: REAL DATA & DETAILS',
+                                color: '#6366f1',
+                                items: [
+                                    'Dati Live: Il calendario ora carica i dati direttamente dai Google Sheets (SK + S2).',
+                                    'Riepilogo Eventi: Aggiunta modal di dettaglio cliccando su qualsiasi attività.',
+                                    'Sincronizzazione Manuale: Allineamento perfetto con le modifiche fatte nella Dashboard.'
+                                ]
+                            },
+                            {
+                                version: '3.1.36',
+                                label: 'UI ENHANCEMENTS: CALENDAR FIXES',
+                                color: '#14b8a6',
+                                items: [
+                                    'Restyling Calendario: Interfaccia più chiara e leggibile con contrasti elevati.',
+                                    'Pianificazione Completa: Sdoppiamento di Installazioni e Collaudi se programmati in date diverse.',
+                                    'Recupero Dati: Aggiunto fallback alla data di consegna per non perdere nessuna installazione programmata.'
+                                ]
+                            },
+                            {
+                                version: '3.1.35',
+                                label: 'NEW FEATURE: WOW CALENDAR',
+                                color: '#6366f1',
+                                items: [
+                                    'Nuova Vista Calendario: Una sezione dedicata per visualizzare tutti i Ticket, le Installazioni e i Collaudi.',
+                                    'Viste Mese e Settimana: Navigazione fluida tra le date per una pianificazione perfetta.',
+                                    'Design Premium: Glassmorphism e indicatori colorati per distinguere a colpo d\'occhio ogni attività.'
+                                ]
+                            },
+                            {
                                 version: '3.1.34',
                                 label: 'UNIFIED CALENDAR SYNC',
                                 color: '#6366f1',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, PlusCircle, Settings, LogOut, User, Truck, Ticket } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings, LogOut, User, Truck, Ticket, Calendar } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export const Navigation: React.FC = () => {
@@ -66,6 +66,10 @@ export const Navigation: React.FC = () => {
                 {/* Collegamenti condizionali per le Sezioni */}
                 <NavLink to="/" end className={navClass} title="Dashboard Attività">
                     <LayoutDashboard size={16} /> <span className="hide-mobile">Dashboard</span>
+                </NavLink>
+
+                <NavLink to="/calendar" className={navClass} title="Calendario Attività">
+                    <Calendar size={16} /> <span className="hide-mobile">Calendario</span>
                 </NavLink>
 
                 {userSections.includes('sk') && (
