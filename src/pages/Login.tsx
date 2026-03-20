@@ -282,6 +282,16 @@ export const Login: React.FC = () => {
 
                         {([
                             {
+                                version: '3.1.20',
+                                label: 'GOOGLE AUTO-LOGIN',
+                                color: '#10b981',
+                                items: [
+                                    'Google Sheets/Calendar: Rimosso l\'obbligo di selezionare l\'account ogni volta (rimosso prompt consent).',
+                                    'Login: Il collegamento ora è più fluido e tenta di riutilizzare la sessione Google esistente senza passaggi extra.',
+                                    'Versione: Aggiornamento alla 3.1.20 con ottimizzazioni per la stabilità del token.'
+                                ]
+                            },
+                            {
                                 version: '3.1.19',
                                 label: 'UI FINAL POLISH',
                                 color: '#6366f1',

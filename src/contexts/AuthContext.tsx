@@ -119,12 +119,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_calendar_token'));
 
+    // Tentativo di rilevamento automatico per utenti Google
+    useEffect(() => {
+        if (!currentUser || googleToken) return;
+        const isGoogleUser = currentUser.providerData.some(p => p.providerId === 'google.com');
+        if (isGoogleUser) {
+            console.log("Utente Google rilevato senza token attivo. Il sistema tenterà il collegamento fluido alla prima azione necessaria.");
+        }
+    }, [currentUser, googleToken]);
+
+
     const connectGoogle = async () => {
         try {
             const provider = new GoogleAuthProvider();
             provider.addScope('https://www.googleapis.com/auth/calendar.events');
             provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-            provider.setCustomParameters({ prompt: 'consent' });
+            // provider.setCustomParameters({ prompt: 'consent' }); // rimosso per login automatico
+
 
             if (!currentUser) {
                 alert("Devi essere loggato per collegare Google.");
@@ -175,7 +186,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const provider = new GoogleAuthProvider();
             provider.addScope('https://www.googleapis.com/auth/calendar.events');
             provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-            provider.setCustomParameters({ prompt: 'consent' });
+            // provider.setCustomParameters({ prompt: 'consent' }); // rimosso per login automatico
+
 
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);

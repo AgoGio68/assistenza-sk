@@ -1,0 +1,8 @@
+# Istruzioni Globali Assistenza-SK
+
+- **Lingua**: Parla sempre in ITALIANO.
+- **Versione**: Per ogni modifica significativa al codice, incrementa sempre la versione in `package.json` e aggiungi una nota nel changelog di `src/pages/Login.tsx`.
+- **Sincronizzazione**: Alla fine di ogni task completato con successo, esegui sempre `git push` per mantenere sincronizzato GitHub.
+- **Sicurezza Google Sheets**: Mai eliminare righe, colonne o dati dal foglio Google (la funzione `deleteInstallationFromSheet` deve rimanere disabilitata).
+- **Integrità Firestore**: Usa sempre la strategia di sovrascrittura totale (`setDoc` senza `merge: true`) per salvare le installazioni, garantendo uno stato pulito del DB.
+- **Design dark**: Tutte le nuove interfacce o modifiche devono rispettare il tema dark premium definito in `index.css`. Evitare sfondi chiari cablati nelle sezioni modali.
