@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.firebase/
+coverage/
+public/
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.webp

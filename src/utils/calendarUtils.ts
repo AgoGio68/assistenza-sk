@@ -21,28 +21,27 @@ export interface CalendarEvent {
 export const createGoogleCalendarEvent = async (
     token: string,
     event: CalendarEvent,
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
 ) => {
     try {
-        const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(event),
-            }
-        );
+        const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(event),
+        });
 
         if (!response.ok) {
             const error = await response.json();
             console.error('Google Calendar API Error:', error);
             if (response.status === 401) {
-                throw new Error("Il collegamento a Google è scaduto (sicurezza dopo 1 ora). Ricollega il calendario cliccando 'Calendario Collegato' per scollegarlo e ricollegarlo!");
+                throw new Error(
+                    "Il collegamento a Google è scaduto (sicurezza dopo 1 ora). Ricollega il calendario cliccando 'Calendario Collegato' per scollegarlo e ricollegarlo!",
+                );
             }
-            throw new Error(error.error?.message || 'Errore durante la creazione dell\'evento');
+            throw new Error(error.error?.message || "Errore durante la creazione dell'evento");
         }
 
         return await response.json();
@@ -63,7 +62,7 @@ export const formatTicketToEvent = (
     companyName: string,
     description: string,
     scheduledDate: Date,
-    ticketUrl?: string
+    ticketUrl?: string,
 ): CalendarEvent => {
     const endDate = new Date(scheduledDate.getTime() + 60 * 60 * 1000);
 

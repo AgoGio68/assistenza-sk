@@ -28,14 +28,16 @@ function App() {
                             <Route path="/pending" element={<PendingApproval />} />
 
                             <Route element={<ProtectedRoute />}>
-                                <Route element={
-                                    <div className="app-container">
-                                        <Navigation />
-                                        <main className="app-content">
-                                            <Outlet />
-                                        </main>
-                                    </div>
-                                }>
+                                <Route
+                                    element={
+                                        <div className="app-container">
+                                            <Navigation />
+                                            <main className="app-content">
+                                                <Outlet />
+                                            </main>
+                                        </div>
+                                    }
+                                >
                                     <Route path="/" element={<Dashboard />} />
                                     <Route path="/calendar" element={<CalendarPage />} />
                                     <Route path="/tickets" element={<TicketList />} />
@@ -43,15 +45,17 @@ function App() {
                                     <Route path="/profile" element={<Profile />} />
                                     <Route path="/installations" element={<Installations />} />
                                 </Route>
-                                
-                                <Route element={
-                                    <div className="app-container">
-                                        <Navigation />
-                                        <main className="app-content">
-                                            <Outlet />
-                                        </main>
-                                    </div>
-                                }>
+
+                                <Route
+                                    element={
+                                        <div className="app-container">
+                                            <Navigation />
+                                            <main className="app-content">
+                                                <Outlet />
+                                            </main>
+                                        </div>
+                                    }
+                                >
                                     <Route path="/s2" element={<TicketList section="s2" />} />
                                     <Route path="/s2/installations" element={<Installations section="s2" />} />
                                     <Route path="/s2/create" element={<CreateTicket section="s2" />} />
@@ -59,14 +63,17 @@ function App() {
                             </Route>
 
                             <Route element={<ProtectedRoute requireAdmin={true} />}>
-                                <Route path="/admin" element={
-                                    <div className="app-container">
-                                        <Navigation />
-                                        <main className="app-content">
-                                            <AdminDashboard />
-                                        </main>
-                                    </div>
-                                } />
+                                <Route
+                                    path="/admin"
+                                    element={
+                                        <div className="app-container">
+                                            <Navigation />
+                                            <main className="app-content">
+                                                <AdminDashboard />
+                                            </main>
+                                        </div>
+                                    }
+                                />
                             </Route>
                         </Routes>
                     </BrowserRouter>

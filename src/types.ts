@@ -10,6 +10,7 @@ export interface UserProfile {
     createdAt: number;
     canCreateTickets?: boolean;
     fcmToken?: string;
+    phone?: string;
     sections?: ('sk' | 's2')[];
 }
 
@@ -30,7 +31,7 @@ export interface GlobalSettings {
     enablePhotos?: boolean;
     photoInstructions?: string;
     telegramChatIds?: string[]; // Assuming TelegramChatId is a string
-    
+
     // Feature C: Second Section Settings
     section2Enabled?: boolean;
     section2Name?: string;
@@ -51,8 +52,28 @@ export interface GlobalSettings {
     enableInstallations?: boolean;
     insertInstallationsAtTop?: boolean;
     installationsSheetUrl?: string;
+    installationsSheetName?: string; // v3.3.0: Nome tab foglio (default: "ORDINI")
+    section2InstallationsSheetName?: string; // v3.3.0: Nome tab foglio S2 (default: "ORDINI")
     serialPrefix?: string;
     installationModules?: string[];
+
+    // WhatsApp Settings
+    whatsappEnabled?: boolean; // v3.3.1: master flag — default false (richiede approvazione)
+    waNotifyNewImport?: boolean;
+    waNotifyCalendar?: boolean;
+
+    // Magazzino (v3.5.0)
+    inventoryEmail?: string;
+
+    // Collaudo Checklist (v3.4.0)
+    collaudoChecklists?: {
+        rp: string[];
+        sp: string[];
+        c1?: { title: string; items: string[] };
+        c2?: { title: string; items: string[] };
+        c3?: { title: string; items: string[] };
+        c4?: { title: string; items: string[] };
+    };
 
     // New: Granular Field Configuration for Installations
     section2InstallationsFields?: {
@@ -77,8 +98,8 @@ export interface Ticket {
     status: TicketStatus;
     createdAt: number;
     updatedAt?: number;
-    createdBy?: string;      // uid del creatore
-    creatorName?: string;    // nome del creatore (per denormalizzazione/cache)
+    createdBy?: string; // uid del creatore
+    creatorName?: string; // nome del creatore (per denormalizzazione/cache)
     assignedTo?: string | null; // uid del collega che l'ha preso in carico
     assigneeName?: string | null; // nome del collega (per denormalizzazione/cache)
     closedBy?: string | null;
@@ -130,5 +151,71 @@ export interface Installation {
     orderDfv?: string; // N. ordine DFV personalizzato
     originalRowIndex?: string; // Indice riga per aggiornamento Sheets
     testDate?: string; // Data di collaudo specifica
-    _firestoreId?: string;    // ID stabile calcolato al merge, usato per save/delete
+    _firestoreId?: string; // ID stabile calcolato al merge, usato per save/delete
 }
+
+// v3.4.0: Collaudo Checklist
+export type ChecklistKey = 'rp' | 'sp' | 'c1' | 'c2' | 'c3' | 'c4';
+export type MachineType = 'rp' | 'sp' | 'generic';
+
+export interface CollaudoReport {
+    id?: string;
+    installationId: string; // _firestoreId dell'installazione
+    machineName: string;
+    machineType: MachineType;
+    clientName: string;
+    checklist: string[]; // snapshot delle voci al momento del collaudo
+    completedItems: string[]; // voci spuntate
+    completedAt: number | null; // timestamp
+    technicianId: string;
+    technicianName: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
+// v3.6.0: Corrupted Emoji Fix (UTF-8)
+export interface InventoryItem {
+    id?: string;
+    code: string; // Codice articolo (es. MOT-01)
+    name: string; // Nome articolo
+    unit?: string; // Unità di misura (es. pz, mt)
+    stock: number; // Giacenza attuale
+    minThreshold: number; // Soglia minima per alert
+    cost?: number; // Costo acquisto (optional)
+    price?: number; // Prezzo vendita (optional)
+    category?: string; // Categoria (Meccanica, Elettronica, ecc)
+    lastUpdated?: number;
+    sortOrder?: number; // v3.7.0: Ordinamento per drag and drop
+}
+
+export interface InventoryMovement {
+    id?: string;
+    itemId: string; // ID dell'articolo
+    itemName: string; // Nome articolo (denormalizzato per facilità lettura log)
+    type: 'in' | 'out'; // Carico (IN) o Scarico (OUT)
+    quantity: number; // Quantità movimentata
+    timestamp: number;
+    userId: string; // Chi ha fatto il movimento
+    userName: string;
+    referenceId?: string; // ID del Ticket o dell'Installazione associata
+    referenceType?: 'ticket' | 'installation';
+    notes?: string;
+}
+
+export type ActivityActionType = 'CREATE' | 'UPDATE' | 'DELETE' | 'STATUS_CHANGE' | 'LOGIN' | 'ASSIGN' | 'REJECT' | 'APPROVE';
+export type ActivityResourceType = 'TICKET' | 'INSTALLATION' | 'USER' | 'COMPANY' | 'SETTINGS' | 'INVENTORY_ITEM' | 'SYSTEM';
+
+export interface ActivityLog {
+    id?: string;
+    timestamp: number;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    userRole: string;
+    action: ActivityActionType;
+    resourceType: ActivityResourceType;
+    resourceId?: string;
+    details: string;
+    metadata?: any;
+}
+

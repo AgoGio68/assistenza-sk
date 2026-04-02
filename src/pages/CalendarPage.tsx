@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    ChevronLeft, 
-    ChevronRight, 
-    Truck, 
+import {
+    ChevronLeft,
+    ChevronRight,
+    Truck,
     CheckCircle2,
     CalendarDays,
     CalendarRange,
@@ -12,13 +12,15 @@ import {
     MapPin,
     Info,
     User,
-    MessageSquare
+    MessageSquare,
 } from 'lucide-react';
 import { collection, query, onSnapshot } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Ticket, Installation } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 import { fetchInstallations } from '../services/InstallationService';
+import { CollaudoChecklistModal } from '../components/CollaudoChecklistModal';
 
 type ViewType = 'month' | 'week';
 
@@ -36,20 +38,22 @@ interface CalendarEvent {
 
 export const CalendarPage: React.FC = () => {
     const { settings } = useSettings();
+    const navigate = useNavigate();
     const [view, setView] = useState<ViewType>('month');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [filters, setFilters] = useState({
         tickets: true,
         installations: true,
-        collaudi: true
+        collaudi: true,
     });
 
-    const [allEvents, setAllEvents] = useState<{tickets: CalendarEvent[], installations: CalendarEvent[]}>({
+    const [allEvents, setAllEvents] = useState<{ tickets: CalendarEvent[]; installations: CalendarEvent[] }>({
         tickets: [],
-        installations: []
+        installations: [],
     });
-    
+
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [collaudoModal, setCollaudoModal] = useState<CalendarEvent | null>(null);
 
     // Fetch data from Firestore & Google Sheets
     useEffect(() => {
@@ -59,11 +63,11 @@ export const CalendarPage: React.FC = () => {
         const qTickets = query(collection(db, 'tickets'));
         const unsubTickets = onSnapshot(qTickets, (snapshot) => {
             const ticketEvents: CalendarEvent[] = snapshot.docs
-                .map(doc => {
+                .map((doc) => {
                     const data = doc.data() as Ticket;
                     const dateStr = data.scheduledDate || data.testDate;
                     if (!dateStr) return null;
-                    
+
                     return {
                         id: doc.id,
                         title: data.companyName,
@@ -73,19 +77,21 @@ export const CalendarPage: React.FC = () => {
                         status: data.status,
                         details: data.contactName,
                         color: data.isCollaudo ? '#a855f7' : '#6366f1',
-                        originalData: data
+                        originalData: data,
                     } as CalendarEvent;
                 })
-                .filter(e => e !== null) as CalendarEvent[];
-            
-            setAllEvents(prev => ({ ...prev, tickets: ticketEvents }));
+                .filter((e) => e !== null) as CalendarEvent[];
+
+            setAllEvents((prev) => ({ ...prev, tickets: ticketEvents }));
         });
         unsubscribeList.push(unsubTickets);
 
         // 2. Fetch Installations (Directly from Sheets + Overrides)
         let dbInstallations: Record<string, any> = {};
         const unsubDbInst = onSnapshot(collection(db, 'installation_data'), (snap) => {
-            snap.forEach(doc => { dbInstallations[doc.id] = doc.data(); });
+            snap.forEach((doc) => {
+                dbInstallations[doc.id] = doc.data();
+            });
             refreshInstallations(); // Refresh when overrides change
         });
         unsubscribeList.push(unsubDbInst);
@@ -97,9 +103,12 @@ export const CalendarPage: React.FC = () => {
             for (const url of urls) {
                 try {
                     const sheetData = await fetchInstallations(url!);
-                    sheetData.forEach(inst => {
-                        const clean = (s: string) => (s || '').trim().toLowerCase().replace(/\//g, '-').replace(/\s+/g, '_');
-                        const id = inst._firestoreId || `inst-${clean(inst.orderNumber)}-${clean(inst.client)}-${clean(inst.machine)}`;
+                    sheetData.forEach((inst) => {
+                        const clean = (s: string) =>
+                            (s || '').trim().toLowerCase().replace(/\//g, '-').replace(/\s+/g, '_');
+                        const id =
+                            inst._firestoreId ||
+                            `inst-${clean(inst.orderNumber)}-${clean(inst.client)}-${clean(inst.machine)}`;
                         const extra = dbInstallations[id] || {};
                         const merged: Installation = { ...inst, ...extra };
 
@@ -110,12 +119,18 @@ export const CalendarPage: React.FC = () => {
                                 id: `${id}-inst`,
                                 title: merged.client,
                                 subtitle: `${merged.machine} (Inst)`,
-                                date: new Date(instDate.includes('T') ? instDate : (merged.scheduledTime ? `${instDate}T${merged.scheduledTime}` : instDate)),
+                                date: new Date(
+                                    instDate.includes('T')
+                                        ? instDate
+                                        : merged.scheduledTime
+                                          ? `${instDate}T${merged.scheduledTime}`
+                                          : instDate,
+                                ),
                                 type: 'installation',
-                                status: merged.tested ? 'tested' : (merged.toTest ? 'toTest' : 'pending'),
+                                status: merged.tested ? 'tested' : merged.toTest ? 'toTest' : 'pending',
                                 details: merged.installationSite || '',
                                 color: '#14b8a6',
-                                originalData: merged
+                                originalData: merged,
                             });
                         }
 
@@ -130,25 +145,25 @@ export const CalendarPage: React.FC = () => {
                                 status: merged.tested ? 'tested' : 'toTest',
                                 details: 'Collaudo Tecnico',
                                 color: '#a855f7',
-                                originalData: merged
+                                originalData: merged,
                             });
                         }
                     });
                 } catch (err) {
-                    console.error("Error fetching installations for calendar:", err);
+                    console.error('Error fetching installations for calendar:', err);
                 }
             }
-            setAllEvents(prev => ({ ...prev, installations: instEvents }));
+            setAllEvents((prev) => ({ ...prev, installations: instEvents }));
         };
 
         refreshInstallations();
 
-        return () => unsubscribeList.forEach(u => u());
+        return () => unsubscribeList.forEach((u) => u());
     }, [settings.installationsSheetUrl, settings.section2InstallationsSheetUrl]);
 
     const filteredEvents = useMemo(() => {
         let combined = [...allEvents.tickets, ...allEvents.installations];
-        return combined.filter(e => {
+        return combined.filter((e) => {
             if (e.type === 'ticket' && !filters.tickets) return false;
             if (e.type === 'installation' && !filters.installations) return false;
             if (e.type === 'collaudo' && !filters.collaudi) return false;
@@ -164,7 +179,7 @@ export const CalendarPage: React.FC = () => {
         const lastDay = new Date(year, month + 1, 0);
         const days = [];
         const prevMonthLastDay = new Date(year, month, 0).getDate();
-        const firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; 
+        const firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             days.push({ date: new Date(year, month - 1, prevMonthLastDay - i), currentMonth: false });
         }
@@ -193,35 +208,53 @@ export const CalendarPage: React.FC = () => {
 
     const isToday = (date: Date) => {
         const today = new Date();
-        return date.getDate() === today.getDate() && 
-               date.getMonth() === today.getMonth() && 
-               date.getFullYear() === today.getFullYear();
+        return (
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+        );
     };
 
     const getEventsForDay = (date: Date) => {
-        return filteredEvents.filter(e => {
-            return e.date.getDate() === date.getDate() && 
-                   e.date.getMonth() === date.getMonth() && 
-                   e.date.getFullYear() === date.getFullYear();
-        }).sort((a, b) => a.date.getTime() - b.date.getTime());
+        return filteredEvents
+            .filter((e) => {
+                return (
+                    e.date.getDate() === date.getDate() &&
+                    e.date.getMonth() === date.getMonth() &&
+                    e.date.getFullYear() === date.getFullYear()
+                );
+            })
+            .sort((a, b) => a.date.getTime() - b.date.getTime());
     };
 
     return (
         <div className="calendar-container">
             <div className="calendar-toolbar glass-panel">
                 <div className="toolbar-left">
-                    <button className="btn-icon" onClick={() => navigateMonth('prev')}><ChevronLeft size={20} /></button>
+                    <button className="btn-icon" onClick={() => navigateMonth('prev')}>
+                        <ChevronLeft size={20} />
+                    </button>
                     <h2 className="current-month-label">{formatMonth(currentDate)}</h2>
-                    <button className="btn-icon" onClick={() => navigateMonth('next')}><ChevronRight size={20} /></button>
-                    <button className="btn-today" onClick={() => setCurrentDate(new Date())}>Oggi</button>
+                    <button className="btn-icon" onClick={() => navigateMonth('next')}>
+                        <ChevronRight size={20} />
+                    </button>
+                    <button className="btn-today" onClick={() => setCurrentDate(new Date())}>
+                        Oggi
+                    </button>
                 </div>
 
                 <div className="toolbar-center">
                     <div className="view-toggle">
-                        <button className={`toggle-btn ${view === 'month' ? 'active' : ''}`} onClick={() => setView('month')}>
+                        <button
+                            className={`toggle-btn ${view === 'month' ? 'active' : ''}`}
+                            onClick={() => setView('month')}
+                        >
                             <CalendarDays size={16} /> Mese
                         </button>
-                        <button className={`toggle-btn ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>
+                        <button
+                            className={`toggle-btn ${view === 'week' ? 'active' : ''}`}
+                            onClick={() => setView('week')}
+                        >
                             <CalendarRange size={16} /> Settimana
                         </button>
                     </div>
@@ -230,15 +263,27 @@ export const CalendarPage: React.FC = () => {
                 <div className="toolbar-right">
                     <div className="filters-group">
                         <label className={`filter-chip ${filters.tickets ? 'active' : ''} ticket`}>
-                            <input type="checkbox" checked={filters.tickets} onChange={() => setFilters(f => ({...f, tickets: !f.tickets}))} />
+                            <input
+                                type="checkbox"
+                                checked={filters.tickets}
+                                onChange={() => setFilters((f) => ({ ...f, tickets: !f.tickets }))}
+                            />
                             <TicketIcon size={14} /> Ticket
                         </label>
                         <label className={`filter-chip ${filters.installations ? 'active' : ''} inst`}>
-                            <input type="checkbox" checked={filters.installations} onChange={() => setFilters(f => ({...f, installations: !f.installations}))} />
+                            <input
+                                type="checkbox"
+                                checked={filters.installations}
+                                onChange={() => setFilters((f) => ({ ...f, installations: !f.installations }))}
+                            />
                             <Truck size={14} /> Installazioni
                         </label>
                         <label className={`filter-chip ${filters.collaudi ? 'active' : ''} collaudo`}>
-                            <input type="checkbox" checked={filters.collaudi} onChange={() => setFilters(f => ({...f, collaudi: !f.collaudi}))} />
+                            <input
+                                type="checkbox"
+                                checked={filters.collaudi}
+                                onChange={() => setFilters((f) => ({ ...f, collaudi: !f.collaudi }))}
+                            />
                             <CheckCircle2 size={14} /> Collaudi
                         </label>
                     </div>
@@ -248,27 +293,48 @@ export const CalendarPage: React.FC = () => {
             <div className={`calendar-grid-wrapper ${view}`}>
                 {view === 'month' ? (
                     <div className="month-grid">
-                        {['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'].map(d => (
-                            <div key={d} className="weekday-header">{d}</div>
+                        {['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'].map((d) => (
+                            <div key={d} className="weekday-header">
+                                {d}
+                            </div>
                         ))}
                         {monthDays.map((day, idx) => {
                             const dayEvents = getEventsForDay(day.date);
                             return (
-                                <div key={idx} className={`calendar-day ${!day.currentMonth ? 'other-month' : ''} ${isToday(day.date) ? 'today' : ''}`}>
+                                <div
+                                    key={idx}
+                                    className={`calendar-day ${!day.currentMonth ? 'other-month' : ''} ${isToday(day.date) ? 'today' : ''}`}
+                                >
                                     <div className="day-number">{day.date.getDate()}</div>
                                     <div className="day-events">
-                                        {dayEvents.slice(0, 5).map(event => (
-                                            <div 
-                                                key={event.id} 
-                                                className={`event-pill ${event.type}`} 
-                                                style={{ backgroundColor: event.color + '44', borderLeftColor: event.color }}
-                                                onClick={() => setSelectedEvent(event)}
+                                        {dayEvents.slice(0, 5).map((event) => (
+                                            <div
+                                                key={event.id}
+                                                className={`event-pill ${event.type}`}
+                                                style={{
+                                                    backgroundColor: event.color + '44',
+                                                    borderLeftColor: event.color,
+                                                }}
+                                                onClick={() => {
+                                                    if (event.type === 'collaudo') {
+                                                        setCollaudoModal(event);
+                                                    } else {
+                                                        setSelectedEvent(event);
+                                                    }
+                                                }}
                                             >
-                                                <span className="event-time" style={{ color: event.color }}>{event.date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span className="event-time" style={{ color: event.color }}>
+                                                    {event.date.toLocaleTimeString('it-IT', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                </span>
                                                 <span className="event-title">{event.title}</span>
                                             </div>
                                         ))}
-                                        {dayEvents.length > 5 && <div className="more-events">+{dayEvents.length - 5} altri...</div>}
+                                        {dayEvents.length > 5 && (
+                                            <div className="more-events">+{dayEvents.length - 5} altri...</div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -292,8 +358,10 @@ export const CalendarPage: React.FC = () => {
                         </div>
                         <div className="week-body" style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                             <div className="time-column">
-                                {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(h => (
-                                    <div key={h} className="time-slot">{h}:00</div>
+                                {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((h) => (
+                                    <div key={h} className="time-slot">
+                                        {h}:00
+                                    </div>
                                 ))}
                             </div>
                             <div className="week-grid-days">
@@ -304,25 +372,43 @@ export const CalendarPage: React.FC = () => {
                                     const dayEvents = getEventsForDay(day);
                                     return (
                                         <div key={i} className={`week-day-col ${isToday(day) ? 'today' : ''}`}>
-                                            {dayEvents.map(event => {
+                                            {dayEvents.map((event) => {
                                                 const hour = event.date.getHours();
                                                 const minutes = event.date.getMinutes();
                                                 if (hour < 8 || hour > 20) return null;
-                                                const top = ((hour - 8) * 60 + minutes);
+                                                const top = (hour - 8) * 60 + minutes;
                                                 return (
-                                                    <div 
-                                                        key={event.id} 
-                                                        className={`week-event-card ${event.type}`} 
+                                                    <div
+                                                        key={event.id}
+                                                        className={`week-event-card ${event.type}`}
                                                         style={{ top: `${top}px`, backgroundColor: event.color + 'dd' }}
-                                                        onClick={() => setSelectedEvent(event)}
+                                                        onClick={() => {
+                                                            if (event.type === 'collaudo') {
+                                                                setCollaudoModal(event);
+                                                            } else {
+                                                                setSelectedEvent(event);
+                                                            }
+                                                        }}
                                                     >
-                                                        <div className="event-time-sm">{event.date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                        <div className="event-time-sm">
+                                                            {event.date.toLocaleTimeString('it-IT', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
+                                                        </div>
                                                         <div className="event-title-sm">{event.title}</div>
-                                                        <div className="event-subtitle-sm" style={{ fontSize: '0.6rem', opacity: 0.8 }}>{event.subtitle}</div>
+                                                        <div
+                                                            className="event-subtitle-sm"
+                                                            style={{ fontSize: '0.6rem', opacity: 0.8 }}
+                                                        >
+                                                            {event.subtitle}
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
-                                            {Array.from({ length: 13 }).map((_, h) => <div key={h} className="hour-guide-line"></div>)}
+                                            {Array.from({ length: 13 }).map((_, h) => (
+                                                <div key={h} className="hour-guide-line"></div>
+                                            ))}
                                         </div>
                                     );
                                 })}
@@ -332,15 +418,37 @@ export const CalendarPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Event Detail Modal */}
+            {/* Collaudo Checklist Modal */}
+            {collaudoModal && (
+                <CollaudoChecklistModal
+                    installationId={collaudoModal.originalData?._firestoreId || collaudoModal.id}
+                    machineName={collaudoModal.originalData?.machine || collaudoModal.subtitle || ''}
+                    clientName={collaudoModal.title}
+                    scheduledDate={collaudoModal.date.toISOString()}
+                    onClose={() => setCollaudoModal(null)}
+                />
+            )}
+
+            {/* Event Detail Modal (non-collaudo) */}
             {selectedEvent && (
                 <div className="event-modal-overlay" onClick={() => setSelectedEvent(null)}>
-                    <div className="event-modal glass-panel anim-fade-in" onClick={e => e.stopPropagation()}>
-                        <button className="modal-close" onClick={() => setSelectedEvent(null)}><X size={20} /></button>
-                        
+                    <div className="event-modal glass-panel anim-fade-in" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close" onClick={() => setSelectedEvent(null)}>
+                            <X size={20} />
+                        </button>
+
                         <div className="modal-header">
-                            <div className={`modal-badge ${selectedEvent.type}`} style={{ backgroundColor: selectedEvent.color }}>
-                                {selectedEvent.type === 'ticket' ? <TicketIcon size={14} /> : (selectedEvent.type === 'installation' ? <Truck size={14} /> : <CheckCircle2 size={14} />)}
+                            <div
+                                className={`modal-badge ${selectedEvent.type}`}
+                                style={{ backgroundColor: selectedEvent.color }}
+                            >
+                                {selectedEvent.type === 'ticket' ? (
+                                    <TicketIcon size={14} />
+                                ) : selectedEvent.type === 'installation' ? (
+                                    <Truck size={14} />
+                                ) : (
+                                    <CheckCircle2 size={14} />
+                                )}
                                 {selectedEvent.type.toUpperCase()}
                             </div>
                             <h2 className="modal-title">{selectedEvent.title}</h2>
@@ -353,9 +461,16 @@ export const CalendarPage: React.FC = () => {
                                 <div>
                                     <div className="detail-label">Data e Ora</div>
                                     <div className="detail-value">
-                                        {selectedEvent.date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                        {selectedEvent.date.toLocaleDateString('it-IT', {
+                                            weekday: 'long',
+                                            day: 'numeric',
+                                            month: 'long',
+                                        })}
                                         {' alle '}
-                                        {selectedEvent.date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                        {selectedEvent.date.toLocaleTimeString('it-IT', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -364,7 +479,9 @@ export const CalendarPage: React.FC = () => {
                                 <MapPin size={16} className="detail-icon" />
                                 <div>
                                     <div className="detail-label">Luogo / Dettagli</div>
-                                    <div className="detail-value">{selectedEvent.details || 'Nessun dettaglio specificato'}</div>
+                                    <div className="detail-value">
+                                        {selectedEvent.details || 'Nessun dettaglio specificato'}
+                                    </div>
                                 </div>
                             </div>
 
@@ -383,18 +500,32 @@ export const CalendarPage: React.FC = () => {
                                     <User size={16} className="detail-icon" />
                                     <div>
                                         <div className="detail-label">Contatto</div>
-                                        <div className="detail-value">{selectedEvent.originalData.contactName} {selectedEvent.originalData.contactPhone ? `- ${selectedEvent.originalData.contactPhone}` : ''}</div>
+                                        <div className="detail-value">
+                                            {selectedEvent.originalData.contactName}{' '}
+                                            {selectedEvent.originalData.contactPhone
+                                                ? `- ${selectedEvent.originalData.contactPhone}`
+                                                : ''}
+                                        </div>
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setSelectedEvent(null)}>Chiudi</button>
-                            <button className="btn-primary" onClick={() => {
-                                // Potenziale navigazione alla pagina specifica
-                                alert("Funzionalità di navigazione diretta in arrivo nelle prossime versioni!");
-                            }}>
+                            <button className="btn-secondary" onClick={() => setSelectedEvent(null)}>
+                                Chiudi
+                            </button>
+                            <button
+                                className="btn-primary"
+                                onClick={() => {
+                                    if (selectedEvent.type === 'installation' || selectedEvent.type === 'collaudo') {
+                                        const cleanId = selectedEvent.id.replace('-inst', '').replace('-coll', '');
+                                        navigate(`/installations?id=${cleanId}`);
+                                    } else {
+                                        navigate(`/tickets`); // fallback per ticket
+                                    }
+                                }}
+                            >
                                 <Info size={16} /> Vedi Scheda
                             </button>
                         </div>

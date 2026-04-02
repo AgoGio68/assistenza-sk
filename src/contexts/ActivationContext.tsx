@@ -43,8 +43,8 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const checkActivation = async () => {
             const cachedToken = localStorage.getItem('assistenza_sk_activation');
 
-            // 1. Controllo cache locale: se abbiamo una cache valida (non vuota), 
-            // ci fidiamo a prescindere dall'eventuale ricalcolo di 'cleanExpected' 
+            // 1. Controllo cache locale: se abbiamo una cache valida (non vuota),
+            // ci fidiamo a prescindere dall'eventuale ricalcolo di 'cleanExpected'
             // che potrebbe sfalsare l'hash a causa del ritardo delle variabili d'ambiente.
             if (cachedToken && cachedToken.length > 5) {
                 setIsActivated(true);
@@ -57,9 +57,11 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
                 // Add a timeout fallback in case getDoc hangs indefinitely (common in some web setups)
                 const getDocPromise = getDoc(licenseDocRef);
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout lettura server")), 8000));
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Timeout lettura server')), 8000),
+                );
 
-                const licenseDoc = await Promise.race([getDocPromise, timeoutPromise]) as any;
+                const licenseDoc = (await Promise.race([getDocPromise, timeoutPromise])) as any;
 
                 if (licenseDoc && licenseDoc.exists && licenseDoc.exists()) {
                     const savedToken = licenseDoc.data().token;
@@ -80,8 +82,10 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     }
                 }
             } catch (err: any) {
-                console.error("Errore verifica attivazione:", err);
-                setError(`Errore di comunicazione col server: ${err.message || String(err)}. Se il problema persiste, la connessione Firebase è bloccata.`);
+                console.error('Errore verifica attivazione:', err);
+                setError(
+                    `Errore di comunicazione col server: ${err.message || String(err)}. Se il problema persiste, la connessione Firebase è bloccata.`,
+                );
             } finally {
                 setLoading(false);
             }
@@ -106,10 +110,10 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 localStorage.setItem('assistenza_sk_activation', cleanExpected);
                 setIsActivated(true);
             } else {
-                setError("Codice di sblocco non valido.");
+                setError('Codice di sblocco non valido.');
             }
         } catch (err: any) {
-            console.error("Errore salvataggio attivazione:", err);
+            console.error('Errore salvataggio attivazione:', err);
             setError("Errore durante il salvataggio dell'attivazione.");
         } finally {
             setVerifying(false);
@@ -117,21 +121,71 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     if (loading) {
-        return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif' }}>Verifica attivazione di sistema...</div>;
+        return (
+            <div
+                style={{
+                    height: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'system-ui, sans-serif',
+                }}
+            >
+                Verifica attivazione di sistema...
+            </div>
+        );
     }
 
     if (!isActivated) {
         return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
-                <div style={{ backgroundColor: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', maxWidth: '500px', width: '100%', textAlign: 'center' }}>
+            <div
+                style={{
+                    height: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#f8fafc',
+                    padding: '1rem',
+                    fontFamily: 'system-ui, sans-serif',
+                }}
+            >
+                <div
+                    style={{
+                        backgroundColor: 'white',
+                        padding: '2.5rem',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        maxWidth: '500px',
+                        width: '100%',
+                        textAlign: 'center',
+                    }}
+                >
                     <h2 style={{ color: '#b91c1c', marginBottom: '1rem' }}>Sblocco Sistema Richiesto</h2>
                     <p style={{ color: '#475569', marginBottom: '1rem', lineHeight: '1.5' }}>
                         Questa installazione deve essere autenticata per poter funzionare.
                     </p>
 
-                    <div style={{ padding: '1.5rem', backgroundColor: '#f1f5f9', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #cbd5e1' }}>
-                        <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>CODICE RICHIESTA</p>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '2px', color: '#0f172a', userSelect: 'all' }}>
+                    <div
+                        style={{
+                            padding: '1.5rem',
+                            backgroundColor: '#f1f5f9',
+                            borderRadius: '8px',
+                            marginBottom: '2rem',
+                            border: '1px solid #cbd5e1',
+                        }}
+                    >
+                        <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>
+                            CODICE RICHIESTA
+                        </p>
+                        <div
+                            style={{
+                                fontSize: '1.25rem',
+                                fontWeight: 700,
+                                letterSpacing: '2px',
+                                color: '#0f172a',
+                                userSelect: 'all',
+                            }}
+                        >
                             {displayRequestHash}
                         </div>
                         <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
@@ -140,18 +194,46 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     </div>
 
                     <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: '#334155' }}>Codice di Sblocco</label>
+                        <label
+                            style={{
+                                display: 'block',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                marginBottom: '0.5rem',
+                                color: '#334155',
+                            }}
+                        >
+                            Codice di Sblocco
+                        </label>
                         <input
                             type="text"
                             placeholder="ES. ABCDE-FGHIJ-KLMNO-PQRST"
                             value={inputCode}
                             onChange={(e) => setInputCode(e.target.value)}
-                            style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', borderRadius: '6px', border: '1px solid #cbd5e1', letterSpacing: '1px', textTransform: 'uppercase' }}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                fontSize: '1rem',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                letterSpacing: '1px',
+                                textTransform: 'uppercase',
+                            }}
                         />
                     </div>
 
                     {error && (
-                        <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+                        <div
+                            style={{
+                                backgroundColor: '#fee2e2',
+                                color: '#991b1b',
+                                padding: '0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.875rem',
+                                marginBottom: '1.5rem',
+                                textAlign: 'left',
+                            }}
+                        >
                             {error}
                         </div>
                     )}
@@ -159,11 +241,20 @@ export const ActivationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     <button
                         onClick={handleActivate}
                         disabled={!inputCode || verifying}
-                        style={{ width: '100%', padding: '0.875rem', backgroundColor: (!inputCode || verifying) ? '#94a3b8' : '#2563eb', color: 'white', borderRadius: '6px', fontWeight: 600, border: 'none', cursor: (!inputCode || verifying) ? 'not-allowed' : 'pointer', fontSize: '1rem' }}
+                        style={{
+                            width: '100%',
+                            padding: '0.875rem',
+                            backgroundColor: !inputCode || verifying ? '#94a3b8' : '#2563eb',
+                            color: 'white',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            border: 'none',
+                            cursor: !inputCode || verifying ? 'not-allowed' : 'pointer',
+                            fontSize: '1rem',
+                        }}
                     >
                         {verifying ? 'Verifica in corso...' : 'Sblocca Sistema'}
                     </button>
-
                 </div>
             </div>
         );

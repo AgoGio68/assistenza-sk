@@ -5,8 +5,8 @@ import { GlobalSettings } from '../types';
 
 const defaultSettings: GlobalSettings = {
     settingsSheetUrl: '',
-    primaryColor: '#0f172a', /* Default slate-900 */
-    secondaryColor: '#3b82f6', /* Default blue-500 */
+    primaryColor: '#0f172a' /* Default slate-900 */,
+    secondaryColor: '#3b82f6' /* Default blue-500 */,
     logoUrl: '',
     appName: 'ASSISTENZA SK',
     visibilityMode: 'all',
@@ -19,25 +19,34 @@ const defaultSettings: GlobalSettings = {
     installationsSheetUrl: '',
     serialPrefix: '',
     installationModules: [
-        "OCMSKD20101 - Upgrade 1 Monitoring channel CPX",
-        "OCMSKD20202 - Multiple tool counter CPX [x1]",
-        "OCMSKD20301 - Monit-module triple profile CPX [x1]",
-        "OCMSKD20304 - Monitoring-module peak force CPX [x1]",
-        "OCMSKD20309 - Monit-module: rollback check CPX [x1]",
-        "OCMSKD20401 - Part data management CPX [x1]",
-        "OCMSKD20402 - User administration CPX [x1]",
-        "OCMSKD20405 - DMI CPX [x1]",
-        "OCMSKD20406 - PTO xpress CPX [x1]",
-        "OCMSKD20408 - Screenshot to USB CPX [x1]",
-        "OCMSKD20305 - TESTA ROTATA",
-        "OCMSKD20309 - ROLLBACK",
-        "OCMSKD20601  - RAIS CPX"
+        'OCMSKD20101 - Upgrade 1 Monitoring channel CPX',
+        'OCMSKD20202 - Multiple tool counter CPX [x1]',
+        'OCMSKD20301 - Monit-module triple profile CPX [x1]',
+        'OCMSKD20304 - Monitoring-module peak force CPX [x1]',
+        'OCMSKD20309 - Monit-module: rollback check CPX [x1]',
+        'OCMSKD20401 - Part data management CPX [x1]',
+        'OCMSKD20402 - User administration CPX [x1]',
+        'OCMSKD20405 - DMI CPX [x1]',
+        'OCMSKD20406 - PTO xpress CPX [x1]',
+        'OCMSKD20408 - Screenshot to USB CPX [x1]',
+        'OCMSKD20305 - TESTA ROTATA',
+        'OCMSKD20309 - ROLLBACK',
+        'OCMSKD20601  - RAIS CPX',
     ],
     adminCanAssignAtCreation: true,
     adminCanReassignOthers: false,
     adminCanCloseOthers: false,
     userCanAssignAtCreation: false,
     userCanCloseOwnTickets: true,
+    whatsappEnabled: false, // v3.3.1: disabilitato di default — richiede ok amministrazione
+    collaudoChecklists: {
+        rp: [],
+        sp: [],
+        c1: { title: 'Custom 1', items: [] },
+        c2: { title: 'Custom 2', items: [] },
+        c3: { title: 'Custom 3', items: [] },
+        c4: { title: 'Custom 4', items: [] },
+    }, // v3.4.0
     // Note: Section 2 settings are optional in the type, so we don't need to define them here
     // unless we want default values for them.
 };
@@ -50,8 +59,8 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType>({
     settings: defaultSettings,
-    updateSettings: async () => { },
-    loading: true
+    updateSettings: async () => {},
+    loading: true,
 });
 
 export const useSettings = () => useContext(SettingsContext);
@@ -62,23 +71,27 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     useEffect(() => {
         const docRef = doc(db, 'settings', 'global');
-        const unsubscribe = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data() as GlobalSettings;
-                setSettings({ ...defaultSettings, ...data });
+        const unsubscribe = onSnapshot(
+            docRef,
+            (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as GlobalSettings;
+                    setSettings({ ...defaultSettings, ...data });
 
-                // Assicura di applicare istantaneamente le variabili scritte a database al documento CSS root
-                const root = document.documentElement;
-                if (data.primaryColor) root.style.setProperty('--primary-color', data.primaryColor);
-                if (data.secondaryColor) root.style.setProperty('--secondary-color', data.secondaryColor);
-            } else {
-                setDoc(docRef, defaultSettings).catch(console.error);
-            }
-            setLoading(false);
-        }, (err) => {
-            console.error("Error fetching settings:", err);
-            setLoading(false);
-        });
+                    // Assicura di applicare istantaneamente le variabili scritte a database al documento CSS root
+                    const root = document.documentElement;
+                    if (data.primaryColor) root.style.setProperty('--primary-color', data.primaryColor);
+                    if (data.secondaryColor) root.style.setProperty('--secondary-color', data.secondaryColor);
+                } else {
+                    setDoc(docRef, defaultSettings).catch(console.error);
+                }
+                setLoading(false);
+            },
+            (err) => {
+                console.error('Error fetching settings:', err);
+                setLoading(false);
+            },
+        );
 
         return () => unsubscribe();
     }, []);
@@ -88,16 +101,19 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const docRef = doc(db, 'settings', 'global');
             await setDoc(docRef, newSettings, { merge: true });
         } catch (error) {
-            console.error("Failed to update settings:", error);
+            console.error('Failed to update settings:', error);
             throw error;
         }
     };
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Caricamento impostazioni globali...</div>;
+    if (loading)
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                Caricamento impostazioni globali...
+            </div>
+        );
 
     return (
-        <SettingsContext.Provider value={{ settings, updateSettings, loading }}>
-            {children}
-        </SettingsContext.Provider>
+        <SettingsContext.Provider value={{ settings, updateSettings, loading }}>{children}</SettingsContext.Provider>
     );
 };

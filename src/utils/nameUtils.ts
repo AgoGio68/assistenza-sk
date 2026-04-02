@@ -7,7 +7,7 @@ import { Ticket, UserProfile } from '../types';
 export const getCreatorName = (ticket: Ticket, users: UserProfile[]): string => {
     if (ticket.creatorName) return ticket.creatorName;
     if (!ticket.createdBy) return 'Utente';
-    const user = users.find(u => u.uid === ticket.createdBy);
+    const user = users.find((u) => u.uid === ticket.createdBy);
     return user?.displayName || user?.email || 'Utente';
 };
 
@@ -18,7 +18,7 @@ export const getCreatorName = (ticket: Ticket, users: UserProfile[]): string => 
 export const getAssigneeName = (ticket: Ticket, users: UserProfile[]): string => {
     if (ticket.assigneeName) return ticket.assigneeName;
     if (!ticket.assignedTo) return 'Non assegnato';
-    const user = users.find(u => u.uid === ticket.assignedTo);
+    const user = users.find((u) => u.uid === ticket.assignedTo);
     return user?.displayName || user?.email || 'Collega';
 };
 
@@ -27,6 +27,6 @@ export const getAssigneeName = (ticket: Ticket, users: UserProfile[]): string =>
  */
 export const getClosedByName = (ticket: Ticket, users: UserProfile[]): string => {
     if (!ticket.closedBy) return 'N/A';
-    const user = users.find(u => u.uid === ticket.closedBy);
+    const user = users.find((u) => u.uid === ticket.closedBy);
     return user?.displayName || user?.email || 'Collega';
 };

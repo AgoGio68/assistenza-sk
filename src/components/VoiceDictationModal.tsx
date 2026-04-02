@@ -14,7 +14,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
     onClose,
     onSave,
     initialText = '',
-    title = 'Aggiungi note'
+    title = 'Aggiungi note',
 }) => {
     const [text, setText] = useState(initialText);
     const [isListening, setIsListening] = useState(false);
@@ -42,7 +42,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        setText(prev => (prev + ' ' + transcript).trim());
+                        setText((prev) => (prev + ' ' + transcript).trim());
                     } else {
                         currentTranscript += transcript;
                     }
@@ -55,7 +55,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
             };
 
             recon.onerror = (event: any) => {
-                console.error("Errore riconoscimento vocale:", event.error);
+                console.error('Errore riconoscimento vocale:', event.error);
                 setIsListening(false);
             };
 
@@ -83,7 +83,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
                 recognition.start();
                 setIsListening(true);
             } catch (e) {
-                console.error("Errore avvio microfono", e);
+                console.error('Errore avvio microfono', e);
                 // Fallback in caso sia già avviato o permessi negati
             }
         }
@@ -109,15 +109,44 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 3000,
-            display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
-        }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', backgroundColor: 'white', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                zIndex: 3000,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '1rem',
+            }}
+        >
+            <div
+                className="glass-panel"
+                style={{
+                    width: '100%',
+                    maxWidth: '500px',
+                    backgroundColor: 'white',
+                    padding: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                }}
+            >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, color: 'var(--primary-color)' }}>{title}</h3>
-                    <button onClick={handleCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                    <button
+                        onClick={handleCancel}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
                         <X size={24} />
                     </button>
                 </div>
@@ -136,7 +165,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
                             borderRadius: '8px',
                             fontSize: '1rem',
                             fontFamily: 'inherit',
-                            resize: 'vertical'
+                            resize: 'vertical',
                         }}
                     />
                     <button
@@ -154,7 +183,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         }}
                         title={isListening ? 'Ferma dettatura' : 'Avvia dettatura vocale'}
                     >
@@ -163,14 +192,26 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
                 </div>
 
                 {isListening && (
-                    <div style={{ color: 'var(--danger-color)', fontSize: '0.875rem', textAlign: 'center', fontWeight: 'bold', animation: 'pulse 1.5s infinite' }}>
+                    <div
+                        style={{
+                            color: 'var(--danger-color)',
+                            fontSize: '0.875rem',
+                            textAlign: 'center',
+                            fontWeight: 'bold',
+                            animation: 'pulse 1.5s infinite',
+                        }}
+                    >
                         In ascolto... Parla chiaro.
                     </div>
                 )}
 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                    <button onClick={handleCancel} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0' }}>Annulla</button>
-                    <button onClick={handleSave} className="btn btn-success" style={{ flex: 1 }}><Check size={18} /> Salva Appunti</button>
+                    <button onClick={handleCancel} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0' }}>
+                        Annulla
+                    </button>
+                    <button onClick={handleSave} className="btn btn-success" style={{ flex: 1 }}>
+                        <Check size={18} /> Salva Appunti
+                    </button>
                 </div>
             </div>
             {/* CSS per l'animazione pulse */}

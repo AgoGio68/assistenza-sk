@@ -27,7 +27,8 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
 
     // Gestione Pre-Assegnazione
     const { isSuperadmin } = useAuth();
-    const canAssign = isSuperadmin ||
+    const canAssign =
+        isSuperadmin ||
         (isAdmin && settings.adminCanAssignAtCreation !== false) ||
         (!isAdmin && settings.userCanAssignAtCreation === true);
 
@@ -41,7 +42,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 const q = query(collection(db, 'users'), where('status', '==', 'approved'));
                 const snap = await getDocs(q);
                 const fetched: UserProfile[] = [];
-                snap.forEach(d => {
+                snap.forEach((d) => {
                     const data = d.data() as UserProfile;
                     // Tutti tranne i superadmin possono essere assegnatari (inclusi semplici utenti)
                     if (data.role !== 'superadmin') {
@@ -50,7 +51,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 });
                 setAssignableUsers(fetched);
             } catch (err) {
-                console.error("Errore recupero utenti per assegnazione", err);
+                console.error('Errore recupero utenti per assegnazione', err);
             }
         };
         fetchUsers();
@@ -75,7 +76,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                     collection(db, 'companies'),
                     where('name', '>=', companyName),
                     where('name', '<=', companyName + '\uf8ff'),
-                    limit(5)
+                    limit(5),
                 );
                 const querySnapshot = await getDocs(q);
                 const results: Company[] = [];
@@ -84,7 +85,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 });
                 setSuggestions(results);
             } catch (err) {
-                console.error("Error searching companies:", err);
+                console.error('Error searching companies:', err);
             }
         };
 
@@ -103,12 +104,12 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
         if (e.target.files) {
             const selectedFiles = Array.from(e.target.files);
             // Limit to max 3 photos per ticket maybe? Or let them upload what they want
-            setPhotos(prev => [...prev, ...selectedFiles].slice(0, 3)); // Max 3 photos for safety
+            setPhotos((prev) => [...prev, ...selectedFiles].slice(0, 3)); // Max 3 photos for safety
         }
     };
 
     const removePhoto = (index: number) => {
-        setPhotos(prev => prev.filter((_, i) => i !== index));
+        setPhotos((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -128,7 +129,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
             let uploadedPhotoUrls: string[] = [];
 
             if (photos.length > 0 && settings.enablePhotos) {
-                setUploadProgress("Compressione e caricamento foto...");
+                setUploadProgress('Compressione e caricamento foto...');
                 for (let i = 0; i < photos.length; i++) {
                     const file = photos[i];
                     try {
@@ -136,7 +137,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                         const options = {
                             maxSizeMB: 0.5,
                             maxWidthOrHeight: 1024,
-                            useWebWorker: true
+                            useWebWorker: true,
                         };
                         const compressedFile = await imageCompression(file, options);
 
@@ -146,13 +147,13 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                         const downloadUrl = await getDownloadURL(storageRef);
                         uploadedPhotoUrls.push(downloadUrl);
                     } catch (uploadError) {
-                        console.error("Errore upload foto:", uploadError);
+                        console.error('Errore upload foto:', uploadError);
                         // Continuiamo con la creazione del ticket anche se una foto fallisce
                     }
                 }
             }
 
-            const assigneeUser = assignedTo ? assignableUsers.find(u => u.uid === assignedTo) : null;
+            const assigneeUser = assignedTo ? assignableUsers.find((u) => u.uid === assignedTo) : null;
 
             const newTicket: Ticket = {
                 urgency: urgency,
@@ -166,11 +167,12 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 ...(uploadedPhotoUrls.length > 0 && { photoUrls: uploadedPhotoUrls }),
                 createdBy: userProfile?.uid,
                 creatorName: userProfile?.displayName || userProfile?.email || 'Anonimo',
-                ...(assignedTo && assigneeUser && {
-                    assignedTo: assignedTo,
-                    assigneeName: assigneeUser.displayName || assigneeUser.email || 'Tecnico'
-                }),
-                section // Save the section the ticket belongs to
+                ...(assignedTo &&
+                    assigneeUser && {
+                        assignedTo: assignedTo,
+                        assigneeName: assigneeUser.displayName || assigneeUser.email || 'Tecnico',
+                    }),
+                section, // Save the section the ticket belongs to
             };
 
             await setDoc(newTicketRef, newTicket);
@@ -183,7 +185,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                     await setDoc(doc(collection(db, 'companies')), {
                         name: companyName.trim(),
                         contactName: contactName.trim(),
-                        phone: phone.trim()
+                        phone: phone.trim(),
                     });
                 }
             } catch (errCompany) {
@@ -202,7 +204,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
             navigate('/');
         } catch (err) {
             console.error(err);
-            alert("Errore durante il salvataggio");
+            alert('Errore durante il salvataggio');
         } finally {
             setLoading(false);
             setUploadProgress(null);
@@ -212,14 +214,22 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
     return (
         <div style={{ paddingBottom: '2rem' }}>
             <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: section === 's2' ? (settings.section2Color || 'var(--accent-teal)') : 'var(--text-primary)' }}>
-                    Nuova Assistenza {section === 's2' ? (settings.section2Name || 'Sezione 2') : ''}
+                <h2
+                    style={{
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        color:
+                            section === 's2' ? settings.section2Color || 'var(--accent-teal)' : 'var(--text-primary)',
+                    }}
+                >
+                    Nuova Assistenza {section === 's2' ? settings.section2Name || 'Sezione 2' : ''}
                 </h2>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Compila il form per aprire un nuovo ticket di supporto</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    Compila il form per aprire un nuovo ticket di supporto
+                </p>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-
                 {/* Urgency Selection */}
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button
@@ -232,10 +242,16 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                             fontWeight: 700,
                             borderRadius: 'var(--border-radius-md)',
                             border: `2px solid ${urgency === 'urgente' ? 'var(--danger-color)' : 'rgba(244,63,94,0.2)'}`,
-                            background: urgency === 'urgente' ? 'linear-gradient(135deg, #f43f5e, #e11d48)' : 'rgba(244,63,94,0.06)',
+                            background:
+                                urgency === 'urgente'
+                                    ? 'linear-gradient(135deg, #f43f5e, #e11d48)'
+                                    : 'rgba(244,63,94,0.06)',
                             color: urgency === 'urgente' ? 'white' : '#fb7185',
                             cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
                             transition: 'all 0.2s',
                             boxShadow: urgency === 'urgente' ? '0 4px 16px rgba(244,63,94,0.35)' : 'none',
                         }}
@@ -253,10 +269,16 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                             fontWeight: 700,
                             borderRadius: 'var(--border-radius-md)',
                             border: `2px solid ${urgency === 'non_urgente' ? 'var(--accent-teal)' : 'rgba(20,184,166,0.2)'}`,
-                            background: urgency === 'non_urgente' ? 'linear-gradient(135deg, #14b8a6, #0d9488)' : 'rgba(20,184,166,0.06)',
+                            background:
+                                urgency === 'non_urgente'
+                                    ? 'linear-gradient(135deg, #14b8a6, #0d9488)'
+                                    : 'rgba(20,184,166,0.06)',
                             color: urgency === 'non_urgente' ? 'white' : 'var(--accent-teal)',
                             cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
                             transition: 'all 0.2s',
                             boxShadow: urgency === 'non_urgente' ? '0 4px 16px rgba(20,184,166,0.35)' : 'none',
                         }}
@@ -266,7 +288,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 </div>
 
                 {/* Collaudo Flag */}
-                <div 
+                <div
                     onClick={() => setIsCollaudo(!isCollaudo)}
                     style={{
                         padding: '1rem',
@@ -275,17 +297,25 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                         background: isCollaudo ? 'rgba(250,204,21,0.1)' : 'transparent',
                         color: isCollaudo ? '#facc15' : 'var(--text-muted)',
                         cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
                         transition: 'all 0.2s',
-                        fontWeight: 700
+                        fontWeight: 700,
                     }}
                 >
-                    <div style={{
-                        width: '24px', height: '24px', borderRadius: '4px',
-                        border: '2px solid ' + (isCollaudo ? '#facc15' : 'var(--border-subtle)'),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isCollaudo ? '#facc15' : 'transparent',
-                    }}>
+                    <div
+                        style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '4px',
+                            border: '2px solid ' + (isCollaudo ? '#facc15' : 'var(--border-subtle)'),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: isCollaudo ? '#facc15' : 'transparent',
+                        }}
+                    >
                         {isCollaudo && <Zap size={14} color="black" fill="black" />}
                     </div>
                     <span>SEGNA COME COLLAUDO</span>
@@ -293,7 +323,19 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
 
                 {/* Company AutoComplete */}
                 <div style={{ position: 'relative' }}>
-                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Azienda</label>
+                    <label
+                        style={{
+                            display: 'block',
+                            marginBottom: '0.4rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: 'var(--text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                        }}
+                    >
+                        Azienda
+                    </label>
                     <input
                         type="text"
                         value={companyName}
@@ -306,18 +348,37 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                         placeholder="Nome azienda..."
                     />
                     {showSuggestions && suggestions.length > 0 && (
-                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: '4px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
-                            {suggestions.map(comp => (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                zIndex: 10,
+                                marginTop: '4px',
+                                background: 'var(--bg-elevated)',
+                                border: '1px solid var(--border-subtle)',
+                                borderRadius: 'var(--border-radius-md)',
+                                overflow: 'hidden',
+                                boxShadow: 'var(--shadow-lg)',
+                            }}
+                        >
+                            {suggestions.map((comp) => (
                                 <div
                                     key={comp.id}
                                     onClick={() => selectCompany(comp)}
-                                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    style={{
+                                        padding: '0.75rem 1rem',
+                                        cursor: 'pointer',
+                                        borderBottom: '1px solid var(--border-subtle)',
+                                        transition: 'background 0.15s',
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                                 >
                                     <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{comp.name}</div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                        {comp.contactName} ·  {comp.phone}
+                                        {comp.contactName} · {comp.phone}
                                     </div>
                                 </div>
                             ))}
@@ -326,7 +387,19 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Referente</label>
+                    <label
+                        style={{
+                            display: 'block',
+                            marginBottom: '0.4rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: 'var(--text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                        }}
+                    >
+                        Referente
+                    </label>
                     <input
                         type="text"
                         value={contactName}
@@ -337,7 +410,19 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Telefono</label>
+                    <label
+                        style={{
+                            display: 'block',
+                            marginBottom: '0.4rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: 'var(--text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                        }}
+                    >
+                        Telefono
+                    </label>
                     <input
                         type="tel"
                         value={phone}
@@ -348,7 +433,19 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Breve Descrizione</label>
+                    <label
+                        style={{
+                            display: 'block',
+                            marginBottom: '0.4rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: 'var(--text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                        }}
+                    >
+                        Breve Descrizione
+                    </label>
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -359,47 +456,135 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                 </div>
 
                 {canAssign && (
-                    <div style={{ background: 'rgba(20,184,166,0.07)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid rgba(20,184,166,0.2)' }}>
-                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-teal)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Assegna Subito A (Opzionale)</label>
+                    <div
+                        style={{
+                            background: 'rgba(20,184,166,0.07)',
+                            padding: '1rem',
+                            borderRadius: 'var(--border-radius-md)',
+                            border: '1px solid rgba(20,184,166,0.2)',
+                        }}
+                    >
+                        <label
+                            style={{
+                                display: 'block',
+                                marginBottom: '0.4rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                color: 'var(--accent-teal)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                            }}
+                        >
+                            Assegna Subito A (Opzionale)
+                        </label>
                         <select
                             value={assignedTo}
                             onChange={(e) => setAssignedTo(e.target.value)}
                             style={{ width: '100%' }}
                         >
                             <option value="">Nessuno (Lascia in "Da Assegnare")</option>
-                            {assignableUsers.map(u => (
-                                <option key={u.uid} value={u.uid}>{u.displayName || u.email}</option>
+                            {assignableUsers.map((u) => (
+                                <option key={u.uid} value={u.uid}>
+                                    {u.displayName || u.email}
+                                </option>
                             ))}
                         </select>
                     </div>
                 )}
 
                 {settings.enablePhotos && (
-                    <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-subtle)' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <div
+                        style={{
+                            background: 'var(--bg-elevated)',
+                            padding: '1rem',
+                            borderRadius: 'var(--border-radius-md)',
+                            border: '1px solid var(--border-subtle)',
+                        }}
+                    >
+                        <label
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                marginBottom: '0.75rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                color: 'var(--text-secondary)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                            }}
+                        >
                             <Camera size={15} /> Aggiungi Fotografie (Max 3)
                         </label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
                             {photos.map((photo, idx) => (
-                                <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                                    <img src={URL.createObjectURL(photo)} alt={`Upload ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <div
+                                    key={idx}
+                                    style={{
+                                        position: 'relative',
+                                        width: '80px',
+                                        height: '80px',
+                                        borderRadius: 'var(--border-radius-sm)',
+                                        overflow: 'hidden',
+                                        border: '1px solid var(--border-subtle)',
+                                    }}
+                                >
+                                    <img
+                                        src={URL.createObjectURL(photo)}
+                                        alt={`Upload ${idx}`}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
                                     <button
                                         type="button"
                                         onClick={() => removePhoto(idx)}
-                                        style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', padding: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '2px',
+                                            right: '2px',
+                                            backgroundColor: 'rgba(0,0,0,0.7)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            padding: '2px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
                                     >
                                         <X size={12} />
                                     </button>
                                 </div>
                             ))}
                             {photos.length < 3 && (
-                                <label style={{ width: '80px', height: '80px', borderRadius: 'var(--border-radius-sm)', border: '2px dashed rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.2s' }}>
+                                <label
+                                    style={{
+                                        width: '80px',
+                                        height: '80px',
+                                        borderRadius: 'var(--border-radius-sm)',
+                                        border: '2px dashed rgba(99,102,241,0.3)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-muted)',
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
                                     <Camera size={22} />
-                                    <input type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handlePhotoChange}
+                                        style={{ display: 'none' }}
+                                    />
                                 </label>
                             )}
                         </div>
-                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>Le immagini verranno compresse automaticamente prima dell'invio.</p>
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+                            Le immagini verranno compresse automaticamente prima dell'invio.
+                        </p>
                     </div>
                 )}
 
@@ -419,10 +604,13 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                         opacity: loading || !urgency ? 0.6 : 1,
                         boxShadow: '0 4px 20px rgba(99,102,241,0.35)',
                         transition: 'all 0.2s',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
                     }}
                 >
-                    {loading ? (uploadProgress || 'Invio in corso...') : 'INVIA ASSISTENZA'}
+                    {loading ? uploadProgress || 'Invio in corso...' : 'INVIA ASSISTENZA'}
                 </button>
             </form>
         </div>

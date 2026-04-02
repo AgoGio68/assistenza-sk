@@ -6,7 +6,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     linkWithPopup,
-    reauthenticateWithPopup
+    reauthenticateWithPopup,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
@@ -22,6 +22,7 @@ interface AuthContextType {
     isAdmin: boolean;
     isApproved: boolean;
     updateDisplayName: (newName: string) => Promise<void>;
+    updatePhone: (newPhone: string) => Promise<void>;
     connectGoogle: () => Promise<string | null>;
     signInWithGoogle: () => Promise<void>;
     disconnectGoogle: () => void;
@@ -70,23 +71,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setUserProfile(data);
 
                         // Richiedi notifiche push per admin/superadmin approvati
-                        if ((data.role === 'admin' || data.role === 'superadmin') && data.status === 'approved' && messaging) {
+                        if (
+                            (data.role === 'admin' || data.role === 'superadmin') &&
+                            data.status === 'approved' &&
+                            messaging
+                        ) {
                             Notification.requestPermission().then((permission) => {
                                 if (permission === 'granted') {
                                     getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
                                         .then((token) => {
                                             if (token && token !== data.fcmToken) {
-                                                console.log("Nuovo token FCM generato e salvato.");
+                                                console.log('Nuovo token FCM generato e salvato.');
                                                 updateDoc(userDocRef, { fcmToken: token });
                                             }
-                                        }).catch(console.error);
+                                        })
+                                        .catch(console.error);
                                 }
                             });
                         }
                     }
                     setLoading(false); // <--- Imposto loading=false SOLO DOPO aver caricato il profilo
                 });
-
             } else {
                 setUserProfile(null);
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -107,9 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isSuperadmin = userProfile?.role === 'superadmin';
     const isAdmin = userProfile?.role === 'admin' || isSuperadmin;
     const isApproved = userProfile?.status === 'approved' || isSuperadmin;
-    const userSections: ('sk' | 's2')[] = isSuperadmin 
-        ? ['sk', 's2'] 
-        : (userProfile?.sections || ['sk']);
+    const userSections: ('sk' | 's2')[] = isSuperadmin ? ['sk', 's2'] : userProfile?.sections || ['sk'];
 
     const updateDisplayName = async (newName: string) => {
         if (!currentUser) return;
@@ -117,17 +120,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateDoc(userDocRef, { displayName: newName });
     };
 
+    const updatePhone = async (newPhone: string) => {
+        if (!currentUser) return;
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, { phone: newPhone });
+    };
+
     const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_calendar_token'));
 
     // Tentativo di rilevamento automatico per utenti Google
     useEffect(() => {
         if (!currentUser || googleToken) return;
-        const isGoogleUser = currentUser.providerData.some(p => p.providerId === 'google.com');
+        const isGoogleUser = currentUser.providerData.some((p) => p.providerId === 'google.com');
         if (isGoogleUser) {
-            console.log("Utente Google rilevato senza token attivo. Il sistema tenterà il collegamento fluido alla prima azione necessaria.");
+            console.log(
+                'Utente Google rilevato senza token attivo. Il sistema tenterà il collegamento fluido alla prima azione necessaria.',
+            );
         }
     }, [currentUser, googleToken]);
-
 
     const connectGoogle = async () => {
         try {
@@ -136,15 +146,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             provider.addScope('https://www.googleapis.com/auth/spreadsheets');
             // provider.setCustomParameters({ prompt: 'consent' }); // rimosso per login automatico
 
-
             if (!currentUser) {
-                alert("Devi essere loggato per collegare Google.");
+                alert('Devi essere loggato per collegare Google.');
                 return null;
             }
 
             let token: string | undefined = undefined;
 
-            const isGoogleLinked = currentUser.providerData.some(p => p.providerId === 'google.com');
+            const isGoogleLinked = currentUser.providerData.some((p) => p.providerId === 'google.com');
 
             try {
                 if (isGoogleLinked) {
@@ -159,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch (err: any) {
                 if (err.code === 'auth/credential-already-in-use') {
                     // L'account Google è già usato da un'altra entità Firebase.
-                    // Poiché ci serve solo il Token OAuth per le chiamate API Calendar/Sheets, 
+                    // Poiché ci serve solo il Token OAuth per le chiamate API Calendar/Sheets,
                     // estraiamo pacificamente le credenziali dall'errore, senza loggare l'utente fuori/dentro.
                     const credential = GoogleAuthProvider.credentialFromError(err);
                     token = credential?.accessToken;
@@ -175,8 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             return null;
         } catch (error: any) {
-            console.error("Error connecting to Google:", error);
-            alert("Errore durante il collegamento a Google: " + (error.message || "Verifica la console del browser."));
+            console.error('Error connecting to Google:', error);
+            alert('Errore durante il collegamento a Google: ' + (error.message || 'Verifica la console del browser.'));
             return null;
         }
     };
@@ -188,7 +197,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             provider.addScope('https://www.googleapis.com/auth/spreadsheets');
             // provider.setCustomParameters({ prompt: 'consent' }); // rimosso per login automatico
 
-
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential?.accessToken;
@@ -198,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.setItem('google_calendar_token', token);
             }
         } catch (error: any) {
-            console.error("Error signing in with Google:", error);
+            console.error('Error signing in with Google:', error);
             throw error;
         }
     };
@@ -217,16 +225,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         isApproved,
         updateDisplayName,
+        updatePhone,
         connectGoogle,
         signInWithGoogle,
         disconnectGoogle,
         googleToken,
-        userSections
+        userSections,
     };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };

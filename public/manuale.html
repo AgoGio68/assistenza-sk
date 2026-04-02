@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manuale Utente — Assistenza SK v3.1.34</title>
+    <title>Manuale Utente — Assistenza SK v3.2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -532,7 +532,7 @@
     <div class="header">
         <h1>Manuale Utente Ufficiale</h1>
         <p>Applicazione Assistenza SK — Sistema Gestionale Tecnico</p>
-        <div class="version-badge">Versione 3.1.34</div>
+        <div class="version-badge">Versione 3.2.0</div>
     </div>
 
     <div class="container">
@@ -561,6 +561,7 @@
                 <li><a href="#superadmin">Pannello SuperAdmin</a></li>
                 <li class="sub-item"><a href="#utenti">Gestione Utenti</a></li>
                 <li class="sub-item"><a href="#impostazioni">Impostazioni Globali</a></li>
+                <li class="sub-item"><a href="#whatsapp-pro">Notifiche WhatsApp PRO</a></li>
                 <li class="sub-item"><a href="#moduli-config">Configurazione Moduli</a></li>
                 <li><a href="#ruoli">Riepilogo Ruoli</a></li>
             </ul>
@@ -615,6 +616,11 @@
                 <h3 id="login">Login</h3>
                 <p>Inserisci email e password e clicca <strong>"Entra"</strong>. Se le credenziali sono corrette e
                     l'account è attivo, verrai reindirizzato alla home.</p>
+                
+                <div class="alert alert-info">
+                    <span class="alert-icon">💡</span>
+                    <div><strong>Nota sull'accesso Google:</strong> Per massimizzare la velocità e la pulizia della pagina iniziale, l'accesso tramite pulsante Google è stato rimosso dal login. Puoi collegare il tuo account Google (necessario per Fogli e Calendario) direttamente dal tuo <strong>Profilo</strong> dopo essere entrato.</div>
+                </div>
 
                 <h3 id="recovery">Reset password dimenticata</h3>
                 <p>Clicca su <strong>"Dimenticata?"</strong> accanto al campo password. Inserisci la tua email e clicca
@@ -930,6 +936,14 @@
                         <td>Abilita/disabilita la sezione Installazioni per tutti gli utenti.</td>
                     </tr>
                     <tr>
+                        <td><strong>Notifiche WhatsApp New Import</strong></td>
+                        <td>Invia automaticamente un messaggio agli Admin approvati quando viene rilevata una nuova riga nel Foglio Google.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notifiche WhatsApp Calendario</strong></td>
+                        <td>Invia un messaggio di conferma agli Admin quando viene creato un evento sul Google Calendar.</td>
+                    </tr>
+                    <tr>
                         <td><strong>Google Sheets URL</strong></td>
                         <td>URL del Foglio Google da cui leggere i dati delle installazioni.</td>
                     </tr>
@@ -939,6 +953,18 @@
                             <code>SK-</code>).</td>
                     </tr>
                 </table>
+
+                <h3 id="whatsapp-pro">🔔 Notifiche WhatsApp PRO</h3>
+                <p>Il sistema integra un motore di notifica intelligente via WhatsApp per tenere il team sempre aggiornato sulle novità senza dover consultare continuamente l'app.</p>
+                <div class="feature-box">
+                    <h4>Funzionamento e Sicurezza</h4>
+                    <ul>
+                        <li><strong>Target:</strong> I messaggi vengono inviati a tutti i membri con ruolo <code>Admin</code> o <code>SuperAdmin</code> che hanno fornito un numero di cellulare nel profilo e sono stati approvati.</li>
+                        <li><strong>Automazione Import:</strong> Ogni volta che un utente clicca su "Aggiorna da Fogli" nella dashboard, il sistema confronta i dati. Se trova nuovi ordini mai visti prima, invia istantaneamente un riepilogo su WhatsApp.</li>
+                        <li><strong>Conferma Calendario:</strong> Alla creazione di un appuntamento tecnico, viene inviata una notifica con i dettagli (Cliente, Luogo, Data) per conferma immediata al team.</li>
+                        <li><strong>Contatore Messaggi:</strong> Nelle impostazioni è visibile un contatore mensile. Al superamento di 900 messaggi/mese, il sistema blocca gli invii per sicurezza (limite gratuito API).</li>
+                    </ul>
+                </div>
 
                 <h3 id="moduli-config">Configurazione Moduli Attivabili</h3>
                 <p>Nella scheda Impostazioni, la sezione <strong>"Moduli da Attivare"</strong> mostra l'elenco completo
@@ -1042,7 +1068,7 @@
             </section>
 
             <footer>
-                <p>© 2026 Assistenza SK &nbsp;•&nbsp; Sistema Gestionale Tecnico &nbsp;•&nbsp; Versione 2.2.15</p>
+                <p>© 2026 Assistenza SK &nbsp;•&nbsp; Sistema Gestionale Tecnico &nbsp;•&nbsp; Versione 3.2.0</p>
                 <p style="margin-top: 0.3rem; font-size: 0.75rem;">Per assistenza tecnica sull'applicazione, contatta il
                     SuperAdmin del sistema.</p>
             </footer>
