@@ -119,7 +119,70 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     </div>
                 </div>
 
-                <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0' }} />
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '0' }} />
+
+                {/* 1b. Colori Icone Navigazione (v3.9.1) */}
+                <div>
+                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        🎨 Colori Icone Navigazione
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                        Personalizza il colore di ogni icona nella barra di navigazione superiore (Mobile & Desktop).
+                    </p>
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                            gap: '1.25rem',
+                        }}
+                    >
+                        {[
+                            { id: 'dashboard', label: 'Dashboard' },
+                            { id: 'calendar', label: 'Calendario' },
+                            { id: 'tickets', label: 'Ticket SK' },
+                            { id: 'installations', label: 'Installazioni' },
+                            { id: 'profile', label: 'Profilo/Statistiche' },
+                            { id: 'create', label: 'Nuovo Ticket' },
+                            { id: 'admin', label: 'Pannello Admin' },
+                            { id: 'rapportini', label: 'Rapportini' },
+                            { id: 'logout', label: 'Logout' },
+                        ].map((item) => (
+                            <div key={item.id}>
+                                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                                    {item.label}
+                                </label>
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                    <input
+                                        type="color"
+                                        value={localSettings.navIconColors?.[item.id] || '#6366f1'}
+                                        onChange={(e) =>
+                                            setLocalSettings((prev: any) => ({
+                                                ...prev,
+                                                navIconColors: {
+                                                    ...(prev.navIconColors || {}),
+                                                    [item.id]: e.target.value,
+                                                },
+                                            }))
+                                        }
+                                        style={{
+                                            width: '36px',
+                                            height: '36px',
+                                            padding: 0,
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                        }}
+                                    />
+                                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                                        {localSettings.navIconColors?.[item.id] || '#6366f1'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '0' }} />
 
                 {/* 2. Preferenze Visibilità e Permessi */}
                 <div>

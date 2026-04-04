@@ -25,13 +25,18 @@ import { AdminTicketDetailsModal } from '../components/admin/AdminTicketDetailsM
 import { GlobalAuditLog } from '../components/admin/GlobalAuditLog';
 import { CollaudoChecklistTab } from '../components/admin/CollaudoChecklistTab';
 import { InventoryTab } from '../components/admin/InventoryTab';
+import { RapportiniTab } from '../components/admin/RapportiniTab';
+import { useAllRapportini } from '../hooks/useRapportini';
 
 export const AdminDashboard: React.FC = () => {
     const { isSuperadmin, isAdmin, currentUser, userProfile } = useAuth();
     const [activeTab, setActiveTab] = useState<
-        'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory'
+        'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini'
     >('tickets');
     const [hasUnsavedChecklist, setHasUnsavedChecklist] = useState(false);
+
+    // Badge rapportini
+    const { badgeCount: rapportiniBadge } = useAllRapportini(500);
 
     // SuperAdmin Global Settings
     const { settings, updateSettings } = useSettings();
@@ -102,7 +107,7 @@ export const AdminDashboard: React.FC = () => {
     };
 
     const handleTabChange = (
-        newTab: 'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory',
+        newTab: 'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini',
     ) => {
         if (activeTab === 'checklist' && hasUnsavedChecklist) {
             const ok = window.confirm(
@@ -632,6 +637,36 @@ export const AdminDashboard: React.FC = () => {
                 >
                     <Box size={20} /> Magazzino
                 </button>
+                <button
+                    className={`btn ${activeTab === 'rapportini' ? 'btn-primary' : ''}`}
+                    onClick={() => handleTabChange('rapportini')}
+                    style={{ flex: 1, minWidth: '120px', position: 'relative' }}
+                >
+                    📸 Rapportini
+                    {rapportiniBadge > 0 && (
+                        <span
+                            style={{
+                                position: 'absolute',
+                                top: -6,
+                                right: -6,
+                                background: '#ef4444',
+                                color: 'white',
+                                borderRadius: '100px',
+                                minWidth: 18,
+                                height: 18,
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '0 4px',
+                                border: '2px solid var(--bg-surface)',
+                            }}
+                        >
+                            {rapportiniBadge > 99 ? '99+' : rapportiniBadge}
+                        </span>
+                    )}
+                </button>
             </div>
 
             {activeTab === 'tickets' && (
@@ -729,6 +764,8 @@ export const AdminDashboard: React.FC = () => {
             {activeTab === 'checklist' && <CollaudoChecklistTab onUnsavedChange={setHasUnsavedChecklist} />}
 
             {activeTab === 'inventory' && <InventoryTab />}
+
+            {activeTab === 'rapportini' && <RapportiniTab />}
 
             {/* Ticket Details Modal */}
             {selectedTicket && (

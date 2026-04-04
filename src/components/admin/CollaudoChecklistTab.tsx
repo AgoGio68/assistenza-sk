@@ -220,7 +220,7 @@ export const CollaudoChecklistTab: React.FC<CollaudoChecklistTabProps> = ({ onUn
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '0.4rem',
-                        maxHeight: 280,
+                        maxHeight: 600,
                         overflowY: 'auto',
                         minHeight: 120,
                         background: 'rgba(0,0,0,0.1)',

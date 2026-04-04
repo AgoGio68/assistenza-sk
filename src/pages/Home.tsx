@@ -9,7 +9,7 @@ import { fetchInstallations } from '../services/InstallationService';
 import { CollaudoChecklistModal } from '../components/CollaudoChecklistModal';
 
 export const Home: React.FC = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, googleToken } = useAuth();
     const { settings } = useSettings();
 
     const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -58,7 +58,7 @@ export const Home: React.FC = () => {
             const sheetUrl = settings.installationsSheetUrl;
             if (!sheetUrl) return;
             try {
-                const data = await fetchInstallations(sheetUrl);
+                const data = await fetchInstallations(sheetUrl, googleToken || undefined);
                 setInstallations(data);
             } catch (err) {
                 console.error('Home/Installations error:', err);

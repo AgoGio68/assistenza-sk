@@ -45,7 +45,8 @@ service cloud.firestore {
     
     // Tickets: Assistance interventions
     match /tickets/{ticketId} {
-      allow read, write: if isApproved();
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
     }
     
     // Companies: Client registry
@@ -68,12 +69,14 @@ service cloud.firestore {
 
     // Installation Data: Machine info
     match /installation_data/{instId} {
-      allow read, write: if isApproved();
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
     }
     
     // Collaudo Reports: Detailed machine tests
     match /collaudo_reports/{reportId} {
-      allow read, write: if isApproved();
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
     }
 
     // Activity Logs: Global audit log

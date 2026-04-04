@@ -86,6 +86,19 @@ export interface GlobalSettings {
         showExtractedNotes?: boolean;
         showTechnicalNotes?: boolean;
     };
+
+    // v3.9.1: Customizable Navigation Colors
+    navIconColors?: {
+        dashboard?: string;
+        calendar?: string;
+        tickets?: string;
+        installations?: string;
+        profile?: string;
+        create?: string;
+        admin?: string;
+        rapportini?: string;
+        logout?: string;
+    };
 }
 
 export interface Ticket {

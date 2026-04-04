@@ -404,7 +404,7 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
                 <div
                     style={{
                         padding: '1rem 1.5rem',
-                        maxHeight: '45vh',
+                        maxHeight: '65vh',
                         overflowY: 'auto',
                     }}
                 >

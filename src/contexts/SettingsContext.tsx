@@ -47,8 +47,17 @@ const defaultSettings: GlobalSettings = {
         c3: { title: 'Custom 3', items: [] },
         c4: { title: 'Custom 4', items: [] },
     }, // v3.4.0
-    // Note: Section 2 settings are optional in the type, so we don't need to define them here
-    // unless we want default values for them.
+    navIconColors: {
+        dashboard: '#3b82f6',
+        calendar: '#10b981',
+        tickets: '#f59e0b',
+        installations: '#06b6d4',
+        profile: '#8b5cf6',
+        create: '#ec4899',
+        admin: '#6366f1',
+        rapportini: '#14b8a6',
+        logout: '#f43f5e',
+    },
 };
 
 interface SettingsContextType {

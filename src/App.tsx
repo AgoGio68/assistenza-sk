@@ -14,6 +14,7 @@ import { Profile } from './pages/Profile';
 import { Installations } from './pages/Installations';
 import { Home as Dashboard } from './pages/Home';
 import { CalendarPage } from './pages/CalendarPage';
+import { RapportiniPage } from './pages/RapportiniPage';
 
 // Placeholders for main pages
 
@@ -44,6 +45,7 @@ function App() {
                                     <Route path="/create" element={<CreateTicket />} />
                                     <Route path="/profile" element={<Profile />} />
                                     <Route path="/installations" element={<Installations />} />
+                                    <Route path="/rapportini" element={<RapportiniPage />} />
                                 </Route>
 
                                 <Route

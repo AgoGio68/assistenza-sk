@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, PlusCircle, Settings, LogOut, User, Truck, Ticket, Calendar, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings, LogOut, Truck, Ticket, Calendar, Sun, Moon } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
+import { RapportiniQuickButton } from './RapportiniQuickButton';
 
 // ─── Theme helpers ────────────────────────────────────────────────
 const getInitialTheme = (): 'dark' | 'light' => {
@@ -35,12 +36,12 @@ export const Navigation: React.FC = () => {
 
     return (
         <nav
+            className="nav-fixed-top"
             style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '0.7rem 1.25rem',
-                marginBottom: '0.75rem',
+                padding: 'var(--nav-padding)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 100,
@@ -51,34 +52,44 @@ export const Navigation: React.FC = () => {
                 boxShadow: isLight
                     ? '0 1px 0 rgba(79,70,229,0.08), 0 2px 12px rgba(0,0,0,0.06)'
                     : '0 1px 0 rgba(99,102,241,0.12), 0 4px 24px rgba(0,0,0,0.4)',
-                transition: 'background 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease',
+                transition: 'all 0.28s ease',
             }}
         >
             {/* Left: Brand */}
             <NavLink
                 to="/profile"
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+                className="nav-brand-comp-link"
+                style={{
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                }}
                 title="Il tuo profilo e statistiche"
             >
-                <div
-                    style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, var(--primary-color), var(--accent-teal))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: 'var(--glow-indigo)',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        color: 'white',
-                    }}
-                >
-                    {(userProfile?.displayName || userProfile?.email || 'U')[0].toUpperCase()}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="nav-profile-stack">
+                    <span className="nav-brand-name-mobile">
+                        {userProfile?.displayName?.split(' ')[0] || userProfile?.email?.split('@')[0] || 'Utente'}
+                    </span>
+                    <div
+                        style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, var(--primary-color), var(--accent-teal))',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            boxShadow: 'var(--glow-indigo)',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            color: 'white',
+                        }}
+                    >
+                        {(userProfile?.displayName || userProfile?.email || 'U')[0].toUpperCase()}
+                    </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="nav-brand-desktop-info hide-mobile" style={{ marginLeft: '0.75rem' }}>
                     <span className="nav-brand-name">{userProfile?.displayName || userProfile?.email || appName}</span>
                     <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 400 }}>
                         v{__APP_VERSION__} · {appName}
@@ -90,27 +101,24 @@ export const Navigation: React.FC = () => {
             <div
                 style={{
                     display: 'flex',
-                    gap: '0.3rem',
+                    gap: '0.1rem',
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     justifyContent: 'flex-end',
                 }}
             >
-                <NavLink to="/profile" className={navClass} title="Vedi Profilo e Statistiche">
-                    <User size={16} /> <span className="hide-mobile">Profilo</span>
-                </NavLink>
 
                 <NavLink to="/" end className={navClass} title="Dashboard Attività">
-                    <LayoutDashboard size={16} /> <span className="hide-mobile">Dashboard</span>
+                    <LayoutDashboard size={22} className="nav-icon-mobile" color={settings.navIconColors?.dashboard || '#3b82f6'} /> <span className="hide-mobile">Dashboard</span>
                 </NavLink>
 
                 <NavLink to="/calendar" className={navClass} title="Calendario Attività">
-                    <Calendar size={16} /> <span className="hide-mobile">Calendario</span>
+                    <Calendar size={22} className="nav-icon-mobile" color={settings.navIconColors?.calendar || '#10b981'} /> <span className="hide-mobile">Calendario</span>
                 </NavLink>
 
                 {userSections.includes('sk') && (
                     <NavLink to="/tickets" className={navClass} title="Ticket Assistenza SK">
-                        <Ticket rotate={-90} size={16} /> <span className="hide-mobile">Assistenze SK</span>
+                        <Ticket rotate={-90} size={22} className="nav-icon-mobile" color={settings.navIconColors?.tickets || '#f59e0b'} /> <span className="hide-mobile">Assistenze SK</span>
                     </NavLink>
                 )}
 
@@ -128,45 +136,30 @@ export const Navigation: React.FC = () => {
                                 : {}
                         }
                     >
-                        <Ticket size={16} /> <span className="hide-mobile">{settings.section2Name || 'Sezione 2'}</span>
+                        <Ticket size={22} className="nav-icon-mobile" color={settings.navIconColors?.tickets || '#f59e0b'} /> <span className="hide-mobile">{settings.section2Name || 'Sezione 2'}</span>
                     </NavLink>
                 )}
 
                 {(settings.enableInstallations || isAdmin) && (
                     <NavLink to="/installations" className={navClass} title="Gestione Installazioni Macchine">
-                        <Truck size={16} /> <span className="hide-mobile">Installazioni</span>
-                    </NavLink>
-                )}
-
-                {settings.section2Enabled && settings.section2InstallationsEnabled && userSections.includes('s2') && (
-                    <NavLink
-                        to="/s2/installations"
-                        className={navClass}
-                        title={`Installazioni ${settings.section2Name || 'Sezione 2'}`}
-                        style={({ isActive }) =>
-                            isActive
-                                ? {
-                                      color: settings.section2Color || 'var(--accent-teal)',
-                                      borderColor: settings.section2Color || 'var(--accent-teal)',
-                                  }
-                                : {}
-                        }
-                    >
-                        <Truck size={16} /> <span className="hide-mobile">Inst. {settings.section2Name || 'S2'}</span>
+                        <Truck size={22} className="nav-icon-mobile" color={settings.navIconColors?.installations || '#06b6d4'} /> <span className="hide-mobile">Installazioni</span>
                     </NavLink>
                 )}
 
                 {(isAdmin || settings.allowUserTicketCreation) && (
                     <NavLink to="/create" className={navClass} title="Apri un nuovo Ticket di Assistenza">
-                        <PlusCircle size={16} /> <span className="hide-mobile">Nuova Assistenza</span>
+                        <PlusCircle size={22} className="nav-icon-mobile" color={settings.navIconColors?.create || '#ec4899'} /> <span className="hide-mobile">Nuova Assistenza</span>
                     </NavLink>
                 )}
 
                 {isAdmin && (
                     <NavLink to="/admin" className={navClass} title="Gestione globale Amministratori">
-                        <Settings size={16} /> <span className="hide-mobile">Pannello Admin</span>
+                        <Settings size={22} className="nav-icon-mobile" color={settings.navIconColors?.admin || '#6366f1'} /> <span className="hide-mobile">Pannello Admin</span>
                     </NavLink>
                 )}
+
+                {/* ─── Rapportini Quick Button ─────────────────────── */}
+                <RapportiniQuickButton variant="nav" showBadge={isAdmin} color={settings.navIconColors?.rapportini || '#14b8a6'} />
 
                 {/* ─── Theme toggle ───────────────────────────────── */}
                 <button
@@ -178,8 +171,8 @@ export const Navigation: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: 34,
-                        height: 34,
+                        width: 38,
+                        height: 38,
                         borderRadius: '50%',
                         border: isLight ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.12)',
                         background: isLight ? 'rgba(79,70,229,0.08)' : 'rgba(255,255,255,0.06)',
@@ -199,7 +192,7 @@ export const Navigation: React.FC = () => {
                         (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
                     }}
                 >
-                    {isLight ? <Moon size={16} strokeWidth={2} /> : <Sun size={16} strokeWidth={2} />}
+                    {isLight ? <Moon size={20} strokeWidth={2} /> : <Sun size={20} strokeWidth={2} />}
                 </button>
 
                 {/* Logout */}
@@ -210,12 +203,12 @@ export const Navigation: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.4rem',
-                        padding: '0.45rem 0.85rem',
+                        padding: '0.5rem 0.75rem',
                         borderRadius: 'var(--border-radius-sm)',
                         fontSize: '0.83rem',
                         fontWeight: 600,
                         background: 'transparent',
-                        color: isLight ? '#dc2626' : '#f43f5e',
+                        color: settings.navIconColors?.logout || (isLight ? '#dc2626' : '#f43f5e'),
                         border: `1px solid ${isLight ? 'rgba(220,38,38,0.15)' : 'transparent'}`,
                         cursor: 'pointer',
                         transition: 'all 0.2s',
@@ -236,7 +229,7 @@ export const Navigation: React.FC = () => {
                             : 'transparent';
                     }}
                 >
-                    <LogOut size={16} /> <span className="hide-mobile">Esci</span>
+                    <LogOut size={22} color={settings.navIconColors?.logout || (isLight ? '#dc2626' : '#f43f5e')} /> <span className="hide-mobile">Esci</span>
                 </button>
             </div>
         </nav>

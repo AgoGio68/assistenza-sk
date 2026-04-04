@@ -1,6 +1,6 @@
 import { Installation } from '../types';
 
-export const fetchInstallations = async (sheetUrl: string): Promise<Installation[]> => {
+export const fetchInstallations = async (sheetUrl: string, googleToken?: string | null): Promise<Installation[]> => {
     try {
         const sheetIdMatch = sheetUrl.match(/\/d\/([^/]+)/);
         if (!sheetIdMatch) throw new Error('Invalid Google Sheet URL');
@@ -13,8 +13,18 @@ export const fetchInstallations = async (sheetUrl: string): Promise<Installation
 
         const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
 
-        const response = await fetch(csvUrl);
-        if (!response.ok) throw new Error('Failed to fetch sheet data. Ensure the sheet is public.');
+        const headers: Record<string, string> = {};
+        if (googleToken) {
+            headers['Authorization'] = `Bearer ${googleToken}`;
+        }
+
+        const response = await fetch(csvUrl, { headers });
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('Accesso negato al foglio Google. Verifica i permessi o ricollega Google.');
+            }
+            throw new Error('Failed to fetch sheet data. Ensure the sheet is public or you have access.');
+        }
 
         const csvText = await response.text();
         return parseCSV(csvText);

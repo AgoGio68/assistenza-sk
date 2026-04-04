@@ -5,7 +5,7 @@ import { db, functions } from '../firebase';
 import { fetchInstallations } from '../services/InstallationService';
 import { Installation } from '../types';
 
-export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadmin: boolean) => {
+export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadmin: boolean, googleToken: string | null) => {
     const [sheetData, setSheetData] = useState<Installation[]>([]);
     const [installations, setInstallations] = useState<Installation[]>([]);
     const [dbData, setDbData] = useState<Record<string, Partial<Installation>>>({});
@@ -13,24 +13,24 @@ export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadm
     const [error, setError] = useState<string | null>(null);
     const [importNotified, setImportNotified] = useState(false);
     const [orphanedData, setOrphanedData] = useState<Installation[]>([]);
-
+ 
     const loadSheetData = async () => {
         const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
-
+ 
         if (!sheetUrl) {
             setSheetData([]);
             setLoading(false);
             return;
         }
-
+ 
         setLoading(true);
         setError(null);
         try {
-            const data = await fetchInstallations(sheetUrl);
+            const data = await fetchInstallations(sheetUrl, googleToken);
             setSheetData(data);
-        } catch (err) {
+        } catch (err: any) {
             setError(
-                `Impossibile caricare i dati dal foglio. Verifica che l'URL sia corretto e il foglio sia pubblico.`,
+                err.message || `Impossibile caricare i dati dal foglio. Verifica che l'URL sia corretto e il foglio sia pubblico.`
             );
         } finally {
             setLoading(false);

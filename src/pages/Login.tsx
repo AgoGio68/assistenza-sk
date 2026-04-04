@@ -405,6 +405,102 @@ export const Login: React.FC = () => {
                         {(
                             [
                                 {
+                                    version: '3.9.4',
+                                    date: '04/04/2026',
+                                    title: 'Ottimizzazione Spazio Icone',
+                                    changes: [
+                                        'Rossa icona profilo ridondante (il nome è già cliccabile).',
+                                        'Compattata ulteriormente la spaziatura tra le icone di navigazione.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.3',
+                                    date: '04/04/2026',
+                                    title: 'Fix Mobile Header Precision',
+                                    changes: [
+                                        'Corretto un bug che mostrava ancora versione e nome app su alcuni dispositivi mobile.',
+                                        'Header ora 100% pulito con solo avatar e nome utente superiore.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.2',
+                                    date: '04/04/2026',
+                                    title: 'Mobile Header Minimal',
+                                    changes: [
+                                        'Rimosso nome applicazione e versione su mobile per massimizzare lo spazio icone.',
+                                        'Compattato il layout del profilo: solo nome utente sopra l\'avatar.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.1',
+                                    date: '04/04/2026',
+                                    title: 'Icone Colorate Custom & Mobile Brand',
+                                    changes: [
+                                        'Supporto per la personalizzazione dei colori delle icone dal Pannello Admin.',
+                                        'Ridisegnato il profilo mobile: nome sopra l\'avatar per massimizzare lo spazio.',
+                                        'Icone ingrandite a 22px per una migliore usabilità mobile.',
+                                        'Supporto per i colori personalizzati anche nel pulsante Rapportini.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.0',
+                                    date: '04/04/2026',
+                                    title: 'Ottimizzazione Mobile Header',
+                                    changes: [
+                                        'Ridotta l\'altezza della barra di navigazione superiore su dispositivi mobili.',
+                                        'Branding semplificato su smartphone (solo nome profilo) per guadagnare spazio.',
+                                        'Icone di navigazione ingrandite del 25% per una migliore leggibilità e tocco.',
+                                    ],
+                                },
+                                {
+                                    version: '3.8.9',
+                                    date: '04/04/2026',
+                                    title: 'Layout Griglia 3-Colonne',
+                                    changes: [
+                                        'Trasformato lo storico rapportini in una griglia compatta 3xN.',
+                                        'Utilizzo di miniature quadrate con overlay dello stato per ottimizzare lo spazio.',
+                                        'Maggiore densità informativa permettendo la visualizzazione di più file affiancati.',
+                                    ],
+                                },
+                                {
+                                    version: '3.8.8',
+                                    date: '04/04/2026',
+                                    title: 'Ottimizzazione Layout Rapportini',
+                                    changes: [
+                                        'Ridotta la larghezza dei box rapportini del 33% (layout compatto 280px).',
+                                        'Ottimizzati padding, font e icone per la visualizzazione su schermi stretti.',
+                                    ],
+                                },
+                                {
+                                    version: '3.8.7',
+                                    date: '04/04/2026',
+                                    title: 'Fix UI e Sincronizzazione Dati',
+                                    changes: [
+                                        'Ripristino tasto "Vedi Inviato" nelle schede installazione.',
+                                        'Correzione dell\'allineamento verticale e centratura nella pagina Rapportini (foto.html).',
+                                        'Risoluzione del bug di accesso ai fogli Google privati nella Dashboard Home (iniezione googleToken).',
+                                    ],
+                                },
+                                {
+                                    version: '3.7.1',
+                                    label: 'UI CHECKLIST OPTIMIZATION',
+                                    color: '#6366f1',
+                                    items: [
+                                        'Aumento Righe Visibili: Espansa la visualizzazione delle checklist di collaudo a 16 righe per ridurre lo scrolling.',
+                                        'Ottimizzazione Pannello Admin: Migliorata la gestione dello spazio nelle tabelle di configurazione.',
+                                        'Ottimizzazione Modal: Aumentata l\'altezza massima del modal di esecuzione collaudo per una migliore visibilità.',
+                                    ],
+                                },
+                                {
+                                    version: '3.7.0',
+                                    label: 'DRAG & DROP REORDER',
+                                    color: '#8b5cf6',
+                                    items: [
+                                        'Ordinamento Dinamico: Implementato il drag and drop per riordinare le voci nelle checklist.',
+                                        'Persistenza Ordine: Salvataggio automatico della sequenza personalizzata in Firestore.',
+                                    ],
+                                },
+                                {
                                     version: '3.5.0',
                                     label: 'MAGAZZINO & INVENTORY',
                                     color: '#10b981',
