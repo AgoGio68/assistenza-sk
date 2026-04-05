@@ -9,24 +9,48 @@ interface CollaudoChecklistTabProps {
 type ChecklistKey = 'rp' | 'sp' | 'c1' | 'c2' | 'c3' | 'c4';
 
 export const CollaudoChecklistTab: React.FC<CollaudoChecklistTabProps> = ({ onUnsavedChange }) => {
-    const { settings, updateSettings } = useSettings();
+    const { settings, updateSettings, loading: settingsLoading } = useSettings();
 
     // ─── Stato dinamico per le liste ──────────────────────────────
     const [lists, setLists] = useState<Record<ChecklistKey, string[]>>({
-        rp: settings.collaudoChecklists?.rp || [],
-        sp: settings.collaudoChecklists?.sp || [],
-        c1: settings.collaudoChecklists?.c1?.items || [],
-        c2: settings.collaudoChecklists?.c2?.items || [],
-        c3: settings.collaudoChecklists?.c3?.items || [],
-        c4: settings.collaudoChecklists?.c4?.items || [],
+        rp: [],
+        sp: [],
+        c1: [],
+        c2: [],
+        c3: [],
+        c4: [],
     });
 
     const [titles, setTitles] = useState<Record<string, string>>({
-        c1: settings.collaudoChecklists?.c1?.title || 'Custom 1',
-        c2: settings.collaudoChecklists?.c2?.title || 'Custom 2',
-        c3: settings.collaudoChecklists?.c3?.title || 'Custom 3',
-        c4: settings.collaudoChecklists?.c4?.title || 'Custom 4',
+        c1: 'Custom 1',
+        c2: 'Custom 2',
+        c3: 'Custom 3',
+        c4: 'Custom 4',
     });
+
+    // Flag per evitare ricaricamenti continui se l'utente sta modificando
+    const [isInitialized, setIsInitialized] = useState(false);
+
+    // v4.0.1: Sincronizzazione iniziale Robusta
+    useEffect(() => {
+        if (!settingsLoading && !isInitialized && settings.collaudoChecklists) {
+            setLists({
+                rp: settings.collaudoChecklists?.rp || [],
+                sp: settings.collaudoChecklists?.sp || [],
+                c1: Array.isArray(settings.collaudoChecklists?.c1) ? settings.collaudoChecklists?.c1 : (settings.collaudoChecklists?.c1?.items || []),
+                c2: Array.isArray(settings.collaudoChecklists?.c2) ? settings.collaudoChecklists?.c2 : (settings.collaudoChecklists?.c2?.items || []),
+                c3: Array.isArray(settings.collaudoChecklists?.c3) ? settings.collaudoChecklists?.c3 : (settings.collaudoChecklists?.c3?.items || []),
+                c4: Array.isArray(settings.collaudoChecklists?.c4) ? settings.collaudoChecklists?.c4 : (settings.collaudoChecklists?.c4?.items || []),
+            });
+            setTitles({
+                c1: (settings.collaudoChecklists?.c1 as any)?.title || 'Custom 1',
+                c2: (settings.collaudoChecklists?.c2 as any)?.title || 'Custom 2',
+                c3: (settings.collaudoChecklists?.c3 as any)?.title || 'Custom 3',
+                c4: (settings.collaudoChecklists?.c4 as any)?.title || 'Custom 4',
+            });
+            setIsInitialized(true);
+        }
+    }, [settingsLoading, settings.collaudoChecklists, isInitialized]);
 
     const [newInputs, setNewInputs] = useState<Record<ChecklistKey, string>>({
         rp: '',

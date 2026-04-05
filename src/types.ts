@@ -99,6 +99,8 @@ export interface GlobalSettings {
         rapportini?: string;
         logout?: string;
     };
+    // v3.9.7: Version Tracking
+    version?: string;
 }
 
 export interface Ticket {

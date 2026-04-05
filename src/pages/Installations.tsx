@@ -219,10 +219,52 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
 
     if (!isSectionEnabled && !isSuperadmin) {
         return (
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', marginTop: '2rem' }}>
-                <AlertTriangle size={48} style={{ color: 'var(--accent-color)', marginBottom: '1rem' }} />
-                <h3>Sezione non abilitata</h3>
-                <p>La gestione installazioni non è attiva al momento o non hai i permessi per vederla.</p>
+            <div className="glass-panel" style={{ padding: '3rem 1.5rem', textAlign: 'center', marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                <AlertTriangle size={64} style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }} />
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Sezione non abilitata</h2>
+                <p style={{ maxWidth: '500px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                    La gestione installazioni non è attiva nelle impostazioni globali o non hai i permessi di Superadmin per visualizzarla forzatamente.
+                </p>
+
+                {/* v3.9.9: Hard Reset Button for mobile/PWA troubleshooting */}
+                <div style={{ marginTop: '2rem', padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%', maxWidth: '400px' }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                        Se riscontri questo problema solo da cellulare nonostante i permessi siano corretti, potrebbe trattarsi di un errore di memoria (cache) del dispositivo.
+                    </p>
+                    <button
+                        onClick={async () => {
+                            if (window.confirm("Attenzione: questa azione pulirà la memoria locale dell'app e caricherà i dati freschi dal server. Sarà necessario rifare il login. Vuoi procedere?")) {
+                                try {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    if ('caches' in window) {
+                                        const names = await caches.keys();
+                                        for (const name of names) await caches.delete(name);
+                                    }
+                                    window.location.href = '/login';
+                                } catch (e) {
+                                    window.location.reload();
+                                }
+                            }
+                        }}
+                        style={{
+                            padding: '0.8rem 2rem',
+                            backgroundColor: 'transparent',
+                            border: '2px solid var(--accent-color)',
+                            color: 'var(--accent-color)',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        🔄 RIPRISTINA APP (FISSA ERRORI)
+                    </button>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.8rem', opacity: 0.6 }}>
+                        Versione Corrente: {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '3.9.9'}
+                    </p>
+                </div>
             </div>
         );
     }

@@ -91,8 +91,20 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     const root = document.documentElement;
                     if (data.primaryColor) root.style.setProperty('--primary-color', data.primaryColor);
                     if (data.secondaryColor) root.style.setProperty('--secondary-color', data.secondaryColor);
+                    // v3.9.7: Automatic Cache Invalidation
+                    if (data.version && (window as any).__APP_VERSION__ && data.version !== (window as any).__APP_VERSION__) {
+                        console.warn(`Version mismatch detected! Server: ${data.version}, Client: ${(window as any).__APP_VERSION__}. Forcing reload...`);
+                        
+                        // Previeni loop infiniti: ricarica solo se non lo abbiamo fatto negli ultimi 10 secondi
+                        const lastReload = sessionStorage.getItem('last_version_reload');
+                        const now = Date.now();
+                        if (!lastReload || now - parseInt(lastReload) > 10000) {
+                            sessionStorage.setItem('last_version_reload', now.toString());
+                            window.location.reload();
+                        }
+                    }
                 } else {
-                    setDoc(docRef, defaultSettings).catch(console.error);
+                    setDoc(docRef, { ...defaultSettings, version: (window as any).__APP_VERSION__ || '3.9.7' }).catch(console.error);
                 }
                 setLoading(false);
             },
@@ -108,7 +120,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updateSettings = async (newSettings: Partial<GlobalSettings>) => {
         try {
             const docRef = doc(db, 'settings', 'global');
-            await setDoc(docRef, newSettings, { merge: true });
+            const version = (window as any).__APP_VERSION__ || '3.9.7';
+            await setDoc(docRef, { ...newSettings, version }, { merge: true });
         } catch (error) {
             console.error('Failed to update settings:', error);
             throw error;

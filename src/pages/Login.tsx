@@ -405,6 +405,61 @@ export const Login: React.FC = () => {
                         {(
                             [
                                 {
+                                    version: '4.0.1',
+                                    date: '05/04/2026',
+                                    title: 'Data Integrity Patch',
+                                    changes: [
+                                        'Risolta definitivamente la sincronizzazione asincrona delle checklist.',
+                                        'Aggiunto blocco sicurezza per prevenire sovrascritture accidentali dei dati globali.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.9',
+                                    date: '05/04/2026',
+                                    title: 'Emergency PWA Reset',
+                                    changes: [
+                                        'Aggiunto pulsante "RIPRISTINA APP" per risolvere i blocchi di cache su iOS.',
+                                        'Migliorata la resilienza del caricamento moduli su connessioni instabili.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.8',
+                                    date: '05/04/2026',
+                                    title: 'License Check Disabled',
+                                    changes: [
+                                        'Rimosso temporaneamente il controllo della licenza di sistema.',
+                                        'Accesso immediato all\'applicazione senza attivazione.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.7',
+                                    date: '04/04/2026',
+                                    title: 'Senior Fix & Cache Busting',
+                                    changes: [
+                                        'Implementato sistema di ricaricamento forzato per versioni obsolete.',
+                                        'Migliorata la sincronizzazione dei permessi Admin/Superadmin su mobile.',
+                                        'Risolte discrepanze finali nelle checklist di collaudo.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.6',
+                                    date: '04/04/2026',
+                                    title: 'Fix Permission Overhaul',
+                                    changes: [
+                                        'Risolto problema di accesso alle Installazioni per gli amministratori.',
+                                        'Abilitazione globale delle installazioni corretta nel backend.',
+                                    ],
+                                },
+                                {
+                                    version: '3.9.5',
+                                    date: '04/04/2026',
+                                    title: 'Fix Collaudo Data Recovery',
+                                    changes: [
+                                        'Risolto un bug critico che nascondeva le checklist Custom esistenti.',
+                                        'Aggiunto fallback per compatibilità con il vecchio formato dati.',
+                                    ],
+                                },
+                                {
                                     version: '3.9.4',
                                     date: '04/04/2026',
                                     title: 'Ottimizzazione Spazio Icone',
