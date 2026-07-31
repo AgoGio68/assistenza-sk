@@ -11,6 +11,7 @@ import {
     getDoc,
     where,
     limit,
+    writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { InventoryItem, InventoryMovement } from '../types';
@@ -19,6 +20,8 @@ const INVENTORY_COLLECTION = 'inventory';
 const MOVEMENTS_COLLECTION = 'inventory_movements';
 const MAIL_COLLECTION = 'mail';
 const ALERT_RECIPIENT = 'l.fagetti@dfvautomazioni.it';
+// ROB-02: Cooldown minimo tra due alert email per lo stesso articolo (24 ore)
+const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 export const InventoryService = {
     /**
@@ -44,11 +47,17 @@ export const InventoryService = {
 
     /**
      * Aggiunge un nuovo articolo
+     * PERF-03: query ottimizzata — recupera solo il documento con sortOrder più alto invece
+     * di scaricare l'intera collezione
      */
     async addItem(item: Omit<InventoryItem, 'id'>): Promise<string> {
-        // Calcola nuovo sortOrder (max + 100)
-        const items = await this.fetchItems();
-        const maxOrder = items.reduce((max, it) => Math.max(max, it.sortOrder || 0), 0);
+        const q = query(
+            collection(db, INVENTORY_COLLECTION),
+            orderBy('sortOrder', 'desc'),
+            limit(1),
+        );
+        const snap = await getDocs(q);
+        const maxOrder = snap.empty ? 0 : (snap.docs[0].data().sortOrder || 0);
         
         const docRef = await addDoc(collection(db, INVENTORY_COLLECTION), {
             ...item,
@@ -62,7 +71,6 @@ export const InventoryService = {
      * Aggiorna massivamente l'ordine degli articoli (Batch update)
      */
     async updateItemsOrder(items: InventoryItem[]): Promise<void> {
-        const { writeBatch } = await import('firebase/firestore');
         const batch = writeBatch(db);
         
         items.forEach((item, index) => {
@@ -97,33 +105,36 @@ export const InventoryService = {
 
     /**
      * Registra un movimento (Carico/Scarico) e aggiorna la giacenza.
+     * PERF-02: operazione atomica via writeBatch — stock e log vengono
+     * aggiornati in un'unica transazione. Se una fallisce, nessuna viene applicata.
      * Gestisce anche l'invio dell'alert email se la giacenza scende sotto la soglia.
      */
     async recordMovement(movement: Omit<InventoryMovement, 'id' | 'timestamp'>): Promise<void> {
         const { itemId, type, quantity } = movement;
         const change = type === 'in' ? quantity : -quantity;
 
-        // 1. Aggiornamento atomico dello stock
         const itemRef = doc(db, INVENTORY_COLLECTION, itemId);
-        await updateDoc(itemRef, {
-            stock: increment(change),
-            lastUpdated: Date.now(),
-        });
+        const movRef = doc(collection(db, MOVEMENTS_COLLECTION)); // pre-genera ID per il batch
 
-        // 2. Creazione del log del movimento
-        await addDoc(collection(db, MOVEMENTS_COLLECTION), {
-            ...movement,
-            timestamp: Date.now(),
-        });
+        // 1. Aggiornamento atomico: stock + log movimento in un unico commit
+        const batch = writeBatch(db);
+        batch.update(itemRef, { stock: increment(change), lastUpdated: Date.now() });
+        batch.set(movRef, { ...movement, timestamp: Date.now() });
+        await batch.commit();
 
-        // 3. Controllo soglia per alert email (solo se è uno scarico)
+        // 2. Controllo soglia per alert email (solo se è uno scarico)
+        // La lettura post-commit è separata (accettabile: serve solo per la notifica)
         if (type === 'out') {
             const itemSnap = await getDoc(itemRef);
             if (itemSnap.exists()) {
                 const item = itemSnap.data() as InventoryItem;
                 if (item.stock < item.minThreshold) {
-                    // Check se abbiamo già mandato una mail di recente per questo articolo (opzionale, ma evita spam)
-                    await this.sendLowStockEmail(item);
+                    // ROB-02: Invia alert solo se non ne abbiamo mandato uno nelle ultime 24 ore
+                    const lastAlert = item.lastAlertSent || 0;
+                    if (Date.now() - lastAlert >= ALERT_COOLDOWN_MS) {
+                        await this.sendLowStockEmail(item);
+                        await updateDoc(itemRef, { lastAlertSent: Date.now() });
+                    }
                 }
             }
         }

@@ -100,12 +100,23 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
         setShowSuggestions(false);
     };
 
+    const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    const MAX_PHOTO_SIZE_MB = 10;
+
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const selectedFiles = Array.from(e.target.files);
-            // Limit to max 3 photos per ticket maybe? Or let them upload what they want
-            setPhotos((prev) => [...prev, ...selectedFiles].slice(0, 3)); // Max 3 photos for safety
-        }
+        if (!e.target.files) return;
+        const selectedFiles = Array.from(e.target.files).filter((file) => {
+            if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+                alert(`File non supportato: ${file.name}. Usa solo immagini JPEG, PNG o WebP.`);
+                return false;
+            }
+            if (file.size > MAX_PHOTO_SIZE_MB * 1024 * 1024) {
+                alert(`File troppo grande: ${file.name}. Dimensione massima ${MAX_PHOTO_SIZE_MB}MB.`);
+                return false;
+            }
+            return true;
+        });
+        setPhotos((prev) => [...prev, ...selectedFiles].slice(0, 3)); // Max 3 photos
     };
 
     const removePhoto = (index: number) => {
@@ -574,7 +585,7 @@ export const CreateTicket: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 's
                                     <Camera size={22} />
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                                         multiple
                                         onChange={handlePhotoChange}
                                         style={{ display: 'none' }}

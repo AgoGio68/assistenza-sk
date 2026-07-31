@@ -1,7 +1,7 @@
 {
   "name": "assistenza-sk",
   "private": true,
-  "version": "4.0.1",
+  "version": "27.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,16 +11,24 @@
   },
   "dependencies": {
     "@types/crypto-js": "^4.2.2",
+    "ag-grid-community": "^35.2.1",
+    "ag-grid-react": "^35.2.1",
     "browser-image-compression": "^2.0.2",
     "crypto-js": "^4.2.0",
     "firebase": "^11.0.0",
+    "i18next": "^26.0.6",
     "jsencrypt": "^3.5.4",
+    "jspreadsheet-ce": "^4.15.0",
+    "jsuites": "^6.3.4",
     "lucide-react": "^0.470.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
+    "react-i18next": "^17.0.4",
     "react-router-dom": "^7.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

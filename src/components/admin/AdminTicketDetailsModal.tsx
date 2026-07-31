@@ -5,6 +5,7 @@ interface AdminTicketDetailsModalProps {
     selectedTicket: Ticket;
     onClose: () => void;
     onEditNotes: (ticket: Ticket) => void;
+    onEditDescription: (ticket: Ticket) => void;
     onDeleteTicket: (ticketId: string) => Promise<void>;
     users: UserProfile[];
 }
@@ -13,6 +14,7 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
     selectedTicket,
     onClose,
     onEditNotes,
+    onEditDescription,
     onDeleteTicket,
     users,
 }) => {
@@ -157,9 +159,19 @@ export const AdminTicketDetailsModal: React.FC<AdminTicketDetailsModalProps> = (
                             border: '1px solid var(--border-subtle)',
                         }}
                     >
-                        <strong style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
-                            Descrizione Originale del Problema:
-                        </strong>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <strong style={{ color: 'var(--text-secondary)' }}>
+                                Descrizione Originale del Problema:
+                            </strong>
+                            <button
+                                onClick={() => onEditDescription(selectedTicket)}
+                                className="btn btn-primary"
+                                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                                title="Modifica la descrizione originale del problema"
+                            >
+                                ✏️ Modifica
+                            </button>
+                        </div>
                         <div style={{ whiteSpace: 'pre-wrap' }}>{selectedTicket.description}</div>
 
                         {selectedTicket.photoUrls && selectedTicket.photoUrls.length > 0 && (

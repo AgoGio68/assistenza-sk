@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Auth Helpers
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper per ottenere i dati dell'utente loggato
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Identifica se l'utente esiste e ha ruoli specifici
+    function isSuperadmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserData().role == 'superadmin';
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (getUserData().role == 'admin' || getUserData().role == 'superadmin');
+    }
+
+    // Approved: Utente approvato OPPURE un Admin/Superadmin
+    function isApproved() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (getUserData().status == 'approved' || getUserData().role == 'admin' || getUserData().role == 'superadmin');
+    }
+
+    // --- Rules for Collections ---
+    
+    // Users: Profiles management
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Permetti la creazione del proprio profilo se non esiste
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isSuperadmin() || (request.auth.uid == userId);
+      allow delete: if isSuperadmin();
+    }
+    
+    // Tickets: Assistance interventions
+    match /tickets/{ticketId} {
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
+    }
+    
+    // Companies: Client registry
+    match /companies/{companyId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+    
+    // Inventory: Items in warehouse
+    match /inventory/{itemId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+    
+    // Inventory Movements: In/Out logs
+    match /inventory_movements/{moveId} {
+      allow read, create: if isApproved();
+      allow update, delete: if isAdmin();
+    }
+
+    // Installation Data: Machine info
+    match /installation_data/{instId} {
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
+    }
+    
+    // Collaudo Reports: Detailed machine tests
+    match /collaudo_reports/{reportId} {
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
+    }
+
+    // Activity Logs: Global audit log
+    match /activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isApproved();
+      allow update, delete: if isSuperadmin();
+    }
+
+    // Settings: Global application configuration
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperadmin();
+    }
+
+    // WhatsApp Stats: Notification analytics
+    match /wa_stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if isSuperadmin();
+    }
+
+    // Mail: Email trigger queue
+    match /mail/{mailId} {
+      allow create: if isApproved();
+      allow read, update, delete: if false;
+    }
+
+    // Shared Sheets: Clone of Google Sheets
+    match /fogli_condivisi/{sheetId} {
+      // 'ordini' is fully public (anonymous read/write) as requested
+      allow read, write: if sheetId == 'ordini';
+      
+      // Other sheets in this collection require at least authentication
+      allow read, write: if sheetId != 'ordini' && isAuthenticated();
+    }
+  }
+}

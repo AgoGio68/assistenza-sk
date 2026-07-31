@@ -1,0 +1,38 @@
+{
+  "name": "assistenza-sk",
+  "private": true,
+  "version": "6.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\""
+  },
+  "dependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "browser-image-compression": "^2.0.2",
+    "crypto-js": "^4.2.0",
+    "firebase": "^11.0.0",
+    "i18next": "^26.0.6",
+    "jsencrypt": "^3.5.4",
+    "jspreadsheet-ce": "^4.15.0",
+    "jsuites": "^6.3.4",
+    "lucide-react": "^0.470.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.4",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "javascript-obfuscator": "^5.3.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.1",
+    "vite-plugin-javascript-obfuscator": "^3.1.0"
+  }
+}

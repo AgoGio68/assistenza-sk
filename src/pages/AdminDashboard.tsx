@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc, limit, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile, Company, Ticket } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,8 +12,12 @@ import {
     ClipboardList,
     CheckSquare,
     Box,
+    Bell,
+    Cpu,
+    Truck,
 } from 'lucide-react';
 import { VoiceDictationModal } from '../components/VoiceDictationModal';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { AuditLogService } from '../services/AuditLogService';
 
 // New Tab Components
@@ -25,15 +29,20 @@ import { AdminTicketDetailsModal } from '../components/admin/AdminTicketDetailsM
 import { GlobalAuditLog } from '../components/admin/GlobalAuditLog';
 import { CollaudoChecklistTab } from '../components/admin/CollaudoChecklistTab';
 import { InventoryTab } from '../components/admin/InventoryTab';
+import { UnitaSkTab } from '../components/admin/UnitaSkTab';
 import { RapportiniTab } from '../components/admin/RapportiniTab';
+import { TelegramNotificationsTab } from '../components/admin/TelegramNotificationsTab';
+import { MaterialPurchaseTab } from '../components/admin/MaterialPurchaseTab';
 import { useAllRapportini } from '../hooks/useRapportini';
 
 export const AdminDashboard: React.FC = () => {
     const { isSuperadmin, isAdmin, currentUser, userProfile } = useAuth();
     const [activeTab, setActiveTab] = useState<
-        'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini'
+        'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini' | 'telegram' | 'unita_sk' | 'acquisto_materiale'
     >('tickets');
     const [hasUnsavedChecklist, setHasUnsavedChecklist] = useState(false);
+    // UX-03: stato per il modal di conferma cambio tab (sostituisce window.confirm)
+    const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
     // Badge rapportini
     const { badgeCount: rapportiniBadge } = useAllRapportini(500);
@@ -59,10 +68,15 @@ export const AdminDashboard: React.FC = () => {
     const [ticketSortMode, setTicketSortMode] = useState<'chronological' | 'closed_bottom'>('closed_bottom');
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
-    // Dictation Modal state for Admins
+    // Dictation Modal state for Admins (Notes)
     const [isDictationModalOpen, setIsDictationModalOpen] = useState(false);
     const [dictationTargetId, setDictationTargetId] = useState<string | null>(null);
     const [dictationInitialText, setDictationInitialText] = useState('');
+
+    // Dictation Modal state for Description editing
+    const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+    const [descriptionTargetId, setDescriptionTargetId] = useState<string | null>(null);
+    const [descriptionInitialText, setDescriptionInitialText] = useState('');
 
     // Filters and Search
     const [searchQuery, setSearchQuery] = useState('');
@@ -107,13 +121,12 @@ export const AdminDashboard: React.FC = () => {
     };
 
     const handleTabChange = (
-        newTab: 'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini',
+        newTab: 'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini' | 'telegram' | 'unita_sk' | 'acquisto_materiale',
     ) => {
         if (activeTab === 'checklist' && hasUnsavedChecklist) {
-            const ok = window.confirm(
-                'Hai modifiche non salvate per la checklist.\n\nVuoi cambiare scheda senza salvare?',
-            );
-            if (!ok) return;
+            // UX-03: mostra ConfirmModal invece di window.confirm()
+            setPendingTabChange(newTab);
+            return;
         }
         setActiveTab(newTab);
     };
@@ -121,7 +134,8 @@ export const AdminDashboard: React.FC = () => {
     const fetchUsers = async () => {
         setLoadingUsers(true);
         try {
-            const q = query(collection(db, 'users'));
+            // PERF-01: limit a 500 utenti — abbondante per uso aziendale, evita scansioni illimitate
+            const q = query(collection(db, 'users'), orderBy('email'), limit(500));
             const snapshot = await getDocs(q);
             const fetched: UserProfile[] = [];
             snapshot.forEach((doc) => {
@@ -141,7 +155,8 @@ export const AdminDashboard: React.FC = () => {
     const fetchCompanies = async () => {
         setLoadingCompanies(true);
         try {
-            const q = query(collection(db, 'companies'));
+            // PERF-01: limit a 1000 aziende
+            const q = query(collection(db, 'companies'), orderBy('name'), limit(1000));
             const snapshot = await getDocs(q);
             const fetched: Company[] = [];
             snapshot.forEach((doc) => fetched.push({ id: doc.id, ...doc.data() } as Company));
@@ -156,7 +171,8 @@ export const AdminDashboard: React.FC = () => {
     const fetchTickets = async () => {
         setLoadingTickets(true);
         try {
-            const q = query(collection(db, 'tickets'));
+            // PERF-01: limit a 2000 ticket ordinati per data — abbondante, evita scansioni illimitate
+            const q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'), limit(2000));
             const snapshot = await getDocs(q);
             const fetched: Ticket[] = [];
             snapshot.forEach((doc) => fetched.push({ id: doc.id, ...doc.data() } as Ticket));
@@ -373,8 +389,13 @@ export const AdminDashboard: React.FC = () => {
                 // Calcoliamo quali campi sono cambiati
                 const changes: Record<string, any> = {};
                 Object.keys(localSettings).forEach(key => {
-                    if ((localSettings as any)[key] !== (settings as any)[key]) {
-                        changes[key] = { from: (settings as any)[key], to: (localSettings as any)[key] };
+                    const fromVal = (settings as any)[key];
+                    const toVal = (localSettings as any)[key];
+                    if (toVal !== fromVal) {
+                        changes[key] = { 
+                            from: fromVal !== undefined ? fromVal : null, 
+                            to: toVal !== undefined ? toVal : null 
+                        };
                     }
                 });
                 
@@ -427,6 +448,42 @@ export const AdminDashboard: React.FC = () => {
             setIsDictationModalOpen(false);
             setDictationTargetId(null);
             setDictationInitialText('');
+        }
+    };
+
+    const handleSaveDescription = async (newDescription: string) => {
+        if (!descriptionTargetId) return;
+
+        try {
+            const ticketRef = doc(db, 'tickets', descriptionTargetId);
+            await updateDoc(ticketRef, {
+                description: newDescription,
+                updatedAt: Date.now(),
+            });
+
+            // Aggiorna lo stato locale del ticket selezionato
+            if (selectedTicket && selectedTicket.id === descriptionTargetId) {
+                setSelectedTicket({ ...selectedTicket, description: newDescription });
+            }
+
+            // Aggiorna nella lista
+            setTickets(tickets.map((t) => (t.id === descriptionTargetId ? { ...t, description: newDescription } : t)));
+
+            if (currentUser) {
+                const authorName = userProfile?.displayName || currentUser.displayName || 'Amministratore';
+                AuditLogService.logAction({
+                    userId: currentUser.uid, userEmail: currentUser.email || '', userName: authorName, userRole: isSuperadmin ? 'superadmin' : (isAdmin ? 'admin' : 'user'),
+                    action: 'UPDATE', resourceType: 'TICKET', resourceId: descriptionTargetId,
+                    details: `${authorName} ha MODIFICATO la descrizione originale del ticket.`
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore salvataggio descrizione');
+        } finally {
+            setIsDescriptionModalOpen(false);
+            setDescriptionTargetId(null);
+            setDescriptionInitialText('');
         }
     };
 
@@ -631,12 +688,28 @@ export const AdminDashboard: React.FC = () => {
                     <CheckSquare size={20} /> Collaudo
                 </button>
                 <button
-                    className={`btn ${activeTab === 'inventory' ? 'btn-primary' : ''}`}
-                    onClick={() => handleTabChange('inventory')}
+                    className={`btn ${activeTab === 'unita_sk' ? 'btn-primary' : ''}`}
+                    onClick={() => handleTabChange('unita_sk')}
                     style={{ flex: 1, minWidth: '120px' }}
                 >
-                    <Box size={20} /> Magazzino
+                    <Cpu size={20} /> Unità SK
                 </button>
+                <button
+                    className={`btn ${activeTab === 'acquisto_materiale' ? 'btn-primary' : ''}`}
+                    onClick={() => handleTabChange('acquisto_materiale')}
+                    style={{ flex: 1, minWidth: '160px' }}
+                >
+                    <Truck size={20} /> Acquisto Materiale
+                </button>
+                {isSuperadmin && (
+                    <button
+                        className={`btn ${activeTab === 'inventory' ? 'btn-primary' : ''}`}
+                        onClick={() => handleTabChange('inventory')}
+                        style={{ flex: 1, minWidth: '120px' }}
+                    >
+                        <Box size={20} /> Magazzino (Superadmin)
+                    </button>
+                )}
                 <button
                     className={`btn ${activeTab === 'rapportini' ? 'btn-primary' : ''}`}
                     onClick={() => handleTabChange('rapportini')}
@@ -667,6 +740,15 @@ export const AdminDashboard: React.FC = () => {
                         </span>
                     )}
                 </button>
+                {isSuperadmin && (
+                    <button
+                        className={`btn ${activeTab === 'telegram' ? 'btn-primary' : ''}`}
+                        onClick={() => handleTabChange('telegram')}
+                        style={{ flex: 1, minWidth: '120px' }}
+                    >
+                        <Bell size={20} /> Telegram
+                    </button>
+                )}
             </div>
 
             {activeTab === 'tickets' && (
@@ -763,9 +845,15 @@ export const AdminDashboard: React.FC = () => {
 
             {activeTab === 'checklist' && <CollaudoChecklistTab onUnsavedChange={setHasUnsavedChecklist} />}
 
-            {activeTab === 'inventory' && <InventoryTab />}
+            {activeTab === 'unita_sk' && <UnitaSkTab />}
+
+            {activeTab === 'acquisto_materiale' && <MaterialPurchaseTab companies={companies} />}
+
+            {activeTab === 'inventory' && isSuperadmin && <InventoryTab />}
 
             {activeTab === 'rapportini' && <RapportiniTab />}
+
+            {activeTab === 'telegram' && isSuperadmin && <TelegramNotificationsTab />}
 
             {/* Ticket Details Modal */}
             {selectedTicket && (
@@ -776,6 +864,11 @@ export const AdminDashboard: React.FC = () => {
                         setDictationTargetId(t.id!);
                         setDictationInitialText(t.notes || '');
                         setIsDictationModalOpen(true);
+                    }}
+                    onEditDescription={(t) => {
+                        setDescriptionTargetId(t.id!);
+                        setDescriptionInitialText(t.description || '');
+                        setIsDescriptionModalOpen(true);
                     }}
                     onDeleteTicket={deleteTicket}
                     users={users}
@@ -789,6 +882,34 @@ export const AdminDashboard: React.FC = () => {
                     onClose={() => setIsDictationModalOpen(false)}
                     onSave={handleSaveDictation}
                     initialText={dictationInitialText}
+                    title="Modifica Appunti / Note di Chiusura"
+                />
+            )}
+
+            {/* Dictation Modal for updating description */}
+            {isDescriptionModalOpen && (
+                <VoiceDictationModal
+                    isOpen={isDescriptionModalOpen}
+                    onClose={() => setIsDescriptionModalOpen(false)}
+                    onSave={handleSaveDescription}
+                    initialText={descriptionInitialText}
+                    title="Modifica Descrizione Originale del Problema"
+                />
+            )}
+
+            {/* UX-03: Confirm Modal per cambio tab con modifiche non salvate */}
+            {pendingTabChange && (
+                <ConfirmModal
+                    message={'Hai modifiche non salvate per la checklist.\n\nVuoi cambiare scheda senza salvare?'}
+                    confirmLabel="Cambia scheda"
+                    cancelLabel="Rimani qui"
+                    variant="warning"
+                    onConfirm={() => {
+                        setActiveTab(pendingTabChange as any);
+                        setHasUnsavedChecklist(false);
+                        setPendingTabChange(null);
+                    }}
+                    onCancel={() => setPendingTabChange(null)}
                 />
             )}
         </div>

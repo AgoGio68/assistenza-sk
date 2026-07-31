@@ -7,36 +7,35 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper per ottenere i dati dell'utente loggato
+    // Helper per ottenere i dati dell'utente loggato (con fallback per evitare errori se il doc non esiste)
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data : {"role": "guest", "status": "pending"};
     }
 
     // Identifica se l'utente esiste e ha ruoli specifici
     function isSuperadmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             getUserData().role == 'superadmin';
+      return isAuthenticated() && getUserData().role == 'superadmin';
     }
     
     function isAdmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             (getUserData().role == 'admin' || getUserData().role == 'superadmin');
+      let data = getUserData();
+      return isAuthenticated() && (data.role == 'admin' || data.role == 'superadmin');
     }
 
     // Approved: Utente approvato OPPURE un Admin/Superadmin
     function isApproved() {
+      let data = getUserData();
       return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             (getUserData().status == 'approved' || getUserData().role == 'admin' || getUserData().role == 'superadmin');
+             (data.status == 'approved' || data.role == 'admin' || data.role == 'superadmin');
     }
 
     // --- Rules for Collections ---
     
     // Users: Profiles management
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      // Permetti la lettura del proprio profilo o dei profili ospite anonimi
+      allow read: if isAuthenticated() || userId[0:8] == 'anonimo_';
       // Permetti la creazione del proprio profilo se non esiste
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isSuperadmin() || (request.auth.uid == userId);
@@ -58,13 +57,19 @@ service cloud.firestore {
     // Inventory: Items in warehouse
     match /inventory/{itemId} {
       allow read: if isApproved();
-      allow write: if isAdmin();
+      allow write: if isSuperadmin();
     }
     
     // Inventory Movements: In/Out logs
     match /inventory_movements/{moveId} {
-      allow read, create: if isApproved();
-      allow update, delete: if isAdmin();
+      allow read: if isApproved();
+      allow create, update, delete: if isSuperadmin();
+    }
+
+    // Unità SK: Serialized equipment
+    match /unita_sk/{unitId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
     }
 
     // Installation Data: Machine info
@@ -103,5 +108,62 @@ service cloud.firestore {
       allow create: if isApproved();
       allow read, update, delete: if false;
     }
+
+    // Shared Sheets: Clone of Google Sheets
+    match /fogli_condivisi/{sheetId} {
+      // 'ordini' is fully public (anonymous read/write) as requested
+      allow read, write: if sheetId == 'ordini';
+      
+      // Other sheets in this collection require at least authentication
+      allow read, write: if sheetId != 'ordini' && isAuthenticated();
+    }
+
+    // New Row-based Collections
+    // Lettura pubblica OK (clienti possono vedere lo stato ordini)
+    // Scrittura: almeno autenticato (l'app crea sessione anonima automaticamente per visitatori)
+    match /ordini/{rowId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    match /ordini_s2/{rowId} {
+      allow read: if isAuthenticated();
+      allow write: if isApproved();
+    }
+
+    // Calendar: Manual events — solo utenti approvati
+    match /eventi_calendario/{eventId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isApproved();
+      allow delete: if isAdmin();
+    }
+
+    // Collaudo Checklists: Master lists — solo admin possono modificare template
+    match /collaudo_checklists/{listId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+
+    // FCM Tokens: Web Push registrations
+    match /fcm_tokens/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Push Notification Testing
+    match /test_push/{docId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false; // Solo il server (Admin SDK) può leggere e cancellare
+    }
+
+    // Telegram Notifications: Technicians registry
+    match /notifiche_telegram/{docId} {
+      allow read, write: if isSuperadmin();
+    }
+
+    // Material Purchases: Incoming materials tracking
+    match /material_purchases/{purchId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
   }
 }
+

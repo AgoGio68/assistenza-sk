@@ -14,13 +14,13 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 const RAPPORTINI_APP_NAME = 'rapportini-dfv';
 
 const rapportiniConfig = {
-    apiKey: 'AIzaSyD5UHY1lH6cA_Ix2ego9c2DLhq8ScK1zYM',
-    authDomain: 'rapportini-dfv.firebaseapp.com',
-    databaseURL: 'https://rapportini-dfv-default-rtdb.europe-west1.firebasedatabase.app',
-    projectId: 'rapportini-dfv',
-    storageBucket: 'rapportini-dfv.firebasestorage.app',
-    messagingSenderId: '839574377906',
-    appId: '1:839574377906:web:9c993e00e15652836380ab',
+    apiKey: import.meta.env.VITE_RAPPORTINI_API_KEY,
+    authDomain: import.meta.env.VITE_RAPPORTINI_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_RAPPORTINI_DATABASE_URL,
+    projectId: import.meta.env.VITE_RAPPORTINI_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_RAPPORTINI_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_RAPPORTINI_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_RAPPORTINI_APP_ID,
 };
 
 // Inizializza solo se non è già stata inizializzata (hot-reload safe)

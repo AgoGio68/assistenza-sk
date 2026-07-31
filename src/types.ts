@@ -9,6 +9,7 @@ export interface UserProfile {
     status: UserStatus;
     createdAt: number;
     canCreateTickets?: boolean;
+    canAccessInstallations?: boolean;
     fcmToken?: string;
     phone?: string;
     sections?: ('sk' | 's2')[];
@@ -18,7 +19,7 @@ export type UrgencyLevel = 'urgente' | 'non_urgente';
 export type TicketStatus = 'aperto' | 'preso_in_carico' | 'chiuso';
 
 export interface GlobalSettings {
-    settingsSheetUrl: string;
+    settingsSheetUrl?: string;
     appName?: string;
     primaryColor?: string;
     secondaryColor?: string;
@@ -36,11 +37,10 @@ export interface GlobalSettings {
     section2Enabled?: boolean;
     section2Name?: string;
     section2Color?: string;
-    section2SheetUrl?: string;
+    section2SheetUrl?: string; // kept for backward compat, unused
 
     // Feature C Addon: Section 2 Installations
     section2InstallationsEnabled?: boolean;
-    section2InstallationsSheetUrl?: string;
 
     // Permissions
     allowUserTicketCreation?: boolean;
@@ -50,10 +50,6 @@ export interface GlobalSettings {
     userCanCloseOwnTickets?: boolean;
     adminCanReassignOthers?: boolean;
     enableInstallations?: boolean;
-    insertInstallationsAtTop?: boolean;
-    installationsSheetUrl?: string;
-    installationsSheetName?: string; // v3.3.0: Nome tab foglio (default: "ORDINI")
-    section2InstallationsSheetName?: string; // v3.3.0: Nome tab foglio S2 (default: "ORDINI")
     serialPrefix?: string;
     installationModules?: string[];
 
@@ -101,6 +97,8 @@ export interface GlobalSettings {
     };
     // v3.9.7: Version Tracking
     version?: string;
+    // i18n: Application Language
+    language?: 'it' | 'en' | 'fr';
 }
 
 export interface Ticket {
@@ -146,6 +144,7 @@ export interface Installation {
     modelSK: string;
     serialSK: string;
     deliveryDate: string;
+    dataEffettivaConsegna?: string;
     installationSite: string;
     installDate: string;
     comments: string;
@@ -167,6 +166,7 @@ export interface Installation {
     originalRowIndex?: string; // Indice riga per aggiornamento Sheets
     testDate?: string; // Data di collaudo specifica
     _firestoreId?: string; // ID stabile calcolato al merge, usato per save/delete
+    pairedUnit?: { modello: string; seriale: string } | null;
 }
 
 // v3.4.0: Collaudo Checklist
@@ -201,6 +201,7 @@ export interface InventoryItem {
     category?: string; // Categoria (Meccanica, Elettronica, ecc)
     lastUpdated?: number;
     sortOrder?: number; // v3.7.0: Ordinamento per drag and drop
+    lastAlertSent?: number; // ROB-02: timestamp ultimo alert email sottoscorta (rate limiting 24h)
 }
 
 export interface InventoryMovement {
@@ -218,7 +219,7 @@ export interface InventoryMovement {
 }
 
 export type ActivityActionType = 'CREATE' | 'UPDATE' | 'DELETE' | 'STATUS_CHANGE' | 'LOGIN' | 'ASSIGN' | 'REJECT' | 'APPROVE';
-export type ActivityResourceType = 'TICKET' | 'INSTALLATION' | 'USER' | 'COMPANY' | 'SETTINGS' | 'INVENTORY_ITEM' | 'SYSTEM';
+export type ActivityResourceType = 'TICKET' | 'INSTALLATION' | 'USER' | 'COMPANY' | 'SETTINGS' | 'INVENTORY_ITEM' | 'SYSTEM' | 'UNITA_SK' | 'MATERIAL_PURCHASE';
 
 export interface ActivityLog {
     id?: string;
@@ -232,5 +233,45 @@ export interface ActivityLog {
     resourceId?: string;
     details: string;
     metadata?: any;
+}
+
+
+export interface CalendarManualEvent {
+    id?: string;
+    cliente: string; // Cliente/Descrizione
+    tipo: 'Installazione' | 'Collaudo' | 'Riparazione' | 'Sopralluogo';
+    dataInizio: string; // ISO String (Date + Time combined)
+    colore: string;
+    note?: string; // Nuovo campo note
+    createdAt: number;
+}
+
+export interface UnitaSk {
+    id?: string;
+    modello: string;
+    seriale: string;
+    note?: string | null;
+    createdAt: number;
+    updatedAt: number;
+    assignedToInstallationId?: string;
+    assignedToClientName?: string;
+    isArchived?: boolean; // true when paired installation is marked "Collaudata"
+}
+
+export type MaterialPurchaseStatus = 'pending' | 'arrived';
+
+export interface MaterialPurchase {
+    id: string;
+    description: string;
+    quantity: number | string;
+    code: string;
+    orderDate: string;   // YYYY-MM-DD
+    arrivalDate: string; // YYYY-MM-DD
+    client: string;      // Cliente
+    status: MaterialPurchaseStatus;
+    confirmedAt?: number;
+    confirmedBy?: string;
+    createdAt: number;
+    updatedAt: number;
 }
 

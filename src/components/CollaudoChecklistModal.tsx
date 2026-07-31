@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     CheckCircle2,
     Circle,
@@ -10,7 +11,7 @@ import {
     CheckCheck,
     RotateCcw,
 } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -44,7 +45,26 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
     const { settings } = useSettings();
 
     const machineType = getMachineType(machineName);
-    const checklists = settings.collaudoChecklists || { rp: [], sp: [] };
+    const [checklists, setChecklists] = useState<any>(settings.collaudoChecklists || { rp: [], sp: [] });
+    const navigate = useNavigate();
+
+    // Task 4: Load from new collaudo_checklists collection
+    useEffect(() => {
+        const fetchChecklists = async () => {
+            try {
+                const q = query(collection(db, 'collaudo_checklists'));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    const loaded: any = {};
+                    snap.docs.forEach(d => loaded[d.id] = d.data());
+                    setChecklists(loaded);
+                }
+            } catch (err) {
+                console.error('Error fetching checklists from collection:', err);
+            }
+        };
+        fetchChecklists();
+    }, []);
 
     // v3.4.0: Logica di selezione dinamica
     const [selectedKey, setSelectedKey] = useState<string>(
@@ -52,10 +72,8 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
     );
 
     const checklistItems: string[] = (() => {
-        if (selectedKey === 'rp') return checklists.rp || [];
-        if (selectedKey === 'sp') return checklists.sp || [];
-        const custom = (checklists as any)[selectedKey];
-        return custom?.items || [];
+        const cat = (checklists as any)[selectedKey];
+        return cat?.items || [];
     })();
 
     const [report, setReport] = useState<CollaudoReport | null>(null);
@@ -143,6 +161,41 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
             setSavedItems([...completedItems]); // aggiorna snapshot
 
             if (markComplete) {
+                // Aggiornamento stato Collaudo come Completato (Trigger Colore Verde in SharedSheet)
+                const instRef = doc(db, 'installation_data', installationId);
+                await setDoc(instRef, {
+                    tested: true,
+                    testDate: new Date(now).toISOString(),
+                    status: 'completato'
+                }, { merge: true });
+
+                // Scrittura "COLLAUDATO" sulla riga originaria dell'ordine (se non è un ticket)
+                if (!installationId.startsWith('ticket-')) {
+                    let currentSection: 'sk' | 's2' = 'sk';
+                    try {
+                        const instDoc = await getDoc(instRef);
+                        if (instDoc.exists()) {
+                            const instData = instDoc.data();
+                            if (instData.section === 's2') {
+                                currentSection = 's2';
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Errore recupero section da installation_data:', err);
+                    }
+
+                    const sheetId = currentSection === 's2' ? 'ordini_s2' : 'ordini';
+                    const ordineRef = doc(db, sheetId, installationId);
+                    await setDoc(ordineRef, {
+                        installazione: 'COLLAUDATO',
+                        D: 'COLLAUDATO',
+                        note_inst: 'COLLAUDATO',
+                        J: 'COLLAUDATO',
+                        commenti: 'COLLAUDATA',
+                        I: 'COLLAUDATA',
+                        style: '#d4edda' // Forza il verde anche sui campi testuali
+                    }, { merge: true });
+                }
                 // GAGOS 2026-04-02: Global Audit Log
                 const authorName = userProfile?.displayName || currentUser.displayName || 'Tecnico';
                 AuditLogService.logAction({
@@ -156,7 +209,18 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
                     details: `${authorName} ha COMPLETATO il COLLAUDO per ${clientName} (${machineName}).`,
                     metadata: { installationId, machineName, clientName }
                 });
-                setTimeout(onClose, 1200);
+                
+                // Reindirizzamento automatico alla Dashboard principale
+                setTimeout(() => {
+                    onClose();
+                    navigate('/');
+                }, 800);
+            } else {
+                // Se non è completo ma c'è progresso, impostiamo lo stato su 'in_corso' (Giallo)
+                const instRef = doc(db, 'installation_data', installationId);
+                await setDoc(instRef, {
+                    status: completedItems.length > 0 ? 'in_corso' : 'in_attesa'
+                }, { merge: true });
             }
         } catch (err) {
             console.error('Errore salvataggio report:', err);
@@ -577,11 +641,11 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
                                         opacity: allComplete ? 1 : 0.4,
                                         cursor: allComplete ? 'pointer' : 'not-allowed',
                                     }}
-                                    title={allComplete ? 'Completa il collaudo' : 'Completa tutte le voci prima'}
+                                    title={allComplete ? 'Completa il collaudo in modo definitivo' : 'Completa tutte le voci prima di inviare'}
                                 >
                                     <CheckCheck size={16} />
                                     {allComplete
-                                        ? '✅ Completa Collaudo'
+                                        ? 'INVIA E CONCLUDI COLLAUDO'
                                         : `Mancano ${checklistItems.length - completedItems.length} voci`}
                                 </button>
                             </>

@@ -1,114 +1,124 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, writeBatch } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../firebase';
-import { fetchInstallations } from '../services/InstallationService';
+import { db } from '../firebase';
 import { Installation } from '../types';
 
-export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadmin: boolean, googleToken: string | null) => {
+export const useInstallations = (section: 'sk' | 's2', _settings: any, _isSuperadmin: boolean) => {
     const [sheetData, setSheetData] = useState<Installation[]>([]);
     const [installations, setInstallations] = useState<Installation[]>([]);
     const [dbData, setDbData] = useState<Record<string, Partial<Installation>>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [importNotified, setImportNotified] = useState(false);
     const [orphanedData, setOrphanedData] = useState<Installation[]>([]);
- 
-    const loadSheetData = async () => {
-        const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
- 
-        if (!sheetUrl) {
-            setSheetData([]);
-            setLoading(false);
-            return;
-        }
- 
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await fetchInstallations(sheetUrl, googleToken);
-            setSheetData(data);
-        } catch (err: any) {
-            setError(
-                err.message || `Impossibile caricare i dati dal foglio. Verifica che l'URL sia corretto e il foglio sia pubblico.`
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    // Real-time listener for Firestore overrides
+    // 1 — Listen to the Shared Firebase Collection (New PK System)
+    useEffect(() => {
+        const sheetId = section === 's2' ? 'ordini_s2' : 'ordini';
+        const collRef = collection(db, sheetId);
+
+        setLoading(true);
+        const unsub = onSnapshot(collRef, (snapshot) => {
+            const mapped = snapshot.docs.map((docSnap) => {
+                const d = docSnap.data();
+                
+                const orderNumber = (d['A'] || '').trim();
+                const client = (d['B'] || '').trim();
+                const fatturazioneRaw = (d['E'] || d['data_cons'] || '').trim().toUpperCase();
+                const deliveryDateRaw = (d['dataEffettivaConsegna'] || d['L'] || '').trim();
+                const rowIndex = d.rowIndex || 0;
+
+                const autoInvoiced = fatturazioneRaw.includes("FT");
+
+                const rawModelSK = (d['F'] || '').trim();
+                const modelSKIsNote = rawModelSK.startsWith('***') || rawModelSK.startsWith('...');
+                
+                let modelSK = '';
+                let leftoverNote = '';
+
+                if (modelSKIsNote) {
+                    leftoverNote = rawModelSK;
+                } else {
+                    const lines = rawModelSK.split('\n');
+                    const ocmskLines = lines.filter((l: string) => l.trim().startsWith('OCMSK'));
+                    const otherLines = lines.filter((l: string) => !l.trim().startsWith('OCMSK') && l.trim() !== '');
+                    
+                    if (ocmskLines.length > 0) {
+                        modelSK = ocmskLines.join('\n');
+                        if (otherLines.length > 0) {
+                            leftoverNote = otherLines.join('\n').trim();
+                        }
+                    } else {
+                        if (rawModelSK.length > 25 || lines.length > 1) {
+                            leftoverNote = rawModelSK;
+                            modelSK = '';
+                        } else {
+                            modelSK = rawModelSK;
+                        }
+                    }
+                }
+
+                const explicitNote = (d['J'] || '').trim();
+                const extractedNotes = [explicitNote, leftoverNote]
+                    .filter(n => n.trim() !== '')
+                    .join('\n\n');
+
+                return {
+                    rowId: `row-${rowIndex + 1}`,
+                    orderNumber,
+                    client,
+                    machine: (d['C'] || '').trim(),
+                    installationSite: (d['D'] || '').trim(),
+                    deliveryDate: deliveryDateRaw,
+                    modelSK,
+                    serialSK: (d['G'] || '').trim(),
+                    installDate: (d['H'] || '').trim(),
+                    comments: (d['I'] || '').trim(),
+                    extractedNotes,
+                    originalRowIndex: String(rowIndex + 1),
+                    _firestoreId: docSnap.id,
+                    isInvoiced: autoInvoiced,
+                } as Installation;
+            })
+            .filter(i => i.client || i.orderNumber);
+
+            setSheetData(mapped);
+            setLoading(false);
+        }, (err) => {
+            console.error('[useInstallations] Snapshot error:', err);
+            setError('Errore nel collegamento al database degli ordini.');
+            setLoading(false);
+        });
+
+        return () => unsub();
+    }, [section]);
+
+    // 2 — Real-time listener for Firestore overrides
     useEffect(() => {
         const unsub = onSnapshot(collection(db, 'installation_data'), (snap) => {
             const dataMap: Record<string, Partial<Installation>> = {};
-            snap.forEach((doc) => {
-                dataMap[doc.id] = doc.data() as Partial<Installation>;
+            snap.forEach((d) => {
+                dataMap[d.id] = d.data() as Partial<Installation>;
             });
             setDbData(dataMap);
         });
         return () => unsub();
     }, []);
 
-    // Fetch on mount or setting change
-    useEffect(() => {
-        loadSheetData();
-    }, [settings.installationsSheetUrl, settings.section2InstallationsSheetUrl, section]);
-
-    const generateSemanticId = (inst: Installation) => {
+    const generateSemanticId = (inst: Installation): string => {
         if (inst._firestoreId) return inst._firestoreId;
-
-        const clean = (s: string) => (s || '').trim().toLowerCase().replace(/\//g, '-').replace(/\s+/g, '_');
+        const clean = (s: string) =>
+            (s || '').trim().toLowerCase().replace(/\//g, '-').replace(/\s+/g, '_');
         const order = clean(inst.orderNumber);
         const client = clean(inst.client);
         const machine = clean(inst.machine);
         return `inst-${order}-${client}-${machine}`;
     };
 
-    // WhatsApp Notification
-    useEffect(() => {
-        if (
-            settings.whatsappEnabled &&
-            settings.waNotifyNewImport !== false &&
-            sheetData.length > 0 &&
-            !importNotified &&
-            !loading
-        ) {
-            const isFirstLoad = installations.length === 0 && !loading;
-            if (isFirstLoad) {
-                setImportNotified(true);
-                return;
-            }
+    const loadSheetData = async () => {
+        // Handled by onSnapshot — kept for backward compatibility
+    };
 
-            const newItems = sheetData.filter((sheetInst) => {
-                const id = generateSemanticId(sheetInst);
-                return !dbData[id] && !installations.some((i) => i._firestoreId === id);
-            });
-
-            if (newItems.length > 0) {
-                setImportNotified(true);
-                try {
-                    const body = `[IMPORTAZIONE]: Rilevate ${newItems.length} nuova/e riga/e nel foglio Google.\n\nClienti: ${newItems
-                        .slice(0, 5)
-                        .map((i) => i.client)
-                        .join(', ')}${newItems.length > 5 ? ' e altri...' : ''}`;
-                    const inviaNotifica = httpsCallable(functions, 'inviaNotificaWhatsApp');
-                    inviaNotifica({ body });
-                } catch (err) {
-                    console.error('WA Import Notification Error:', err);
-                }
-            }
-        }
-    }, [
-        sheetData,
-        loading,
-        settings.whatsappEnabled,
-        settings.waNotifyNewImport,
-        installations,
-        dbData,
-        importNotified,
-    ]);
-
-    // Merge Data
+    // 3 — Merge: Sheet rows + Local Firestore overrides
     useEffect(() => {
         const sheetIdsSeen = new Set<string>();
         const semanticCounts: Record<string, number> = {};
@@ -124,11 +134,12 @@ export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadm
                 }
                 sheetIdsSeen.add(id);
                 const extra = dbData[id] || {};
-                const { scheduledDate, scheduledTime, tested, toTest, comments, isInvoiced, ...safeLocalOverrides } =
+                const { scheduledDate, scheduledTime, tested, toTest, comments, isInvoiced, extractedNotes, ...safeLocalOverrides } =
                     extra.localOverrides || {};
                 return {
                     ...inst,
                     ...extra,
+                    isInvoiced: inst.isInvoiced,
                     ...safeLocalOverrides,
                     _firestoreId: id,
                 };
@@ -139,34 +150,29 @@ export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadm
         const orphans: Installation[] = [];
 
         Object.entries(dbData)
-            .filter(([id, doc]) => {
-                const isCorrectSection = doc.section === section || (!doc.section && section === 'sk');
+            .filter(([id, d]) => {
+                const isCorrectSection = d.section === section || (!d.section && section === 'sk');
                 const isOrphan = !sheetIdsSeen.has(id);
-                const isNotDeleted = !doc.isDeleted;
+                const isNotDeleted = !d.isDeleted;
                 return isCorrectSection && isOrphan && isNotDeleted;
             })
-            .forEach(([id, doc]) => {
-                const client = doc.client || doc.localOverrides?.client;
-                const machine = doc.machine || doc.localOverrides?.machine;
-                const hasContent = (client && client.trim() !== '') || (machine && machine.trim() !== '');
+            .forEach(([id, d]) => {
+                const client = d.client || d.localOverrides?.client;
+                const machine = d.machine || d.localOverrides?.machine;
+                const hasContent =
+                    (client && client.trim() !== '') || (machine && machine.trim() !== '');
 
                 if (hasContent) {
                     const instObj = {
-                        ...(doc as Installation),
-                        ...(doc.localOverrides || {}),
-                        rowId: (doc as any).rowId || 'manual',
+                        ...(d as Installation),
+                        ...(d.localOverrides || {}),
+                        rowId: (d as any).rowId || 'manual',
                         _firestoreId: id,
                     };
 
-                    if (doc.isManual) {
+                    if (d.isManual) {
                         pendingManual.push(instObj);
-                    } else if (
-                        doc.comments ||
-                        doc.tested ||
-                        doc.toTest ||
-                        doc.scheduledDate ||
-                        doc.applications?.length
-                    ) {
+                    } else if (d.comments || d.tested || d.toTest || d.scheduledDate || d.applications?.length) {
                         orphans.push(instObj);
                     }
                 }
@@ -177,9 +183,9 @@ export const useInstallations = (section: 'sk' | 's2', settings: any, isSuperadm
     }, [sheetData, dbData, section]);
 
     const handleHardResetDB = async (activeInstallations: Installation[]) => {
-        if (!isSuperadmin) return;
+        if (!_isSuperadmin) return;
         const msg =
-            '⚠️ ATTENZIONE ADMINISTRATOR!\n\nSei sicuro di voler PULIRE LA CACHE DEL DATABASE (salvataggi in app) per le macchine attualmente in coda o orfane?\n\nQuesta azione CANCELLERÀ appunti interni, date manuali e flag non ancora esportati, forzando un ricalcolo pulito dal solo foglio Google.\n\nLe macchine già fatturate/storicizzate (grigie) non verranno toccate in alcun modo.\n\nVuoi procedere?';
+            '⚠️ ATTENZIONE ADMINISTRATOR!\n\nSei sicuro di voler PULIRE LA CACHE DEL DATABASE (salvataggi in app) per le macchine attualmente in coda o orfane?\in\nQuesta azione CANCELLERÀ appunti interni, date manuali e flag non ancora esportati, forzando un ricalcolo pulito dal solo foglio Google.\n\nLe macchine già fatturate/storicizzate (grigie) non verranno toccate in alcun modo.\n\nVuoi procedere?';
 
         if (!window.confirm(msg)) return;
 

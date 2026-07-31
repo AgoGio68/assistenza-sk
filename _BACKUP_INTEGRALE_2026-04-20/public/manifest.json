@@ -1,0 +1,16 @@
+{
+    "short_name": "AssistenzaSK",
+    "name": "Assistenza Supporto SK",
+    "icons": [
+        {
+            "src": "/logo-sk.jpg",
+            "type": "image/jpeg",
+            "sizes": "192x192 512x512"
+        }
+    ],
+    "start_url": "/",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#4A90E2"
+}

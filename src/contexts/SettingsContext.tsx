@@ -3,8 +3,7 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { GlobalSettings } from '../types';
 
-const defaultSettings: GlobalSettings = {
-    settingsSheetUrl: '',
+const baseDefaultSettings: Partial<GlobalSettings> = {
     primaryColor: '#0f172a' /* Default slate-900 */,
     secondaryColor: '#3b82f6' /* Default blue-500 */,
     logoUrl: '',
@@ -14,9 +13,6 @@ const defaultSettings: GlobalSettings = {
     applyCompactToAll: false,
     allowUserTicketCreation: true,
     enablePhotos: false,
-    enableInstallations: false,
-    insertInstallationsAtTop: false,
-    installationsSheetUrl: '',
     serialPrefix: '',
     installationModules: [
         'OCMSKD20101 - Upgrade 1 Monitoring channel CPX',
@@ -39,8 +35,39 @@ const defaultSettings: GlobalSettings = {
     userCanAssignAtCreation: false,
     userCanCloseOwnTickets: true,
     whatsappEnabled: false, // v3.3.1: disabilitato di default — richiede ok amministrazione
+};
+
+export const STANDARD_RP_CHECKLIST = [
+    'PRIMA COSA ATTIVARE DMI IN VALORI DI MISURA E CARATTERE',
+    'ATTIVARE DMI IBRIDO',
+    'DMI CON FUNZIONE DI TASTO "0"',
+    'CH1 INGRESSO SUPERIORE POSIZIONE DMI "1" GRUPPO H25',
+    'CH2 INGRESSO INFERIORE  POSIZIONE DMI "S" GRUPPO H25',
+    'CH3 USCITA SUPERIORE      POSIZIONE DMI "S" GRUPPO H25',
+    'CH4 CUNEO  POSIZIONE DMI "D1" HIDE AND E = "0"',
+    'CH5 CUNEO  POSIZIONE DMI "D2" HIDE AND E = "0"',
+    'IN2 : RICHIESTA DI SCARTO ESTERNO',
+    'OUT-BDE2 CONTEGGIO PEZZI BUONI',
+    'ATTIVARE CONTEGGIO IN MAN',
+    'ATTIVARE COLPO A VUOTO',
+    'TOLLERANZA SCARTO 3',
+    'PEZZI DA SCARTARE +2/3',
+    'ATTIVARE SCARTO IN STOP',
+    'ATTIVARE ROLLBACK E METTERE A "1"',
+    'ENTRARE NELLA CURVA ROLLBACK PREMERE IMPOSTAZIONI:',
+    '(ZOOM-CH SENS MIN "1")',
+    '(IN VISUALIZZAZIONE NASCONDERE IL CANALE)',
+    'SINCRONIZZAZIONE PROXIMITY NEGATIVO SE PIASTRINA NON PRESENTE',
+    'INSERIRE INDIRIZZO IP 192.168.0.210',
+    'SALVARE I PARAMETRI A FINE PROGRAMMAZIONE',
+    'ESPORTA BACKUP',
+    'IMPORTANDO IL BACKUP RIMETTERE INDIRIZZO IP',
+];
+
+const defaultSettings: GlobalSettings = {
+    ...baseDefaultSettings,
     collaudoChecklists: {
-        rp: [],
+        rp: STANDARD_RP_CHECKLIST,
         sp: [],
         c1: { title: 'Custom 1', items: [] },
         c2: { title: 'Custom 2', items: [] },
@@ -58,6 +85,7 @@ const defaultSettings: GlobalSettings = {
         rapportini: '#14b8a6',
         logout: '#f43f5e',
     },
+    language: 'it' as 'it' | 'en' | 'fr',
 };
 
 interface SettingsContextType {
@@ -91,20 +119,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     const root = document.documentElement;
                     if (data.primaryColor) root.style.setProperty('--primary-color', data.primaryColor);
                     if (data.secondaryColor) root.style.setProperty('--secondary-color', data.secondaryColor);
-                    // v3.9.7: Automatic Cache Invalidation
-                    if (data.version && (window as any).__APP_VERSION__ && data.version !== (window as any).__APP_VERSION__) {
-                        console.warn(`Version mismatch detected! Server: ${data.version}, Client: ${(window as any).__APP_VERSION__}. Forcing reload...`);
-                        
-                        // Previeni loop infiniti: ricarica solo se non lo abbiamo fatto negli ultimi 10 secondi
-                        const lastReload = sessionStorage.getItem('last_version_reload');
-                        const now = Date.now();
-                        if (!lastReload || now - parseInt(lastReload) > 10000) {
-                            sessionStorage.setItem('last_version_reload', now.toString());
-                            window.location.reload();
-                        }
+                    // v4.6.1: Aggiornamento versione automatico
+                    // Se la versione in Firestore è diversa da quella del bundle,
+                    // aggiorna silenziosamente Firestore (non fare reload — evita loop).
+                    const isPublicSheet = window.location.pathname.startsWith('/sheet');
+                    const bundleVersion = (window as any).__APP_VERSION__;
+                    if (!isPublicSheet && bundleVersion && data.version && data.version !== bundleVersion) {
+                        console.log(`[SettingsContext] Versione Firestore (${data.version}) → Aggiorno a bundle (${bundleVersion}).`);
+                        setDoc(docRef, { version: bundleVersion }, { merge: true }).catch(console.error);
                     }
                 } else {
-                    setDoc(docRef, { ...defaultSettings, version: (window as any).__APP_VERSION__ || '3.9.7' }).catch(console.error);
+                    setDoc(docRef, { ...defaultSettings, version: (window as any).__APP_VERSION__ || '27.0' }).catch(console.error);
                 }
                 setLoading(false);
             },
@@ -120,8 +145,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updateSettings = async (newSettings: Partial<GlobalSettings>) => {
         try {
             const docRef = doc(db, 'settings', 'global');
-            const version = (window as any).__APP_VERSION__ || '3.9.7';
-            await setDoc(docRef, { ...newSettings, version }, { merge: true });
+            const version = (window as any).__APP_VERSION__ || '27.0';
+            
+            // Remove undefined values to prevent Firestore errors
+            const sanitizedSettings = { ...newSettings };
+            Object.keys(sanitizedSettings).forEach(key => {
+                if ((sanitizedSettings as any)[key] === undefined) {
+                    delete (sanitizedSettings as any)[key];
+                }
+            });
+            
+            await setDoc(docRef, { ...sanitizedSettings, version }, { merge: true });
         } catch (error) {
             console.error('Failed to update settings:', error);
             throw error;

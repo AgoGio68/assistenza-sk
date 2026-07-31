@@ -1,33 +1,28 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import {
     User as FirebaseUser,
     onAuthStateChanged,
     signOut,
-    GoogleAuthProvider,
-    signInWithPopup,
-    linkWithPopup,
-    reauthenticateWithPopup,
+    signInAnonymously,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { getToken } from 'firebase/messaging';
-import { auth, db, messaging } from '../firebase';
+import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
     currentUser: FirebaseUser | null;
     userProfile: UserProfile | null;
     loading: boolean;
+    /** true se il safety timeout è scattato (connessione lenta o assente) */
+    isOffline: boolean;
     logout: () => Promise<void>;
     isSuperadmin: boolean;
     isAdmin: boolean;
     isApproved: boolean;
     updateDisplayName: (newName: string) => Promise<void>;
     updatePhone: (newPhone: string) => Promise<void>;
-    connectGoogle: () => Promise<string | null>;
-    signInWithGoogle: () => Promise<void>;
-    disconnectGoogle: () => void;
-    googleToken: string | null;
     userSections: ('sk' | 's2')[];
+    canAccessInstallations: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -40,68 +35,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    // UX-02: stato per banner offline
+    const [isOffline, setIsOffline] = useState(false);
+
+    // ROB-01: useRef per gestire il listener del profilo in modo sicuro
+    // evita race condition tra operazioni async e cleanup
+    const profileUnsubRef = useRef<() => void>(() => {});
 
     useEffect(() => {
-        let userProfileUnsubscribe: () => void;
-
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            // ROB-01: cancella sempre il listener precedente prima di crearne uno nuovo
+            profileUnsubRef.current();
+            profileUnsubRef.current = () => {};
+
             setCurrentUser(user);
 
             if (user) {
                 const userDocRef = doc(db, 'users', user.uid);
 
                 // Fetch iniziale o creazione
-                const userDoc = await getDoc(userDocRef);
-                if (!userDoc.exists()) {
-                    const newProfile: UserProfile = {
-                        uid: user.uid,
-                        email: user.email,
-                        displayName: user.displayName || user.email?.split('@')[0] || 'User',
-                        role: 'user',
-                        status: 'pending',
-                        createdAt: Date.now(),
-                    };
-                    await setDoc(userDocRef, newProfile);
-                }
-
-                // Subscribe ai cambiamenti del profilo in tempo reale
-                userProfileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data() as UserProfile;
-                        setUserProfile(data);
-
-                        // Richiedi notifiche push per admin/superadmin approvati
-                        if (
-                            (data.role === 'admin' || data.role === 'superadmin') &&
-                            data.status === 'approved' &&
-                            messaging
-                        ) {
-                            Notification.requestPermission().then((permission) => {
-                                if (permission === 'granted') {
-                                    getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
-                                        .then((token) => {
-                                            if (token && token !== data.fcmToken) {
-                                                console.log('Nuovo token FCM generato e salvato.');
-                                                updateDoc(userDocRef, { fcmToken: token });
-                                            }
-                                        })
-                                        .catch(console.error);
-                                }
-                            });
+                try {
+                    const userDoc = await getDoc(userDocRef);
+                    if (!userDoc.exists()) {
+                        // VALIDAZIONE RIGOROSA (Fix Ghost Records)
+                        // Non creiamo un profilo se l'email è mancante (es. utenti anonimi o sessioni parziali)
+                        if (!user.email || user.email.trim() === '') {
+                            console.warn('[Auth] Utente anonimo rilevato (o senza email) UID:', user.uid);
+                            setLoading(false);
+                            return;
                         }
+
+                        const newProfile: UserProfile = {
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: (user.displayName || user.email.split('@')[0] || 'User').trim(),
+                            role: 'user',
+                            status: 'pending',
+                            createdAt: Date.now(),
+                        };
+                        await setDoc(userDocRef, newProfile);
                     }
-                    setLoading(false); // <--- Imposto loading=false SOLO DOPO aver caricato il profilo
-                });
+
+                    // ROB-01: salva il nuovo unsubscribe nel ref — sempre chiamabile
+                    profileUnsubRef.current = onSnapshot(
+                        userDocRef,
+                        (docSnap) => {
+                            if (docSnap.exists()) {
+                                const data = docSnap.data() as UserProfile;
+                                setUserProfile(data);
+                            }
+                            setLoading(false);
+                        },
+                        (error) => {
+                            console.error('[Auth] Errore snapshot profilo:', error);
+                            setLoading(false);
+                        },
+                    );
+                } catch (error) {
+                    console.error('[Auth] Errore fetch profilo iniziale:', error);
+                    setLoading(false);
+                }
             } else {
                 setUserProfile(null);
-                if (userProfileUnsubscribe) userProfileUnsubscribe();
-                setLoading(false); // <--- Se non c'è utente, ok loading false immediato
+
+                // LOGIN ANONIMO AUTOMATICO
+                // Se non c'è un utente loggato, attiviamo una sessione anonima
+                // per permettere la visione delle pagine pubbliche (es. /sheet/ordini)
+                try {
+                    console.log('[Auth] Avvio login anonimo...');
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error('[Auth] Errore login anonimo:', error);
+                    setLoading(false);
+                }
             }
         });
 
+        // UX-02: Safety timeout — se dopo 8 secondi siamo ancora in loading,
+        // sblocchiamo la UI e mostriamo il banner offline/lento
+        const safetyTimeout = setTimeout(() => {
+            setLoading((prev) => {
+                if (prev) {
+                    console.warn('[Auth] Safety timeout attivato - Sblocco loading forzato.');
+                    setIsOffline(true);
+                }
+                return false;
+            });
+        }, 8000);
+
         return () => {
             unsubscribe();
-            if (userProfileUnsubscribe) userProfileUnsubscribe();
+            clearTimeout(safetyTimeout);
+            // ROB-01: cleanup sempre sicuro grazie al ref
+            profileUnsubRef.current();
         };
     }, []);
 
@@ -126,111 +152,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateDoc(userDocRef, { phone: newPhone });
     };
 
-    const [googleToken, setGoogleToken] = useState<string | null>(localStorage.getItem('google_calendar_token'));
-
-    // Tentativo di rilevamento automatico per utenti Google
-    useEffect(() => {
-        if (!currentUser || googleToken) return;
-        const isGoogleUser = currentUser.providerData.some((p) => p.providerId === 'google.com');
-        if (isGoogleUser) {
-            console.log(
-                'Utente Google rilevato senza token attivo. Il sistema tenterà il collegamento fluido alla prima azione necessaria.',
-            );
-        }
-    }, [currentUser, googleToken]);
-
-    const connectGoogle = async () => {
-        try {
-            const provider = new GoogleAuthProvider();
-            provider.addScope('https://www.googleapis.com/auth/calendar.events');
-            provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-            // provider.setCustomParameters({ prompt: 'consent' }); // rimosso per login automatico
-
-            if (!currentUser) {
-                alert('Devi essere loggato per collegare Google.');
-                return null;
-            }
-
-            let token: string | undefined = undefined;
-
-            const isGoogleLinked = currentUser.providerData.some((p) => p.providerId === 'google.com');
-
-            try {
-                if (isGoogleLinked) {
-                    const result = await reauthenticateWithPopup(currentUser, provider);
-                    const credential = GoogleAuthProvider.credentialFromResult(result);
-                    token = credential?.accessToken;
-                } else {
-                    const result = await linkWithPopup(currentUser, provider);
-                    const credential = GoogleAuthProvider.credentialFromResult(result);
-                    token = credential?.accessToken;
-                }
-            } catch (err: any) {
-                if (err.code === 'auth/credential-already-in-use') {
-                    // L'account Google è già usato da un'altra entità Firebase.
-                    // Poiché ci serve solo il Token OAuth per le chiamate API Calendar/Sheets,
-                    // estraiamo pacificamente le credenziali dall'errore, senza loggare l'utente fuori/dentro.
-                    const credential = GoogleAuthProvider.credentialFromError(err);
-                    token = credential?.accessToken;
-                } else {
-                    throw err;
-                }
-            }
-
-            if (token) {
-                setGoogleToken(token);
-                localStorage.setItem('google_calendar_token', token);
-                return token;
-            }
-            return null;
-        } catch (error: any) {
-            console.error('Error connecting to Google:', error);
-            alert('Errore durante il collegamento a Google: ' + (error.message || 'Verifica la console del browser.'));
-            return null;
-        }
-    };
-
-    const signInWithGoogle = async () => {
-        try {
-            const provider = new GoogleAuthProvider();
-            provider.addScope('https://www.googleapis.com/auth/calendar.events');
-            provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-            // provider.setCustomParameters({ prompt: 'consent' }); // rimosso per login automatico
-
-            const result = await signInWithPopup(auth, provider);
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            const token = credential?.accessToken;
-
-            if (token) {
-                setGoogleToken(token);
-                localStorage.setItem('google_calendar_token', token);
-            }
-        } catch (error: any) {
-            console.error('Error signing in with Google:', error);
-            throw error;
-        }
-    };
-
-    const disconnectGoogle = () => {
-        setGoogleToken(null);
-        localStorage.removeItem('google_calendar_token');
-    };
-
     const value = {
         currentUser,
         userProfile,
         loading,
+        isOffline,
         logout,
         isSuperadmin,
         isAdmin,
         isApproved,
         updateDisplayName,
         updatePhone,
-        connectGoogle,
-        signInWithGoogle,
-        disconnectGoogle,
-        googleToken,
         userSections,
+        canAccessInstallations: isAdmin,
     };
 
     return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

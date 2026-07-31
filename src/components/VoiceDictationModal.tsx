@@ -206,7 +206,7 @@ export const VoiceDictationModal: React.FC<VoiceDictationModalProps> = ({
                 )}
 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                    <button onClick={handleCancel} className="btn" style={{ flex: 1, backgroundColor: '#e2e8f0' }}>
+                    <button onClick={handleCancel} className="btn" style={{ flex: 1, backgroundColor: '#334155', color: '#f1f5f9', border: '1px solid #475569' }}>
                         Annulla
                     </button>
                     <button onClick={handleSave} className="btn btn-success" style={{ flex: 1 }}>

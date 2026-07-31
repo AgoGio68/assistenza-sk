@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Calendar, DollarSign, Package, MessageSquare, ListChecks, Camera } from 'lucide-react';
+import { Box, Calendar, DollarSign, Package, MessageSquare, ListChecks, Camera, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Installation } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface InstallationCardProps {
     inst: Installation;
@@ -11,6 +12,8 @@ interface InstallationCardProps {
     generateSemanticId: (inst: Installation) => string;
     handleOpenDetail: (inst: Installation) => void;
     setUsageModal: (modal: any) => void;
+    setCollaudoInst: (inst: Installation) => void;
+    setUnitaSkPickerInst: (inst: Installation) => void;
 }
 
 export const InstallationCard: React.FC<InstallationCardProps> = ({
@@ -21,8 +24,11 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
     generateSemanticId,
     handleOpenDetail,
     setUsageModal,
+    setCollaudoInst,
+    setUnitaSkPickerInst,
 }) => {
     const navigate = useNavigate();
+    const { isSuperadmin } = useAuth();
     const cardColor = getCardColor(inst);
     const glowType = getGlowType(inst);
     const id = generateSemanticId(inst);
@@ -51,7 +57,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
             <div
                 key={id}
                 onClick={() => handleOpenDetail(inst)}
-                className={`glass-panel card-hover ${glowType ? `glow-${glowType}` : ''}`}
+                className={`glass-panel card-hover ${glowType ? `flash-${glowType}` : ''}`}
                 style={{
                     ...baseStyle,
                     padding: '0.75rem 1rem',
@@ -72,6 +78,11 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                             </span>
                         )}
                     </h3>
+                    {inst.pairedUnit && (
+                        <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <span>🖥️ <strong>Unità SK:</strong> {inst.pairedUnit.modello} - S/N: {inst.pairedUnit.seriale}</span>
+                        </div>
+                    )}
                 </div>
                 <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     <Box size={14} style={{ flexShrink: 0 }} />{' '}
@@ -85,6 +96,42 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                     {inst.isInvoiced && <DollarSign size={16} color="var(--text-secondary)" />}
                     {hasNotes && <MessageSquare size={14} color="var(--text-secondary)" />}
                     {hasChecklist && <ListChecks size={14} color="var(--success-color)" />}
+                    {(inst.toTest || inst.tested) && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setCollaudoInst(inst);
+                            }}
+                            title="Checklist Collaudo"
+                            style={{
+                                background: 'rgba(234, 179, 8, 0.15)',
+                                color: '#d97706',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '0.2rem',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <ListChecks size={18} />
+                        </button>
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setUnitaSkPickerInst(inst);
+                        }}
+                        title="Associa Unità SK"
+                        style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#ef4444',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '0.2rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <Monitor size={18} />
+                    </button>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -102,22 +149,24 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                     >
                         <Camera size={18} />
                     </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setUsageModal({ isOpen: true, instId: inst._firestoreId || '', clientName: inst.client });
-                        }}
-                        style={{
-                            background: 'rgba(16,185,129,0.15)',
-                            color: '#10b981',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '0.2rem',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <Package size={18} />
-                    </button>
+                    {isSuperadmin && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setUsageModal({ isOpen: true, instId: inst._firestoreId || '', clientName: inst.client });
+                            }}
+                            style={{
+                                background: 'rgba(16,185,129,0.15)',
+                                color: '#10b981',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '0.2rem',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <Package size={18} />
+                        </button>
+                    )}
                 </div>
             </div>
         );
@@ -128,7 +177,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
             <div
                 key={id}
                 onClick={() => handleOpenDetail(inst)}
-                className={`glass-panel card-hover ${glowType ? `glow-${glowType}` : ''}`}
+                className={`glass-panel card-hover ${glowType ? `flash-${glowType}` : ''}`}
                 style={{
                     ...baseStyle,
                     padding: '0.75rem',
@@ -139,6 +188,35 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
             >
                 <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '0.3rem', alignItems: 'center', color: 'var(--text-secondary)' }}>
                     {inst.isInvoiced && <DollarSign size={14} />}
+                    {(inst.toTest || inst.tested) && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setCollaudoInst(inst);
+                            }}
+                            title="Checklist Collaudo"
+                            style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#d97706', border: 'none', borderRadius: '4px', padding: '1px', cursor: 'pointer' }}
+                        >
+                            <ListChecks size={14} />
+                        </button>
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setUnitaSkPickerInst(inst);
+                        }}
+                        title="Associa Unità SK"
+                        style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#ef4444',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '1px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <Monitor size={14} />
+                    </button>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -149,15 +227,17 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                     >
                         <Camera size={14} />
                     </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setUsageModal({ isOpen: true, instId: inst._firestoreId || '', clientName: inst.client });
-                        }}
-                        style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', borderRadius: '4px', padding: '1px', cursor: 'pointer' }}
-                    >
-                        <Package size={14} />
-                    </button>
+                    {isSuperadmin && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setUsageModal({ isOpen: true, instId: inst._firestoreId || '', clientName: inst.client });
+                            }}
+                            style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', borderRadius: '4px', padding: '1px', cursor: 'pointer' }}
+                        >
+                            <Package size={14} />
+                        </button>
+                    )}
                 </div>
                 <h3 style={{
                     margin: '0 0 0.4rem 0',
@@ -188,6 +268,22 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                         {hasChecklist && <ListChecks size={12} color="var(--success-color)" />}
                     </div>
                 </div>
+                {inst.pairedUnit && (
+                    <div style={{
+                        marginTop: '0.4rem',
+                        fontSize: '0.75rem',
+                        color: 'var(--text-primary)',
+                        background: 'rgba(239, 68, 68, 0.08)',
+                        padding: '0.3rem 0.5rem',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(239, 68, 68, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem'
+                    }}>
+                        <span>🖥️ Unità SK: {inst.pairedUnit.modello} - S/N: {inst.pairedUnit.seriale}</span>
+                    </div>
+                )}
             </div>
         );
     }
@@ -197,7 +293,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
         <div
             key={id}
             onClick={() => handleOpenDetail(inst)}
-            className={`glass-panel card-hover ${glowType ? `glow-${glowType}` : ''}`}
+            className={`glass-panel card-hover ${glowType ? `flash-${glowType}` : ''}`}
             style={{
                 ...baseStyle,
                 backgroundColor: inst.isInvoiced ? '#f8fafc' : 'rgba(255,255,255,0.02)',
@@ -206,6 +302,35 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
         >
             <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--text-secondary)' }}>
                 {inst.isInvoiced && <DollarSign size={20} />}
+                {(inst.toTest || inst.tested) && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setCollaudoInst(inst);
+                        }}
+                        title="Checklist Collaudo"
+                        style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#d97706', border: 'none', borderRadius: '4px', padding: '0.2rem', cursor: 'pointer' }}
+                    >
+                        <ListChecks size={20} />
+                    </button>
+                )}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setUnitaSkPickerInst(inst);
+                    }}
+                    title="Associa Unità SK"
+                    style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        color: '#ef4444',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '0.2rem',
+                        cursor: 'pointer',
+                    }}
+                >
+                    <Monitor size={20} />
+                </button>
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -216,15 +341,17 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                 >
                     <Camera size={20} />
                 </button>
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setUsageModal({ isOpen: true, instId: inst._firestoreId || '', clientName: inst.client });
-                    }}
-                    style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', borderRadius: '4px', padding: '0.2rem', cursor: 'pointer' }}
-                >
-                    <Package size={20} />
-                </button>
+                {isSuperadmin && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setUsageModal({ isOpen: true, instId: inst._firestoreId || '', clientName: inst.client });
+                        }}
+                        style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', borderRadius: '4px', padding: '0.2rem', cursor: 'pointer' }}
+                    >
+                        <Package size={20} />
+                    </button>
+                )}
             </div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
                 {inst.client}
@@ -250,6 +377,22 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                     {hasChecklist && <ListChecks size={14} color="var(--success-color)" />}
                 </div>
             </div>
+            {inst.pairedUnit && (
+                <div style={{
+                    marginTop: '0.6rem',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    color: 'var(--text-primary)',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.15)',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '8px',
+                }}>
+                    <span>🖥️ <strong>Unità SK:</strong> {inst.pairedUnit.modello} - S/N: {inst.pairedUnit.seriale}</span>
+                </div>
+            )}
         </div>
     );
 };

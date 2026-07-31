@@ -3,19 +3,22 @@ import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 
 import { db } from '../firebase';
 import { Ticket, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { Check, UserPlus, X, Send, Calendar, Link as LinkIcon, Zap, Box, ListChecks } from 'lucide-react';
+import { Check, UserPlus, X, Send, Calendar, Zap, Box, ListChecks } from 'lucide-react';
 import { VoiceDictationModal } from '../components/VoiceDictationModal';
 import { useSettings } from '../contexts/SettingsContext';
 import { getCreatorName, getAssigneeName } from '../utils/nameUtils';
-import { createGoogleCalendarEvent, formatTicketToEvent } from '../utils/calendarUtils';
 import { CloseTicketModal } from '../components/CloseTicketModal';
 import { CollaudoChecklistModal } from '../components/CollaudoChecklistModal';
 import { InventoryUsageModal } from '../components/InventoryUsageModal';
 import { AuditLogService } from '../services/AuditLogService';
 
+import { useLocation, useNavigate } from 'react-router-dom';
+
 export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk' }) => {
-    const { currentUser, isAdmin, isSuperadmin, userProfile, connectGoogle, googleToken, disconnectGoogle } = useAuth();
+    const { currentUser, isAdmin, isSuperadmin, userProfile } = useAuth();
     const { settings } = useSettings();
+    const location = useLocation();
+    const navigate = useNavigate();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
@@ -39,6 +42,10 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
     const [reassignTo, setReassignTo] = useState('');
     const [reassignReason, setReassignReason] = useState('');
 
+    // Description editing state
+    const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+    const [descriptionTarget, setDescriptionTarget] = useState<{ id: string; description: string } | null>(null);
+
     // Magazzino State (v3.6.0)
     const [usageModal, setUsageModal] = useState<{ isOpen: boolean; ticketId: string; companyName: string }>({
         isOpen: false,
@@ -49,7 +56,6 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
     // Take Charge / Calendar State
     const [takeChargeTicket, setTakeChargeTicket] = useState<Ticket | null>(null);
     const [scheduledDateTime, setScheduledDateTime] = useState('');
-    const [syncToCalendar, setSyncToCalendar] = useState(false);
     const [calendarLoading, setCalendarLoading] = useState(false);
 
     useEffect(() => {
@@ -137,9 +143,24 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
         return () => unsubscribe();
     }, [currentUser]);
 
+    // v15.0.0: Deep Link support via ?id=
+    useEffect(() => {
+        if (!loading && tickets.length > 0) {
+            const params = new URLSearchParams(location.search);
+            const ticketId = params.get('id');
+            if (ticketId && !selectedTicket) {
+                const found = tickets.find(t => t.id === ticketId);
+                if (found) {
+                    setSelectedTicket(found);
+                    // Clear param to avoid re-opening on manual refresh if closed
+                    navigate(location.pathname, { replace: true });
+                }
+            }
+        }
+    }, [loading, tickets, location.search, selectedTicket]);
+
     const handleTakeCharge = (ticket: Ticket) => {
         setTakeChargeTicket(ticket);
-        setSyncToCalendar(!!googleToken);
 
         if (ticket.scheduledDate) {
             setScheduledDateTime(ticket.scheduledDate);
@@ -159,32 +180,8 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
             setCalendarLoading(true);
             const ticketRef = doc(db, 'tickets', takeChargeTicket.id!);
 
-            // 1. Optional Calendar Sync
-            if (syncToCalendar && scheduledDateTime) {
-                if (!googleToken) {
-                    alert(
-                        'Attenzione: Hai richiesto la sincronizzazione, ma non sei collegato a Google Calendar. Clicca su "Collega Google" dalla lista delle assistenze.',
-                    );
-                } else {
-                    const event = formatTicketToEvent(
-                        takeChargeTicket.companyName,
-                        takeChargeTicket.description,
-                        new Date(scheduledDateTime),
-                        window.location.origin,
-                    );
-
-                    try {
-                        console.log('Creazione evento in corso con Token...', googleToken);
-                        await createGoogleCalendarEvent(googleToken, event);
-                        alert('Evento creato in Google Calendar!');
-                    } catch (calErr: any) {
-                        console.error('Calendar Sync Failed:', calErr);
-                        alert(
-                            `Operazione salvata, ma la sincronizzazione del calendario è fallita: ${calErr.message || 'Errore sconosciuto'}`,
-                        );
-                    }
-                }
-            }
+            // 1. Optional Calendar Sync - REMOVED Google Calendar Integration
+            // The system will now use the internal native calendar.
 
             // 2. Update Firestore
             const updatePayload: any = {
@@ -350,6 +347,39 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
         }
     };
 
+    const handleSaveDescription = async (newDescription: string) => {
+        if (!descriptionTarget) return;
+        try {
+            const ticketRef = doc(db, 'tickets', descriptionTarget.id);
+            await updateDoc(ticketRef, {
+                description: newDescription,
+                updatedAt: Date.now(),
+            });
+            if (selectedTicket && selectedTicket.id === descriptionTarget.id) {
+                setSelectedTicket({ ...selectedTicket, description: newDescription });
+            }
+            if (currentUser) {
+                const authorName = userProfile?.displayName || currentUser.displayName || 'Utente';
+                AuditLogService.logAction({
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email || '',
+                    userName: authorName,
+                    userRole: isSuperadmin ? 'superadmin' : (isAdmin ? 'admin' : 'user'),
+                    action: 'UPDATE',
+                    resourceType: 'TICKET',
+                    resourceId: descriptionTarget.id,
+                    details: `${authorName} ha MODIFICATO la descrizione del ticket.`
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Errore salvataggio descrizione');
+        } finally {
+            setIsDescriptionModalOpen(false);
+            setDescriptionTarget(null);
+        }
+    };
+
     const handleSaveClosure = async (hours: number, minutes: number, newNotes: string) => {
         if (!dictationTarget || dictationTarget.action !== 'close') return;
 
@@ -465,27 +495,7 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                     )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                    {(isAdmin || settings.allowUserTicketCreation || userProfile?.role === 'user') && (
-                        <button
-                            onClick={() => (googleToken ? disconnectGoogle() : connectGoogle())}
-                            className="btn"
-                            title={googleToken ? 'Sincronizzazione Google Attiva' : 'Collega il tuo account Google per la sincronizzazione del calendario'}
-                            style={{
-                                fontSize: '0.75rem',
-                                padding: '0.4rem 0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                background: googleToken ? 'rgba(20,184,166,0.12)' : 'var(--bg-elevated)',
-                                color: googleToken ? 'var(--accent-teal)' : 'var(--text-muted)',
-                                border: `1px solid ${googleToken ? 'rgba(20,184,166,0.25)' : 'var(--border-subtle)'}`,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <Calendar size={13} />
-                            {googleToken ? 'Google Sinc ✓' : 'Collega Google'}
-                        </button>
-                    )}
+                    {/* Google Sync Link REMOVED */}
                     <span
                         style={{
                             fontSize: '0.78rem',
@@ -697,7 +707,7 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                                 <Zap size={14} fill="#facc15" />
                                             </div>
                                         )}
-                                        {(isTakenByMe || isAdmin) && (
+                                        {isSuperadmin && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -959,7 +969,7 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                             </button>
                                         )}
 
-                                        {(isTakenByMe || isAdmin) && (
+                                        {isSuperadmin && (
                                             <button
                                                 onClick={() =>
                                                     setUsageModal({
@@ -983,7 +993,8 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                     </div>
 
                                     {(isTakenByMe ||
-                                        (isTakenByOthers && isAdmin && settings.adminCanReassignOthers)) && (
+                                        ticket.createdBy === currentUser?.uid ||
+                                        (isTakenByOthers && (isSuperadmin || (isAdmin && (settings.adminCanReassignOthers || settings.adminCanCloseOthers))))) && (
                                         <div
                                             style={{
                                                 display: 'flex',
@@ -1029,7 +1040,8 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                                             </div>
 
                                             {((isTakenByMe && (isAdmin || settings.userCanCloseOwnTickets !== false)) ||
-                                                (isTakenByOthers && isAdmin && settings.adminCanCloseOthers)) && (
+                                                (ticket.createdBy === currentUser?.uid && (isAdmin || settings.userCanCloseOwnTickets !== false)) ||
+                                                (isTakenByOthers && (isSuperadmin || (isAdmin && settings.adminCanCloseOthers)))) && (
                                                 <button
                                                     onClick={() => handleCloseTicket(ticket.id!, ticket.notes)}
                                                     className="btn btn-success"
@@ -1228,15 +1240,34 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                         >
                             <div
                                 style={{
-                                    fontSize: '0.7rem',
-                                    fontWeight: 700,
-                                    color: 'var(--text-muted)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.06em',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
                                     marginBottom: '0.5rem',
                                 }}
                             >
-                                Descrizione Problema
+                                <div
+                                    style={{
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        color: 'var(--text-muted)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.06em',
+                                    }}
+                                >
+                                    Descrizione Problema
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setDescriptionTarget({ id: selectedTicket.id!, description: selectedTicket.description });
+                                        setIsDescriptionModalOpen(true);
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem' }}
+                                    title="Modifica la descrizione del problema"
+                                >
+                                    ✏️ Modifica
+                                </button>
                             </div>
                             <p style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
                                 {selectedTicket.description}
@@ -1392,10 +1423,11 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                             )}
                             {((selectedTicket.assignedTo === currentUser?.uid &&
                                 (isAdmin || settings.userCanCloseOwnTickets !== false)) ||
+                                (selectedTicket.createdBy === currentUser?.uid &&
+                                    (isAdmin || settings.userCanCloseOwnTickets !== false)) ||
                                 (selectedTicket.assignedTo !== currentUser?.uid &&
-                                    isAdmin &&
-                                    settings.adminCanCloseOthers)) &&
-                                selectedTicket.status === 'preso_in_carico' && (
+                                    (isSuperadmin || (isAdmin && settings.adminCanCloseOthers)))) &&
+                                selectedTicket.status !== 'chiuso' && (
                                     <button
                                         onClick={() => handleCloseTicket(selectedTicket.id!, selectedTicket.notes)}
                                         className="btn btn-success"
@@ -1613,71 +1645,6 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                             />
                         </div>
 
-                        {scheduledDateTime && (
-                            <>
-                                <div
-                                    style={{
-                                        marginBottom: '1.25rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.75rem',
-                                        padding: '0.75rem',
-                                        background: 'var(--bg-elevated)',
-                                        borderRadius: 'var(--border-radius-sm)',
-                                        border: '1px solid var(--border-subtle)',
-                                    }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        id="syncToCalendar"
-                                        checked={syncToCalendar}
-                                        onChange={(e) => setSyncToCalendar(e.target.checked)}
-                                        disabled={!googleToken}
-                                    />
-                                    <label
-                                        htmlFor="syncToCalendar"
-                                        style={{
-                                            fontSize: '0.875rem',
-                                            cursor: googleToken ? 'pointer' : 'default',
-                                            color: googleToken ? 'var(--text-primary)' : 'var(--text-muted)',
-                                        }}
-                                    >
-                                        Crea evento su Google Calendar
-                                        {!googleToken && (
-                                            <span
-                                                style={{
-                                                    display: 'block',
-                                                    fontSize: '0.75rem',
-                                                    color: 'var(--danger-color)',
-                                                    marginTop: '0.2rem',
-                                                }}
-                                            >
-                                                Collega il tuo account Google per attivare questa opzione.
-                                            </span>
-                                        )}
-                                    </label>
-                                </div>
-                                {!googleToken && (
-                                    <button
-                                        onClick={() => connectGoogle()}
-                                        className="btn"
-                                        style={{
-                                            width: '100%',
-                                            marginBottom: '1rem',
-                                            background: 'rgba(20,184,166,0.10)',
-                                            color: 'var(--accent-teal)',
-                                            border: '1px solid rgba(20,184,166,0.2)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.5rem',
-                                        }}
-                                    >
-                                        <LinkIcon size={16} /> Collega Google ora
-                                    </button>
-                                )}
-                            </>
-                        )}
 
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button
@@ -1710,6 +1677,17 @@ export const TicketList: React.FC<{ section?: 'sk' | 's2' }> = ({ section = 'sk'
                 onSave={handleSaveDictation}
                 initialText={dictationTarget?.notes || ''}
                 title="Modifica Note"
+            />
+
+            <VoiceDictationModal
+                isOpen={isDescriptionModalOpen}
+                onClose={() => {
+                    setIsDescriptionModalOpen(false);
+                    setDescriptionTarget(null);
+                }}
+                onSave={handleSaveDescription}
+                initialText={descriptionTarget?.description || ''}
+                title="Modifica Descrizione Problema"
             />
 
             <CloseTicketModal

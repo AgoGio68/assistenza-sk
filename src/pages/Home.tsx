@@ -1,32 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Ticket, Installation, UserProfile } from '../types';
+import { Ticket, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { useSettings } from '../contexts/SettingsContext';
-import { Calendar, Truck, Ticket as TicketIcon, Zap, Filter, Clock, MapPin } from 'lucide-react';
-import { fetchInstallations } from '../services/InstallationService';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Calendar, Truck, Ticket as TicketIcon, Zap, Filter, Clock, MapPin, Trash2 } from 'lucide-react';
 import { CollaudoChecklistModal } from '../components/CollaudoChecklistModal';
+import { parseSheetDate } from '../utils/dateUtils';
+
+/**
+ * Home (Dashboard Attività) — VER 14.0.0 - PLANNING AUTHORITY ONLY
+ * Sincronizzazione basata su dati reali (Firebase) con pulizia automatica del passato.
+ */
 
 export const Home: React.FC = () => {
-    const { currentUser, googleToken } = useAuth();
-    const { settings } = useSettings();
+    const { currentUser } = useAuth();
+    const { t } = useLanguage();
 
     const [tickets, setTickets] = useState<Ticket[]>([]);
-    const [installations, setInstallations] = useState<Installation[]>([]);
-    const [dbInstallations, setDbInstallations] = useState<Record<string, Partial<Installation>>>({});
+    const [manualEvents, setManualEvents] = useState<any[]>([]);
+    const [dbInstallations, setDbInstallations] = useState<any[]>([]);
     const [activeFilter, setActiveFilter] = useState<'all' | 'installations' | 'tickets' | 'collaudi'>('all');
     const [userNames, setUserNames] = useState<Record<string, string>>({});
 
     // Quick Date Edit State
     const [editingItem, setEditingItem] = useState<{
         id: string;
-        type: 'ticket' | 'installation';
+        type: 'ticket' | 'installation' | 'manual';
         date: string;
     } | null>(null);
     const [collaudoItem, setCollaudoItem] = useState<any | null>(null);
 
-    // 1. Fetch Users (for names)
+    const VERSION = "27.2.0";
+
+    // 1. Fetch Users (per i nomi tecnici)
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
             const namesMap: Record<string, string> = {};
@@ -39,7 +46,7 @@ export const Home: React.FC = () => {
         return () => unsubscribe();
     }, []);
 
-    // 2. Fetch Tickets (only scheduled)
+    // 2. Fetch Tickets (solo se programmati)
     useEffect(() => {
         if (!currentUser) return;
         const q = query(collection(db, 'tickets'), where('status', 'in', ['aperto', 'preso_in_carico']));
@@ -52,91 +59,110 @@ export const Home: React.FC = () => {
         return () => unsubscribe();
     }, [currentUser]);
 
-    // 3. Fetch Installations (Sheet + DB)
+    // 3. Fetch Real Activities (installation_data)
     useEffect(() => {
-        const loadInst = async () => {
-            const sheetUrl = settings.installationsSheetUrl;
-            if (!sheetUrl) return;
-            try {
-                const data = await fetchInstallations(sheetUrl, googleToken || undefined);
-                setInstallations(data);
-            } catch (err) {
-                console.error('Home/Installations error:', err);
-            }
-        };
-        loadInst();
-
         const unsubDb = onSnapshot(collection(db, 'installation_data'), (snap) => {
-            const dataMap: Record<string, Partial<Installation>> = {};
-            snap.forEach((doc) => {
-                dataMap[doc.id] = doc.data() as Partial<Installation>;
-            });
-            setDbInstallations(dataMap);
+            const activities = snap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setDbInstallations(activities);
         });
-
         return () => unsubDb();
-    }, [settings.installationsSheetUrl]);
+    }, []);
 
-    // Merge Installations logic (Simplified for Dashboard)
-    const mergedInstallations: (Installation & { type: 'installation' })[] = installations
-        .map((inst) => {
-            const clean = (s: string) => (s || '').trim().toLowerCase().replace(/\//g, '-').replace(/\s+/g, '_');
-            const id =
-                inst._firestoreId || `inst-${clean(inst.orderNumber)}-${clean(inst.client)}-${clean(inst.machine)}`;
-            const extra = dbInstallations[id] || {};
-            return { ...inst, ...extra, _firestoreId: id, type: 'installation' as const };
-        })
-        .filter((inst) => {
-            if (inst.toTest) return !!inst.testDate && !inst.isInvoiced && !inst.tested;
-            return !!inst.scheduledDate && !inst.isInvoiced && !inst.tested;
+    // 4. Fetch Manual Events (eventi_calendario)
+    useEffect(() => {
+        const unsubManual = onSnapshot(collection(db, 'eventi_calendario'), (snapshot) => {
+            const manual = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    id: doc.id,
+                    type: 'manual' as const,
+                    dashboardType: (data.tipo === 'Collaudo') ? 'collaudo' : 'installation',
+                    displayDate: data.dataInizio,
+                    dashboardId: `man-${doc.id}`,
+                };
+            });
+            setManualEvents(manual);
+        });
+        return () => unsubManual();
+    }, []);
+
+    // Logic: REAL DATE & SMART CLEANUP
+    const mergedActivities = useMemo(() => {
+        const dashboardItems: any[] = [];
+        
+        // Calcolo "Oggi" a mezzanotte per filtro temporale
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        
+        // Helper per validare date future/oggi
+        const isFutureOrToday = (dateStr: string) => {
+            if (!dateStr) return false;
+            const d = parseSheetDate(dateStr);
+            if (!d) return false;
+            // Se la data è oggi (dalle 00:00) o nel futuro, ritorna true
+            return d.getTime() >= startOfToday;
+        };
+
+        // --- INSTALLAZIONI E COLLAUDI DA DATABASE ---
+        dbInstallations.forEach(docData => {
+            const stableId = docData.id;
+            const scheduledDate = docData.scheduledDate || "";
+            const testDate = docData.testDate || "";
+
+            // 1. Card Installazione (Solo oggi o futuro + non fatturato)
+            // Se tested è true, apparirà Verde (completato). Se false, apparirà Blu/Teal (programmato).
+            if (scheduledDate && isFutureOrToday(scheduledDate) && !docData.isInvoiced) {
+                dashboardItems.push({
+                    ...docData,
+                    type: 'installation',
+                    dashboardType: 'installation',
+                    dashboardId: `inst-${stableId}`,
+                    displayDate: scheduledDate,
+                });
+            }
+
+            // 2. Card Collaudo (Solo oggi o futuro)
+            // Se tested è true, apparirà Verde (completato). Se false, apparirà Giallo (programmato).
+            if (testDate && isFutureOrToday(testDate)) {
+                dashboardItems.push({
+                    ...docData,
+                    type: 'installation',
+                    dashboardType: 'collaudo',
+                    dashboardId: `col-${stableId}`,
+                    displayDate: testDate,
+                });
+            }
         });
 
-    // Create separate items for Installations and Collaudi if testDate is present
-    const dashboardInstallations: any[] = [];
-    mergedInstallations.forEach((inst) => {
-        // 1. Common Installation item (only if scheduledDate exists and not yet tested)
-        if (inst.scheduledDate) {
-            let displayDate = inst.scheduledDate;
-            if (inst.scheduledTime && !displayDate.includes('T')) {
-                displayDate = `${inst.scheduledDate}T${inst.scheduledTime}`;
-            }
-            dashboardInstallations.push({
-                ...inst,
-                displayDate: displayDate,
-                dashboardType: 'installation',
-                dashboardId: `inst-${inst._firestoreId}`,
-            });
-        }
+        // --- TICKETS (Solo oggi o futuro) ---
+        const ticketItems = tickets
+            .filter(t => t.scheduledDate && isFutureOrToday(t.scheduledDate))
+            .map(t => ({
+                ...t,
+                type: 'ticket' as const,
+                dashboardType: t.isCollaudo ? 'collaudo' : 'ticket',
+                displayDate: t.scheduledDate,
+                dashboardId: `tick-${t.id}`,
+            }));
 
-        // 2. Separate Collaudo item if toTest is true AND testDate is set
-        if (inst.toTest && inst.testDate) {
-            dashboardInstallations.push({
-                ...inst,
-                displayDate: inst.testDate,
-                dashboardType: 'collaudo',
-                dashboardId: `col-${inst._firestoreId}`,
-                isCollaudo: true,
-            });
-        }
-    });
+        // --- MANUALE (Solo oggi o futuro) ---
+        const manualItems = manualEvents.filter(m => m.displayDate && isFutureOrToday(m.displayDate));
 
-    // Combine and Sort
-    const allItems = [
-        ...tickets.map((t) => ({
-            ...t,
-            type: 'ticket' as const,
-            dashboardType: t.isCollaudo ? 'collaudo' : 'ticket',
-            displayDate: t.scheduledDate,
-            dashboardId: `tick-${t.id}`,
-        })),
-        ...dashboardInstallations,
-    ].sort((a, b) => {
-        const dateA = new Date(a.displayDate).getTime();
-        const dateB = new Date(b.displayDate).getTime();
-        return dateA - dateB;
-    });
+        const all = [...dashboardItems, ...ticketItems, ...manualItems];
 
-    const filteredItems = allItems.filter((item) => {
+        // Ordinamento per data
+        return all.sort((a, b) => {
+            const dateA = parseSheetDate(a.displayDate)?.getTime() || 0;
+            const dateB = parseSheetDate(b.displayDate)?.getTime() || 0;
+            return dateA - dateB;
+        });
+    }, [tickets, dbInstallations, manualEvents]);
+
+    const filteredItems = mergedActivities.filter((item) => {
         if (activeFilter === 'all') return true;
         if (activeFilter === 'installations') return item.dashboardType === 'installation';
         if (activeFilter === 'tickets') return item.dashboardType === 'ticket';
@@ -146,8 +172,8 @@ export const Home: React.FC = () => {
 
     const formatForInput = (dateStr: string) => {
         if (!dateStr) return '';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
+        const d = parseSheetDate(dateStr);
+        if (!d) return dateStr;
         const pad = (n: number) => n.toString().padStart(2, '0');
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
@@ -159,18 +185,18 @@ export const Home: React.FC = () => {
                 const cleanId = editingItem.id.startsWith('tick-') ? editingItem.id.substring(5) : editingItem.id;
                 const ref = doc(db, 'tickets', cleanId);
                 await updateDoc(ref, { scheduledDate: editingItem.date, updatedAt: Date.now() });
+            } else if (editingItem.type === 'manual') {
+                const cleanId = editingItem.id.startsWith('man-') ? editingItem.id.substring(4) : editingItem.id;
+                const ref = doc(db, 'eventi_calendario', cleanId);
+                await updateDoc(ref, { dataInizio: editingItem.date });
             } else {
-                // Determine the correct doc ID and field to update
                 const isCollaudoItem = editingItem.id.startsWith('col-');
                 const isInstItem = editingItem.id.startsWith('inst-');
-
-                // Remove ONLY the first prefix (inst- or col-)
                 let cleanId = editingItem.id;
                 if (isCollaudoItem) cleanId = editingItem.id.substring(4);
                 else if (isInstItem) cleanId = editingItem.id.substring(5);
 
                 const finalRef = doc(db, 'installation_data', cleanId);
-
                 if (isCollaudoItem) {
                     await updateDoc(finalRef, { testDate: editingItem.date, updatedAt: Date.now() });
                 } else {
@@ -183,71 +209,69 @@ export const Home: React.FC = () => {
         }
     };
 
+    const handleDelete = async (item: any) => {
+        if (!window.confirm("Sei sicuro di voler eliminare questa attività? L'azione cancellerà il record dal database.")) return;
+        try {
+            if (item.type === 'ticket') {
+                await deleteDoc(doc(db, 'tickets', item.id));
+            } else if (item.type === 'manual') {
+                await deleteDoc(doc(db, 'eventi_calendario', item.id));
+            } else {
+                const cleanId = item.dashboardId.startsWith('inst-') ? item.dashboardId.substring(5) : item.dashboardId.substring(4);
+                await deleteDoc(doc(db, 'installation_data', cleanId));
+            }
+        } catch (err) {
+            alert('Errore durante l\'eliminazione');
+        }
+    };
+
     const getStatusColor = (item: any) => {
-        if (item.dashboardType === 'collaudo') return '#facc15';
+        // Se è completato (tested), è sempre VERDE
+        if (item.tested) return '#22c55e';
+
+        // Altrimenti seguiamo il tipo di attività
+        if (item.dashboardType === 'collaudo') return '#facc15'; // GIALLO PROGRAMMATO
         if (item.type === 'ticket') {
             if ((item as Ticket).urgency === 'urgente') return 'var(--danger-color)';
             return 'var(--primary-color)';
         }
-        return 'var(--accent-teal)';
+        if (item.type === 'manual') return item.colore || 'var(--accent-teal)';
+        return 'var(--accent-teal)'; // INSTALLAZIONE PROGRAMMATA
     };
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem' }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-                <h1
-                    style={{
-                        fontSize: '1.5rem',
-                        fontWeight: 800,
-                        marginBottom: '0.5rem',
-                        background: 'linear-gradient(135deg, var(--text-primary), var(--text-muted))',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}
-                >
-                    Dashboard Attività
-                </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    Attività programmate e collaudi in arrivo.
-                </p>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem', background: 'linear-gradient(135deg, var(--text-primary), var(--text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        {t('dashboard.title')}
+                    </h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        {t('dashboard.subtitle')}
+                    </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800 }}>{VERSION}</span>
+                </div>
             </div>
 
             {/* Filters */}
-            <div
-                style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    marginBottom: '1.5rem',
-                    overflowX: 'auto',
-                    paddingBottom: '0.5rem',
-                    scrollbarWidth: 'none',
-                }}
-            >
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
                 {[
-                    { id: 'all', label: 'Tutto', icon: <Filter size={14} /> },
-                    { id: 'installations', label: 'Installazioni', icon: <Truck size={14} /> },
-                    { id: 'tickets', label: 'Ticket', icon: <TicketIcon size={14} /> },
-                    { id: 'collaudi', label: 'Collaudi', icon: <Zap size={14} /> },
+                    { id: 'all', label: t('dashboard.filter.all'), icon: <Filter size={14} /> },
+                    { id: 'installations', label: t('dashboard.filter.installations'), icon: <Truck size={14} /> },
+                    { id: 'tickets', label: t('dashboard.filter.tickets'), icon: <TicketIcon size={14} /> },
+                    { id: 'collaudi', label: t('dashboard.filter.collaudi'), icon: <Zap size={14} /> },
                 ].map((f) => (
                     <button
                         key={f.id}
                         onClick={() => setActiveFilter(f.id as any)}
                         style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '100px',
-                            border:
-                                '1px solid ' +
-                                (activeFilter === f.id ? 'var(--primary-color)' : 'var(--border-subtle)'),
+                            display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '100px',
+                            border: '1px solid ' + (activeFilter === f.id ? 'var(--primary-color)' : 'var(--border-subtle)'),
                             background: activeFilter === f.id ? 'var(--primary-color)' : 'var(--bg-elevated)',
                             color: activeFilter === f.id ? 'white' : 'var(--text-secondary)',
-                            fontWeight: 600,
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            transition: 'all 0.2s',
+                            fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
                         }}
                     >
                         {f.icon} {f.label}
@@ -258,242 +282,99 @@ export const Home: React.FC = () => {
             {/* List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {filteredItems.length === 0 ? (
-                    <div
-                        style={{
-                            textAlign: 'center',
-                            padding: '4rem',
-                            color: 'var(--text-muted)',
-                            background: 'rgba(255,255,255,0.02)',
-                            borderRadius: 'var(--border-radius-lg)',
-                            border: '1px dashed var(--border-subtle)',
-                        }}
-                    >
+                    <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--border-radius-lg)', border: '1px dashed var(--border-subtle)' }}>
                         <Calendar size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                        <p>Nessuna attività programmata trovata.</p>
+                        <p>{t('dashboard.empty')}</p>
                     </div>
                 ) : (
                     filteredItems.map((item) => {
-                        const displayDate = new Date(item.displayDate!);
+                        const parsedDate = parseSheetDate(item.displayDate);
+                        const displayDate = parsedDate || new Date(0);
 
                         return (
                             <div
                                 key={item.dashboardId}
                                 className={`glass-panel ${item.type === 'ticket' && (item as any).urgency === 'urgente' ? 'blink-border' : ''}`}
                                 style={{
-                                    padding: '0.85rem 1rem',
-                                    borderLeft: `6px solid ${getStatusColor(item)}`,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '0.75rem',
-                                    position: 'relative',
-                                    background: 'var(--bg-surface)',
-                                    boxShadow: 'var(--shadow-md)',
-                                    borderRadius: '16px',
-                                    border: '1px solid var(--border-subtle)',
+                                    padding: '0.85rem 1rem', borderLeft: `6px solid ${getStatusColor(item)}`,
+                                    display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative',
+                                    background: '#ffffff', boxShadow: 'var(--shadow-md)', borderRadius: '16px', border: '1px solid var(--border-subtle)',
                                 }}
                             >
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'flex-start',
-                                        gap: '1rem',
-                                    }}
-                                >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.6rem',
-                                                marginBottom: '0.4rem',
-                                            }}
-                                        >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
                                             <span
                                                 className={item.dashboardType === 'collaudo' ? 'blink-yellow-glow' : ''}
                                                 style={{
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 900,
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.08em',
-                                                    padding: '0.25rem 0.6rem',
-                                                    borderRadius: '4px',
-                                                    background:
-                                                        item.dashboardType === 'collaudo'
-                                                            ? 'rgba(234, 179, 8, 0.4)'
-                                                            : item.dashboardType === 'installation'
-                                                              ? 'rgba(99,102,241,0.2)'
-                                                              : 'rgba(20,184,166,0.15)',
-                                                    color:
-                                                        item.dashboardType === 'collaudo'
-                                                            ? '#facc15'
-                                                            : getStatusColor(item),
+                                                    fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em',
+                                                    padding: '0.25rem 0.6rem', borderRadius: '4px',
+                                                    background: item.dashboardType === 'collaudo' ? 'rgba(234, 179, 8, 0.4)' : item.dashboardType === 'installation' ? 'rgba(99,102,241,0.2)' : 'rgba(20,184,166,0.15)',
+                                                    color: item.dashboardType === 'collaudo' ? '#facc15' : getStatusColor(item),
                                                     border: `1px solid ${getStatusColor(item)}44`,
                                                 }}
                                             >
-                                                {item.dashboardType === 'installation'
-                                                    ? 'INSTALLAZIONE'
-                                                    : item.dashboardType === 'collaudo'
-                                                      ? 'COLLAUDO'
-                                                      : 'ASSISTENZA'}
+                                                {item.dashboardType === 'installation' ? t('dashboard.badge.installation') : item.dashboardType === 'collaudo' ? t('dashboard.badge.collaudo') : t('dashboard.badge.support')}
                                             </span>
                                             {item.type === 'ticket' && (item as any).urgency === 'urgente' && (
-                                                <span
-                                                    style={{
-                                                        fontSize: '0.7rem',
-                                                        background: 'var(--danger-color)',
-                                                        color: 'white',
-                                                        padding: '0.25rem 0.6rem',
-                                                        borderRadius: '4px',
-                                                        fontWeight: 900,
-                                                        boxShadow: '0 0 10px rgba(239,68,68,0.4)',
-                                                    }}
-                                                >
-                                                    URGENTE
-                                                </span>
+                                                <span style={{ fontSize: '0.7rem', background: 'var(--danger-color)', color: 'white', padding: '0.25rem 0.6rem', borderRadius: '4px', fontWeight: 900, boxShadow: '0 0 10px rgba(239,68,68,0.4)' }}>URGENTE</span>
                                             )}
                                         </div>
-                                        <h3
-                                            style={{
-                                                fontSize: '1.25rem',
-                                                fontWeight: 900,
-                                                color: 'var(--text-primary)',
-                                                marginTop: '0.5rem',
-                                                lineHeight: 1.2,
-                                            }}
-                                        >
-                                            {item.type === 'installation'
-                                                ? (item as any).client
-                                                : (item as any).companyName}
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#000000', marginTop: '0.5rem', lineHeight: 1.2 }}>
+                                            {item.type === 'installation' ? (item as any).client : item.type === 'manual' ? (item as any).cliente : (item as any).companyName}
                                         </h3>
                                     </div>
-                                    <div
-                                        onClick={() =>
-                                            setEditingItem({
-                                                id: item.dashboardId!,
-                                                type: item.type,
-                                                date: formatForInput(item.displayDate!),
-                                            })
-                                        }
-                                        style={{
-                                            textAlign: 'center',
-                                            cursor: 'pointer',
-                                            background: 'var(--bg-elevated)',
-                                            padding: '0.45rem 0.8rem',
-                                            borderRadius: '10px',
-                                            border: '2px solid var(--border-subtle)',
-                                            boxShadow: 'var(--shadow-md)',
-                                            minWidth: '88px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                         <div
+                                            onClick={() => setEditingItem({ id: item.dashboardId!, type: item.type, date: formatForInput(item.displayDate!) })}
                                             style={{
-                                                fontSize: '0.75rem',
-                                                color: 'var(--text-secondary)',
-                                                fontWeight: 800,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.05em',
+                                                textAlign: 'center', cursor: 'pointer', background: '#f1f5f9', padding: '0.45rem 0.8rem',
+                                                borderRadius: '10px', border: '2px solid #e2e8f0', boxShadow: 'var(--shadow-md)', minWidth: '88px',
                                             }}
                                         >
-                                            {displayDate.toLocaleDateString('it-IT', {
-                                                weekday: 'short',
-                                                day: '2-digit',
-                                                month: 'short',
-                                            })}
+                                            <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 800, textTransform: 'uppercase' }}>
+                                                {displayDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+                                            </div>
+                                            <div style={{ fontSize: '1.05rem', fontWeight: 950, color: '#000000' }}>
+                                                {displayDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: '1.05rem',
-                                                fontWeight: 950,
-                                                color: 'white',
-                                                marginTop: '0.05rem',
-                                            }}
+                                        <button 
+                                            onClick={() => handleDelete(item)}
+                                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: 'none', padding: '0.6rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                                            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)')}
                                         >
-                                            {displayDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
+                                            <Trash2 size={18} />
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '0.5rem',
-                                        fontSize: '0.9rem',
-                                        color: 'var(--text-secondary)',
-                                        background: 'rgba(255,255,255,0.03)',
-                                        padding: '0.75rem',
-                                        borderRadius: '8px',
-                                    }}
-                                >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: '#333333', background: 'rgba(0,0,0,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                        <Clock size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                                        <Clock size={16} style={{ color: '#64748b', flexShrink: 0 }} />
                                         <span style={{ fontWeight: 600 }}>
-                                            {item.type === 'installation'
-                                                ? (item as any).machine
-                                                : (item as any).description.substring(0, 100) +
-                                                  (item.description.length > 100 ? '...' : '')}
+                                            {item.type === 'installation' ? (item as any).machine : item.type === 'manual' ? (item as any).tipo : (item as any).description?.substring(0, 100) + (item.description?.length > 100 ? '...' : '')}
                                         </span>
                                     </div>
-                                    {item.type === 'installation' && (item as any).installationSite && (
+                                    {(item.installationSite || item.note) && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                            <MapPin size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                                            <span>{(item as any).installationSite}</span>
+                                            <MapPin size={16} style={{ color: '#64748b', flexShrink: 0 }} />
+                                            <span style={{ color: '#475569' }}>{item.installationSite || item.note}</span>
                                         </div>
                                     )}
                                 </div>
 
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        marginTop: '0.15rem',
-                                        borderTop: '1px solid var(--border-subtle)',
-                                        paddingTop: '0.6rem',
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.6rem',
-                                            fontSize: '0.8rem',
-                                            color: 'var(--text-muted)',
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        <span>
-                                            {item.type === 'ticket'
-                                                ? userNames[(item as any).assignedTo || ''] ||
-                                                  (item as any).assigneeName ||
-                                                  'Non assegnato'
-                                                : ''}
-                                        </span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem' }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                                        {item.type === 'ticket' ? userNames[(item as any).assignedTo || ''] || (item as any).assigneeName || 'Non assegnato' : ''}
                                     </div>
                                     {item.dashboardType === 'collaudo' && (
                                         <button
                                             onClick={() => setCollaudoItem(item)}
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '0.4rem',
-                                                padding: '0.4rem 0.85rem',
-                                                background: 'rgba(168,85,247,0.14)',
-                                                color: '#a855f7',
-                                                border: '1px solid rgba(168,85,247,0.35)',
-                                                borderRadius: 8,
-                                                fontSize: '0.8rem',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                letterSpacing: '0.03em',
-                                            }}
-                                            title="Apri checklist collaudo"
+                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.85rem', background: 'rgba(168,85,247,0.14)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.35)', borderRadius: 8, fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
                                         >
-                                            📋 Checklist
+                                            📋 {t('dashboard.checklist')}
                                         </button>
                                     )}
                                 </div>
@@ -505,89 +386,21 @@ export const Home: React.FC = () => {
 
             {/* Quick Date Edit Modal */}
             {editingItem && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.8)',
-                        backdropFilter: 'blur(8px)',
-                        zIndex: 1000,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '1rem',
-                    }}
-                >
-                    <div
-                        style={{
-                            background: 'var(--bg-surface)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: 'var(--border-radius-xl)',
-                            width: '100%',
-                            maxWidth: '400px',
-                            padding: '1.5rem',
-                            boxShadow: 'var(--shadow-xl)',
-                        }}
-                    >
-                        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Calendar size={20} color="var(--primary-color)" /> Modifica Data
-                        </h3>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--border-radius-xl)', width: '100%', maxWidth: '400px', padding: '1.5rem', boxShadow: 'var(--shadow-xl)' }}>
+                        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={20} color="var(--primary-color)" /> Modifica Data</h3>
                         <div style={{ marginBottom: '1.5rem' }}>
-                            <label
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.75rem',
-                                    color: 'var(--text-muted)',
-                                    marginBottom: '0.5rem',
-                                    fontWeight: 600,
-                                }}
-                            >
-                                NUOVA DATA E ORA
-                            </label>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>{t('common.newDate').toUpperCase()}</label>
                             <input
                                 type="datetime-local"
                                 value={editingItem.date}
                                 onChange={(e) => setEditingItem({ ...editingItem, date: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.8rem',
-                                    background: 'var(--bg-elevated)',
-                                    border: '1px solid var(--border-subtle)',
-                                    color: 'white',
-                                    borderRadius: 'var(--border-radius-md)',
-                                }}
+                                style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'white', borderRadius: 'var(--border-radius-md)' }}
                             />
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <button
-                                onClick={() => setEditingItem(null)}
-                                style={{
-                                    flex: 1,
-                                    padding: '0.75rem',
-                                    background: 'transparent',
-                                    border: '1px solid var(--border-subtle)',
-                                    color: 'white',
-                                    borderRadius: 'var(--border-radius-md)',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                Annulla
-                            </button>
-                            <button
-                                onClick={handleUpdateDate}
-                                style={{
-                                    flex: 1,
-                                    padding: '0.75rem',
-                                    background: 'var(--primary-color)',
-                                    border: 'none',
-                                    color: 'white',
-                                    borderRadius: 'var(--border-radius-md)',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                Salva
-                            </button>
+                            <button onClick={() => setEditingItem(null)} style={{ flex: 1, padding: '0.75rem', background: 'transparent', border: '1px solid var(--border-subtle)', color: 'white', borderRadius: 'var(--border-radius-md)', cursor: 'pointer' }}>Annulla</button>
+                            <button onClick={handleUpdateDate} style={{ flex: 1, padding: '0.75rem', background: 'var(--primary-color)', border: 'none', color: 'white', borderRadius: 'var(--border-radius-md)', fontWeight: 700, cursor: 'pointer' }}>Salva</button>
                         </div>
                     </div>
                 </div>
@@ -596,16 +409,8 @@ export const Home: React.FC = () => {
             {/* Collaudo Checklist Modal */}
             {collaudoItem && (
                 <CollaudoChecklistModal
-                    installationId={
-                        collaudoItem.type === 'ticket'
-                            ? `ticket-${collaudoItem.id}`
-                            : collaudoItem._firestoreId || collaudoItem.dashboardId
-                    }
-                    machineName={
-                        collaudoItem.type === 'ticket'
-                            ? collaudoItem.description?.split(' ')[0] || 'generic'
-                            : collaudoItem.machine || 'generic'
-                    }
+                    installationId={collaudoItem.type === 'ticket' ? `ticket-${collaudoItem.id}` : collaudoItem.id}
+                    machineName={collaudoItem.type === 'ticket' ? collaudoItem.description?.split(' ')[0] || 'generic' : collaudoItem.machine || 'generic'}
                     clientName={collaudoItem.type === 'ticket' ? collaudoItem.companyName : collaudoItem.client}
                     scheduledDate={collaudoItem.displayDate}
                     onClose={() => setCollaudoItem(null)}
@@ -613,14 +418,10 @@ export const Home: React.FC = () => {
             )}
 
             <style>{`
-                .glow-yellow {
-                    animation: glowPulseYellow 2s infinite;
-                    border-color: rgba(234, 179, 8, 0.5) !important;
-                }
-                @keyframes glowPulseYellow {
-                    0%, 100% { box-shadow: 0 0 5px rgba(234, 179, 8, 0.2); }
-                    50% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
-                }
+                .glow-yellow { animation: glowPulseYellow 2s infinite; border-color: rgba(234, 179, 8, 0.5) !important; }
+                @keyframes glowPulseYellow { 0%, 100% { box-shadow: 0 0 5px rgba(234, 179, 8, 0.2); } 50% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); } }
+                .blink-yellow-glow { animation: blinkGlow 1.5s infinite; }
+                @keyframes blinkGlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
             `}</style>
         </div>
     );

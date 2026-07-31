@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import {
-    updateInstallationOnSheet,
-    appendInstallationToSheet,
-    deleteInstallationFromSheet,
-} from '../services/InstallationService';
-import { createGoogleCalendarEvent, formatTicketToEvent, CalendarEvent } from '../utils/calendarUtils';
 import { Installation } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AuditLogService } from '../services/AuditLogService';
+import { syncInstallationStatus, syncResetAssignment } from '../utils/sheetSyncUtils';
+import { UnitaSkService } from '../services/UnitaSkService';
 
 export const useInstallationActions = (
     section: 'sk' | 's2',
-    settings: any,
-    googleToken: string | null,
+    _settings: any,
     isAdmin: boolean,
     generateSemanticId: (inst: Installation) => string,
 ) => {
@@ -22,9 +17,7 @@ export const useInstallationActions = (
     const [selectedInst, setSelectedInst] = useState<Installation | null>(null);
     const [editData, setEditData] = useState<Partial<Installation>>({});
     const [saving, setSaving] = useState(false);
-    const [exportToSheet, setExportToSheet] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
-    const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
 
     // Dati orfani modal state
     const [showOrphanVault, setShowOrphanVault] = useState(false);
@@ -86,34 +79,33 @@ export const useInstallationActions = (
             localOverrides: inst.localOverrides || {},
         });
         setDeleteConfirm(false);
-        setExportToSheet(false);
     };
 
     const handleSave = async () => {
         if (!selectedInst) return;
         setSaving(true);
         try {
-            const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
             let finalDocId = selectedInst._firestoreId || generateSemanticId(selectedInst);
-            let mergedEditData = { ...editData };
-
-            if (selectedInst.isManual && exportToSheet && googleToken && sheetUrl) {
-                const combinedData = { ...selectedInst, ...editData, ...editData.localOverrides } as Installation;
-                const newRowIndex = await appendInstallationToSheet(
-                    sheetUrl,
-                    googleToken,
-                    combinedData,
-                    settings.insertInstallationsAtTop,
-                );
-
-                if (newRowIndex) {
-                    mergedEditData.isManual = false;
-                    mergedEditData.originalRowIndex = newRowIndex;
-                    finalDocId = selectedInst._firestoreId || finalDocId;
-                }
-            }
+            const mergedEditData = { ...editData };
 
             const docRef = doc(db, 'installation_data', finalDocId as string);
+
+            // Check if we unlinked a paired Unit SK
+            const oldSerial = selectedInst.pairedUnit?.seriale;
+            const newSerial = editData.pairedUnit === null ? null : (editData.pairedUnit?.seriale || oldSerial);
+            if (oldSerial && oldSerial !== newSerial) {
+                try {
+                    const prevUnit = await UnitaSkService.findUnitBySerial(oldSerial);
+                    if (prevUnit && prevUnit.id) {
+                        await UnitaSkService.updateUnit(prevUnit.id, {
+                            assignedToInstallationId: '',
+                            assignedToClientName: ''
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error clearing old Unit SK assignment:', err);
+                }
+            }
 
             const firestoreDoc = {
                 scheduledDate: editData.scheduledDate || '',
@@ -129,49 +121,51 @@ export const useInstallationActions = (
                 isManual: mergedEditData.isManual || selectedInst.isManual || false,
                 originalRowIndex: mergedEditData.originalRowIndex || selectedInst.originalRowIndex || '',
                 _firestoreId: finalDocId,
+                client: selectedInst.client || '',   // Denormalizzazione per Calendario
+                machine: selectedInst.machine || '', // Denormalizzazione per Calendario
+                pairedUnit: editData.pairedUnit === null ? null : (editData.pairedUnit || selectedInst.pairedUnit || null),
                 updatedAt: Date.now(),
                 updatedBy: isAdmin ? 'admin' : 'superadmin',
             };
-            await setDoc(docRef, firestoreDoc); // no merge
+            await setDoc(docRef, firestoreDoc);
 
-            const targetRowIndex = mergedEditData.originalRowIndex || selectedInst.originalRowIndex;
-            if (googleToken && targetRowIndex && !mergedEditData.isManual && !exportToSheet) {
-                const statusComment = editData.tested ? '[COLLAUDATA]' : editData.toTest ? '[DA COLLAUDARE]' : '';
-                let cleanComments = editData.comments || '';
-                cleanComments = cleanComments
-                    .replace(/\[COLLAUDATA\]/gi, '')
-                    .replace(/\[DA COLLAUDARE\]/gi, '')
-                    .trim();
-
-                const finalComments = statusComment ? `${statusComment} ${cleanComments}`.trim() : cleanComments;
-
-                const sheetStatus = editData.tested ? 'tested' : (editData.toTest ? 'toTest' : 'none');
-
+            // Sincronizzazione isArchived sull'Unità SK abbinata (VER 26.3.0)
+            const pairedSerial = firestoreDoc.pairedUnit?.seriale ?? selectedInst.pairedUnit?.seriale;
+            if (pairedSerial) {
                 try {
-                    await updateInstallationOnSheet(sheetUrl || '', googleToken, targetRowIndex, {
-                        installDate: editData.scheduledDate || '',
-                        serialSK: editData.localOverrides?.serialSK ?? selectedInst.serialSK,
-                        comments: finalComments,
-                        status: sheetStatus,
-                    });
-                } catch (sheetErr: any) {
-                    console.error('Sheet sync error:', sheetErr);
-                    alert(
-                        `Attenzione: Dati salvati nell'App, ma la sincronizzazione col foglio Google è fallita: ${sheetErr.message}`,
-                    );
+                    const pairedUnit = await UnitaSkService.findUnitBySerial(pairedSerial);
+                    if (pairedUnit && pairedUnit.id) {
+                        await UnitaSkService.updateUnit(pairedUnit.id, {
+                            isArchived: firestoreDoc.tested === true,
+                        });
+                    }
+                } catch (err) {
+                    console.error('[UnitaSK] Errore sync isArchived:', err);
                 }
+            }
+
+            // Sincronizzazione con lo spreadsheet basata sui Flag Manuali (VER 23.7.0)
+            const sheetType = (section === 's2' ? 'ordini_s2' : 'ordini') as 'ordini' | 'ordini_s2';
+            if (firestoreDoc.tested) {
+                await syncInstallationStatus(finalDocId, 'COLLAUDATA', sheetType).catch(err => 
+                    console.error('[Sync] Errore sync collaudata:', err)
+                );
+            } else if (firestoreDoc.toTest) {
+                await syncInstallationStatus(finalDocId, 'DA COLLAUDARE', sheetType).catch(err => 
+                    console.error('[Sync] Errore sync da collaudare:', err)
+                );
             }
 
             if (currentUser) {
                 const authorName = userProfile?.displayName || currentUser.displayName || 'Amministratore';
                 const clientName = editData.localOverrides?.client || selectedInst.client || 'Cliente';
                 AuditLogService.logAction({
-                    userId: currentUser.uid, 
-                    userEmail: currentUser.email || '', 
-                    userName: authorName, 
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email || '',
+                    userName: authorName,
                     userRole: isSuperadmin ? 'superadmin' : (isAdmin ? 'admin' : 'user'),
-                    action: 'UPDATE', 
-                    resourceType: 'INSTALLATION', 
+                    action: 'UPDATE',
+                    resourceType: 'INSTALLATION',
                     resourceId: finalDocId as string,
                     details: `${authorName} ha AGGIORNATO l'installazione per: ${clientName} (${selectedInst.machine || 'N/D'}).`
                 });
@@ -197,19 +191,24 @@ export const useInstallationActions = (
         setSaving(true);
         try {
             const id = selectedInst._firestoreId || generateSemanticId(selectedInst);
-            const docRef = doc(db, 'installation_data', id);
-            const sheetUrl = section === 's2' ? settings.section2InstallationsSheetUrl : settings.installationsSheetUrl;
 
-            if (googleToken && selectedInst.originalRowIndex && sheetUrl) {
+            // Clear Unit SK assignment if there is one!
+            if (selectedInst.pairedUnit?.seriale) {
                 try {
-                    await deleteInstallationFromSheet(sheetUrl, googleToken, selectedInst.originalRowIndex);
-                } catch (sheetErr) {
-                    console.error('Sheet delete error:', sheetErr);
+                    const unit = await UnitaSkService.findUnitBySerial(selectedInst.pairedUnit.seriale);
+                    if (unit && unit.id) {
+                        await UnitaSkService.updateUnit(unit.id, {
+                            assignedToInstallationId: '',
+                            assignedToClientName: ''
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error clearing Unit SK assignment on delete:', err);
                 }
             }
 
+            const docRef = doc(db, 'installation_data', id);
             await deleteDoc(docRef);
-
             alert('Installazione eliminata definitivamente.');
             setSelectedInst(null);
         } catch (err) {
@@ -217,88 +216,6 @@ export const useInstallationActions = (
             alert("Errore durante l'eliminazione.");
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleAddEventToCalendar = async (connectGoogle: () => void) => {
-        if (!googleToken) {
-            connectGoogle();
-            return;
-        }
-        if (!editData.scheduledDate) {
-            alert("Inserisci una data di installazione per creare l'evento su Google Calendar.");
-            return;
-        }
-
-        setIsSyncingCalendar(true);
-        try {
-            const dateStr = editData.scheduledDate;
-            const timeStr = editData.scheduledTime || '08:00';
-            const scheduledDateTime = new Date(`${dateStr}T${timeStr}`);
-
-            const clientName = editData.localOverrides?.client ?? selectedInst?.client ?? 'Cliente Sconosciuto';
-            const machineName = editData.localOverrides?.machine ?? selectedInst?.machine ?? 'Macchina Sconosciuta';
-            const locationStr = editData.localOverrides?.installationSite ?? selectedInst?.installationSite ?? '';
-
-            const descriptionText = `Installazione: ${machineName}\nOrdine: ${selectedInst?.orderNumber || ''}\nMatricola: ${editData.localOverrides?.serialSK ?? selectedInst?.serialSK ?? ''}`;
-
-            const googleEventTitle = locationStr ? `${clientName} - ${locationStr}` : clientName;
-
-            const googleEvent: CalendarEvent = formatTicketToEvent(
-                googleEventTitle,
-                descriptionText,
-                scheduledDateTime,
-                window.location.origin,
-            );
-
-            if (locationStr) {
-                googleEvent.location = locationStr;
-            }
-
-            await createGoogleCalendarEvent(googleToken, googleEvent);
-
-            if (currentUser) {
-                const authorName = userProfile?.displayName || currentUser.displayName || 'Amministratore';
-                AuditLogService.logAction({
-                    userId: currentUser.uid, 
-                    userEmail: currentUser.email || '', 
-                    userName: authorName, 
-                    userRole: isSuperadmin ? 'superadmin' : (isAdmin ? 'admin' : 'user'),
-                    action: 'UPDATE', 
-                    resourceType: 'INSTALLATION', 
-                    resourceId: selectedInst?._firestoreId || 'N/D',
-                    details: `${authorName} ha SINCRONIZZATO l'installazione con Google Calendar per: ${clientName}.`
-                });
-            }
-
-            if (selectedInst) {
-                const calDocId = selectedInst._firestoreId || generateSemanticId(selectedInst);
-                const docRef = doc(db, 'installation_data', calDocId);
-                await setDoc(docRef, {
-                    scheduledDate: editData.scheduledDate || '',
-                    scheduledTime: editData.scheduledTime || '',
-                    tested: editData.tested || false,
-                    toTest: editData.toTest || false,
-                    testDate: editData.testDate || '',
-                    comments: editData.comments || '',
-                    isInvoiced: editData.isInvoiced || false,
-                    applications: editData.applications || [],
-                    localOverrides: editData.localOverrides || {},
-                    section: section,
-                    isManual: selectedInst.isManual || false,
-                    originalRowIndex: selectedInst.originalRowIndex || '',
-                    _firestoreId: calDocId,
-                    updatedAt: Date.now(),
-                    updatedBy: isAdmin ? 'admin' : 'superadmin',
-                });
-            }
-
-            alert('Evento aggiunto a Google Calendar e data salvata!');
-        } catch (error: any) {
-            console.error('Google Calendar Sync Error:', error);
-            alert(`Errore durante la sincronizzazione con Google Calendar: ${error.message}`);
-        } finally {
-            setIsSyncingCalendar(false);
         }
     };
 
@@ -337,17 +254,64 @@ export const useInstallationActions = (
         }
     };
 
+    const handleResetAssignment = async () => {
+        if (!selectedInst) return;
+        if (!window.confirm('Sei sicuro di voler rimuovere "chirurgicamente" l\'assegnazione (date e stati) per questa macchina?')) return;
+        
+        setSaving(true);
+        try {
+            const id = selectedInst._firestoreId || generateSemanticId(selectedInst);
+            const docRef = doc(db, 'installation_data', id);
+            
+            // 1. Reset campi su Firebase
+            await setDoc(docRef, {
+                scheduledDate: '',
+                scheduledTime: '',
+                testDate: '',
+                toTest: false,
+                tested: false,
+                updatedAt: Date.now(),
+                updatedBy: isAdmin ? 'admin_reset' : 'superadmin_reset',
+            }, { merge: true });
+
+            // 2. Sincronizzazione "chirurgica" spreadsheet
+            const sheetType = (section === 's2' ? 'ordini_s2' : 'ordini') as 'ordini' | 'ordini_s2';
+            await syncResetAssignment(id, sheetType);
+
+            // 3. Log attività
+            if (currentUser) {
+                const authorName = userProfile?.displayName || currentUser.displayName || 'Amministratore';
+                const clientName = editData.localOverrides?.client || selectedInst.client || 'Cliente';
+                AuditLogService.logAction({
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email || '',
+                    userName: authorName,
+                    userRole: isSuperadmin ? 'superadmin' : (isAdmin ? 'admin' : 'user'),
+                    action: 'UPDATE',
+                    resourceType: 'INSTALLATION',
+                    resourceId: id,
+                    details: `${authorName} ha RIMOSSO l'assegnazione per: ${clientName}.`
+                });
+            }
+
+            alert('Assegnazione rimossa con successo.');
+            setSelectedInst(null);
+        } catch (err) {
+            console.error('Reset assignment error:', err);
+            alert("Errore durante la rimozione dell'assegnazione.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return {
         selectedInst,
         setSelectedInst,
         editData,
         setEditData,
         saving,
-        exportToSheet,
-        setExportToSheet,
         deleteConfirm,
         setDeleteConfirm,
-        isSyncingCalendar,
         showOrphanVault,
         setShowOrphanVault,
         orphanToRelink,
@@ -358,7 +322,7 @@ export const useInstallationActions = (
         handleOpenDetail,
         handleSave,
         handleDelete,
-        handleAddEventToCalendar,
         handleRelink,
+        handleResetAssignment,
     };
 };

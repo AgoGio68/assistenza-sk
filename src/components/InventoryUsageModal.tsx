@@ -91,6 +91,43 @@ export const InventoryUsageModal: React.FC<InventoryUsageModalProps> = ({
 
     if (!isOpen) return null;
 
+    if (!isSuperadmin) {
+        return (
+            <div
+                className="modal-overlay"
+                style={{
+                    zIndex: 2000,
+                    background: 'rgba(0,0,0,0.9)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <div
+                    className="modal-content"
+                    style={{
+                        maxWidth: 400,
+                        padding: '2rem',
+                        textAlign: 'center',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 24,
+                    }}
+                >
+                    <AlertCircle size={48} color="var(--danger-color)" style={{ marginBottom: '1rem', marginLeft: 'auto', marginRight: 'auto' }} />
+                    <h3 style={{ marginBottom: '1rem' }}>Accesso Negato</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                        Solo i Superadmin sono autorizzati a prelevare materiali dal magazzino.
+                    </p>
+                    <button className="btn btn-primary" onClick={onClose} style={{ width: '100%' }}>
+                        Chiudi
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     const filteredItems = items.filter(
         (it) =>
             it.name.toLowerCase().includes(search.toLowerCase()) ||

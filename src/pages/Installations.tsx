@@ -1,32 +1,42 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { formatToISODate } from '../utils/dateUtils';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 
 import { Installation } from '../types';
 import {
     Truck,
-    Calendar,
     Box,
     AlertTriangle,
     RefreshCw,
-    X,
-    Save,
-    MessageSquare,
-    Trash2,
-    CheckCircle2,
-    ListChecks,
-    ArrowDownWideNarrow,
-    MapPin,
-    User,
-    Link as LinkIcon,
     PlusCircle,
+    Package,
+    X,
+    User,
+    Calendar,
+    MapPin,
+    Link as LinkIcon,
+    MessageSquare,
+    CheckCircle2,
+    Save,
+    Trash2,
+    ArrowDownWideNarrow,
 } from 'lucide-react';
 import { InventoryUsageModal } from '../components/InventoryUsageModal';
 import { InstallationCard } from '../components/InstallationCard';
+import { CollaudoChecklistModal } from '../components/CollaudoChecklistModal';
+import { useLanguage } from '../contexts/LanguageContext';
+import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { UnitaSkPicker } from '../components/UnitaSkPicker';
+import { UnitaSk } from '../types';
+import { AuditLogService } from '../services/AuditLogService';
+import { UnitaSkService } from '../services/UnitaSkService';
 
 import { useInstallations } from '../hooks/useInstallations';
 import { useInstallationActions } from '../hooks/useInstallationActions';
+
 interface InstallationsProps {
     section?: 'sk' | 's2';
 }
@@ -38,28 +48,147 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
         clientName: '',
     });
 
+    const { t } = useLanguage();
     const { settings } = useSettings();
-    const { isSuperadmin, isAdmin, googleToken, connectGoogle } = useAuth();
+    const { isSuperadmin, isAdmin, currentUser, userProfile } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
     // UI Local State
     const [searchTerm, setSearchTerm] = useState('');
     const [sortVerifiedAtBottom, setSortVerifiedAtBottom] = useState(true);
+    const [collaudoInst, setCollaudoInst] = useState<Installation | null>(null);
+    const [unitaSkPickerInst, setUnitaSkPickerInst] = useState<Installation | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [searchParams] = useSearchParams();
 
-    const fieldConfig =
-        section === 's2'
-            ? (settings as any).section2InstallationsFields || {}
-            : {
-                  showModelSK: true,
-                  showSerialSK: true,
-                  showOrderNumber: true,
-                  showOrderDfv: true,
-                  showPlanning: true,
-                  showModules: true,
-                  showExtractedNotes: true,
-                  showTechnicalNotes: true,
-              };
+    // Pre-populate search bar from ?search= query param (e.g. from UnitaSkTab client link)
+    useEffect(() => {
+        const paramSearch = searchParams.get('search');
+        if (paramSearch) {
+            setSearchTerm(paramSearch);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => {
+                setToast(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
+
+    const handlePairUnitSk = async (unit: UnitaSk) => {
+        if (!unitaSkPickerInst) return;
+
+        const inst = unitaSkPickerInst;
+        const finalDocId = inst._firestoreId || generateSemanticId(inst);
+        const docRef = doc(db, 'installation_data', finalDocId);
+
+        try {
+            const existingDbData = dbData[finalDocId] || {};
+            const currentOverrides = existingDbData.localOverrides || {};
+
+            // 1. Release previous Unit SK if it was different
+            const previousSerial = existingDbData.pairedUnit?.seriale;
+            if (previousSerial && previousSerial !== unit.seriale) {
+                try {
+                    const prevUnit = await UnitaSkService.findUnitBySerial(previousSerial);
+                    if (prevUnit && prevUnit.id) {
+                        await UnitaSkService.updateUnit(prevUnit.id, {
+                            assignedToInstallationId: '',
+                            assignedToClientName: ''
+                        });
+                    }
+                } catch (err) {
+                    console.error("Error clearing previous Unit SK assignment:", err);
+                }
+            }
+
+            // 2. Set the new Unit SK assignment status
+            try {
+                const targetUnitId = unit.id || (await UnitaSkService.findUnitBySerial(unit.seriale))?.id;
+                if (targetUnitId) {
+                    await UnitaSkService.updateUnit(targetUnitId, {
+                        assignedToInstallationId: finalDocId,
+                        assignedToClientName: inst.client || 'N/D'
+                    });
+                }
+            } catch (err) {
+                console.error("Error updating selected Unit SK assignment:", err);
+            }
+
+            const newOverrides = {
+                ...currentOverrides,
+                serialSK: unit.seriale,
+                modelSK: unit.modello,
+                Matricola: unit.seriale,
+            };
+
+            const updatedDoc = {
+                ...existingDbData,
+                localOverrides: newOverrides,
+                serialSK: unit.seriale,
+                modelSK: unit.modello,
+                Matricola: unit.seriale,
+                pairedUnit: {
+                    modello: unit.modello,
+                    seriale: unit.seriale,
+                },
+                updatedAt: Date.now(),
+                updatedBy: isAdmin ? 'admin' : 'superadmin',
+                section: inst.section || section,
+                isManual: inst.isManual || false,
+                client: inst.client || '',
+                machine: inst.machine || '',
+                _firestoreId: finalDocId,
+            };
+
+            await setDoc(docRef, updatedDoc, { merge: true });
+
+            if (selectedInst && (selectedInst._firestoreId === finalDocId || generateSemanticId(selectedInst) === finalDocId)) {
+                setEditData((prev: any) => ({
+                    ...prev,
+                    localOverrides: {
+                        ...prev.localOverrides,
+                        serialSK: unit.seriale,
+                        modelSK: unit.modello,
+                    },
+                    pairedUnit: {
+                        modello: unit.modello,
+                        seriale: unit.seriale,
+                    }
+                }));
+            }
+
+            if (currentUser) {
+                const authorName = userProfile?.displayName || currentUser.displayName || 'Amministratore';
+                await AuditLogService.logAction({
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email || '',
+                    userName: authorName,
+                    userRole: isSuperadmin ? 'superadmin' : (isAdmin ? 'admin' : 'user'),
+                    action: 'UPDATE',
+                    resourceType: 'INSTALLATION',
+                    resourceId: finalDocId,
+                    details: `${authorName} ha associato l'Unità SK (${unit.modello} - S/N: ${unit.seriale}) all'installazione per ${inst.client}.`
+                });
+            }
+
+            setToast({
+                message: `Unità SK associata con successo!`,
+                type: 'success'
+            });
+            setUnitaSkPickerInst(null);
+        } catch (err) {
+            console.error('Error pairing unit SK:', err);
+            setToast({
+                message: `Errore durante l'associazione.`,
+                type: 'error'
+            });
+        }
+    };
 
     // --- custom hooks ---
     const {
@@ -69,9 +198,8 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
         error,
         dbData,
         generateSemanticId,
-        loadSheetData,
         handleHardResetDB,
-    } = useInstallations(section, settings, isSuperadmin, googleToken);
+    } = useInstallations(section, settings, isSuperadmin) as any;
 
     const {
         selectedInst,
@@ -79,10 +207,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
         editData,
         setEditData,
         saving,
-        exportToSheet,
-        setExportToSheet,
         deleteConfirm,
-        isSyncingCalendar,
         showOrphanVault,
         setShowOrphanVault,
         orphanToRelink,
@@ -93,22 +218,42 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
         handleOpenDetail,
         handleSave,
         handleDelete,
-        handleAddEventToCalendar,
         handleRelink,
-    } = useInstallationActions(section, settings, googleToken, isAdmin, generateSemanticId);
+        handleResetAssignment,
+    } = useInstallationActions(section, settings, isAdmin, generateSemanticId) as any;
 
-    // Gestione auto-apertura da URL (es: navigazione dal Calendario)
+    // Configurazione visibilità campi basata sulla sezione
+    const fieldConfig = section === 's2' ? {
+        showModelSK: false,
+        showSerialSK: true,
+        showOrderNumber: true,
+        showOrderDfv: true,
+        showPlanning: true,
+        showExtractedNotes: true,
+        showModules: true,
+        showTechnicalNotes: true
+    } : {
+        showModelSK: true,
+        showSerialSK: true,
+        showOrderNumber: true,
+        showOrderDfv: false,
+        showPlanning: true,
+        showExtractedNotes: true,
+        showModules: true,
+        showTechnicalNotes: true
+    };
+
+    // Gestione auto-apertura da URL
     useEffect(() => {
         if (!loading && installations.length > 0) {
             const params = new URLSearchParams(location.search);
             const instId = params.get('id');
             if (instId && !selectedInst) {
-                const found = installations.find(i => 
+                const found = installations.find((i: any) => 
                     i._firestoreId === instId || generateSemanticId(i) === instId
                 );
                 if (found) {
                     handleOpenDetail(found);
-                    // Rimuove l'id dall'url per evitare riaperture non volute a refresh
                     navigate(location.pathname, { replace: true });
                 }
             }
@@ -116,155 +261,94 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
     }, [loading, installations, location.search, selectedInst]);
 
     const getCardColor = (inst: Installation) => {
-        if (inst.isInvoiced) return '#94a3b8';
-        if (inst.tested) return 'var(--success-color)';
-        if (inst.toTest) return '#facc15';
-        return 'var(--secondary-color)';
+        const firestoreData = inst._firestoreId ? dbData[inst._firestoreId] : null;
+        const isInvoiced = inst.isInvoiced || firestoreData?.isInvoiced;
+        const tested = firestoreData?.tested ?? inst.tested;
+        const toTest = firestoreData?.toTest ?? inst.toTest;
+        const sDate = firestoreData?.scheduledDate || inst.scheduledDate;
+
+        if (isInvoiced) return '#94a3b8'; // GRIGIO
+        if (tested) return '#22c55e';     // VERDE
+        if (toTest) return '#facc15';     // GIALLO
+        if (sDate) return '#f97316';      // ARANCIONE
+        return '#3b82f6';                 // BLU
     };
 
     const getGlowType = (inst: Installation): 'orange' | 'yellow' | 'green' | null => {
-        if (inst.isInvoiced) return null;
         const firestoreData = inst._firestoreId ? dbData[inst._firestoreId] : null;
+        const isInvoiced = inst.isInvoiced || firestoreData?.isInvoiced;
         const tested = firestoreData?.tested ?? inst.tested;
+        const isArchived = (inst as any).isArchived || (firestoreData as any)?.isArchived;
+
+        // I completati/fatturati/archiviati non devono mai lampeggiare (VER 26.3.2)
+        if (isInvoiced || tested || isArchived) return null;
+
         const toTest = firestoreData?.toTest ?? inst.toTest;
-        const sDateStr = firestoreData?.scheduledDate || inst.scheduledDate;
+        const sDate = firestoreData?.scheduledDate || inst.scheduledDate;
 
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-
-        const parseAnyDate = (dateStr: string | undefined): Date | null => {
-            if (!dateStr) return null;
-            if (dateStr.includes('-')) {
-                const parts = dateStr.split('-');
-                if (parts.length === 3) {
-                    let y = parseInt(parts[0]);
-                    if (y < 100) y += 2000;
-                    return new Date(y, parseInt(parts[1]) - 1, parseInt(parts[2]));
-                }
-            }
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split('/');
-                if (parts.length === 3) {
-                    const d = parseInt(parts[0]);
-                    const m = parseInt(parts[1]);
-                    let y = parseInt(parts[2]);
-                    if (y < 100) y += 2000;
-                    return new Date(y, m - 1, d);
-                }
-            }
-            return null;
-        };
-
-        if (tested) return 'green';
         if (toTest) return 'yellow';
-        const sDate = parseAnyDate(sDateStr);
-        if (sDate && sDate >= now) return 'orange';
+        if (sDate) return 'orange';
 
-        return null;
+        return null; // Blu (vuota) non lampeggia
     };
 
-    const filteredInstallations = useMemo(() => {
-        return [...installations].filter((inst: Installation) => {
-            if (!inst) return false;
-            const search = (searchTerm || '').toLowerCase();
-            const client = (inst.client || '').toLowerCase();
-            const machine = (inst.machine || '').toLowerCase();
-            const serial = (inst.serialSK || '').toLowerCase();
-            const model = (inst.modelSK || '').toLowerCase();
-            const site = (inst.installationSite || '').toLowerCase();
-            const order = (inst.orderNumber || '').toLowerCase();
+    const filteredInstallations = [...installations].filter((inst: Installation) => {
+        if (!inst) return false;
+        const search = (searchTerm || '').toLowerCase();
+        const client = (inst.client || '').toLowerCase();
+        const machine = (inst.machine || '').toLowerCase();
+        const serial = (inst.serialSK || '').toLowerCase();
+        const model = (inst.modelSK || '').toLowerCase();
+        const site = (inst.installationSite || '').toLowerCase();
+        const order = (inst.orderNumber || '').toLowerCase();
 
-            return (
-                client.includes(search) ||
-                machine.includes(search) ||
-                serial.includes(search) ||
-                model.includes(search) ||
-                site.includes(search) ||
-                order.includes(search)
-            );
-        });
-    }, [installations, searchTerm]);
+        return (
+            client.includes(search) ||
+            machine.includes(search) ||
+            serial.includes(search) ||
+            model.includes(search) ||
+            site.includes(search) ||
+            order.includes(search)
+        );
+    });
 
-    const activeInstallations = useMemo(() => {
-        return filteredInstallations
-            .filter((inst: Installation) => !inst.isInvoiced)
-            .sort((a: Installation, b: Installation) => {
-                const glowA = getGlowType(a);
-                const glowB = getGlowType(b);
+    const activeInstallations = filteredInstallations
+        .filter((inst: Installation) => !inst.isInvoiced)
+        .sort((a: Installation, b: Installation) => {
+            if (sortVerifiedAtBottom) {
+                const getPriority = (inst: Installation): number => {
+                    const firestoreData = inst._firestoreId ? dbData[inst._firestoreId] : null;
+                    const tested = firestoreData?.tested ?? inst.tested;
+                    if (tested) return 3; // Collaudata (al fondo)
 
-                // Gerarchia ordine: Arancione → Blu(null) → Giallo → Verde
-                const priority = (glow: 'orange' | 'yellow' | 'green' | null): number => {
-                    if (glow === 'orange') return 0;
-                    if (glow === null) return 1; // Blu: tutto fermo
-                    if (glow === 'yellow') return 2; // Da collaudare
-                    if (glow === 'green') return 3; // Collaudata
-                    return 4;
+                    const toTest = firestoreData?.toTest ?? inst.toTest;
+                    if (toTest) return 2; // In Corso / Da collaudare
+
+                    const sDate = firestoreData?.scheduledDate || inst.scheduledDate;
+                    if (sDate) return 0; // Pianificata
+
+                    return 1; // Attiva (Blu)
                 };
 
-                const diff = priority(glowA) - priority(glowB);
+                const diff = getPriority(a) - getPriority(b);
                 if (diff !== 0) return diff;
+            }
 
-                // A parità di stato, ordine alfabetico per Cliente
-                const aClient = a.client || '';
-                const bClient = b.client || '';
-                return aClient.toLowerCase().localeCompare(bClient.toLowerCase());
-            });
-    }, [filteredInstallations, dbData]); // dbData è usato in getGlowType
+            const aClient = a.client || '';
+            const bClient = b.client || '';
+            return aClient.toLowerCase().localeCompare(bClient.toLowerCase());
+        });
 
-    const invoicedInstallations = useMemo(() => {
-        return filteredInstallations.filter((inst: Installation) => inst.isInvoiced);
-    }, [filteredInstallations]);
+    const invoicedInstallations = filteredInstallations.filter((inst: Installation) => inst.isInvoiced);
 
-    const isSectionEnabled = section === 's2' ? settings.section2InstallationsEnabled : settings.enableInstallations;
-
-    if (!isSectionEnabled && !isSuperadmin) {
+    const isSectionEnabled = (section === 's2' ? settings.section2InstallationsEnabled : true) || isAdmin;
+    
+    if (!isSectionEnabled) {
         return (
-            <div className="glass-panel" style={{ padding: '3rem 1.5rem', textAlign: 'center', marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-                <AlertTriangle size={64} style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }} />
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Sezione non abilitata</h2>
-                <p style={{ maxWidth: '500px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                    La gestione installazioni non è attiva nelle impostazioni globali o non hai i permessi di Superadmin per visualizzarla forzatamente.
-                </p>
-
-                {/* v3.9.9: Hard Reset Button for mobile/PWA troubleshooting */}
-                <div style={{ marginTop: '2rem', padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%', maxWidth: '400px' }}>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                        Se riscontri questo problema solo da cellulare nonostante i permessi siano corretti, potrebbe trattarsi di un errore di memoria (cache) del dispositivo.
-                    </p>
-                    <button
-                        onClick={async () => {
-                            if (window.confirm("Attenzione: questa azione pulirà la memoria locale dell'app e caricherà i dati freschi dal server. Sarà necessario rifare il login. Vuoi procedere?")) {
-                                try {
-                                    localStorage.clear();
-                                    sessionStorage.clear();
-                                    if ('caches' in window) {
-                                        const names = await caches.keys();
-                                        for (const name of names) await caches.delete(name);
-                                    }
-                                    window.location.href = '/login';
-                                } catch (e) {
-                                    window.location.reload();
-                                }
-                            }
-                        }}
-                        style={{
-                            padding: '0.8rem 2rem',
-                            backgroundColor: 'transparent',
-                            border: '2px solid var(--accent-color)',
-                            color: 'var(--accent-color)',
-                            borderRadius: '12px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '1rem',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        🔄 RIPRISTINA APP (FISSA ERRORI)
-                    </button>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.8rem', opacity: 0.6 }}>
-                        Versione Corrente: {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '3.9.9'}
-                    </p>
-                </div>
+            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', marginTop: '2rem' }}>
+                <AlertTriangle size={48} style={{ color: 'var(--accent-color)', marginBottom: '1rem' }} />
+                <h3>{t('common.notEnabled')}</h3>
+                <p>{t('inst.sectionDisabledDesc')}</p>
             </div>
         );
     }
@@ -283,10 +367,10 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
             >
                 <div>
                     <h2 style={{ marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Truck size={28} /> Gestione Installazioni
+                        <Truck size={28} /> {t('inst.title')}
                     </h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                        In attesa | Da collaudare | Collaudata
+                        {t('inst.subtitle')}
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -300,7 +384,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                         }}
                     >
                         <ArrowDownWideNarrow size={18} />
-                        <span className="hide-mobile">Sposta collaudate in fondo:</span>
+                        <span className="hide-mobile">{t('inst.sortVerified')}:</span>
                         <input
                             type="checkbox"
                             checked={sortVerifiedAtBottom}
@@ -326,14 +410,14 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                             }}
                         >
                             <AlertTriangle size={15} />{' '}
-                            <span className="hide-mobile">Dati Scollegati ({orphanedData.length})</span>
+                            <span className="hide-mobile">{t('inst.orphans')} ({orphanedData.length})</span>
                         </button>
                     )}
                     {isSuperadmin && (
                         <button
                             onClick={() => handleHardResetDB(activeInstallations)}
                             className="btn"
-                            title="Pulisci Cache DB Firestore per le installazioni non fatturate"
+                            title={t('inst.fixHint')}
                             style={{
                                 padding: '0.5rem',
                                 background: '#fef2f2',
@@ -352,15 +436,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                         className="btn btn-primary"
                         style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem' }}
                     >
-                        <PlusCircle size={18} /> <span className="hide-mobile">Nuova</span>
-                    </button>
-                    <button
-                        onClick={loadSheetData}
-                        className="btn"
-                        disabled={loading}
-                        title="Ricarica dal foglio connesso"
-                    >
-                        <RefreshCw size={18} className={loading ? 'spin' : ''} />
+                        <PlusCircle size={18} /> <span className="hide-mobile">{t('common.add')}</span>
                     </button>
                 </div>
             </div>
@@ -368,7 +444,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
             <div className="glass-panel" style={{ padding: '0.75rem', marginBottom: '1.5rem' }}>
                 <input
                     type="text"
-                    placeholder="Cerca cliente, macchina, matricola o ordine..."
+                    placeholder={t('inst.search')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
@@ -377,14 +453,16 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                         borderRadius: 'var(--border-radius-md)',
                         border: '1px solid var(--border-color)',
                         fontSize: '0.95rem',
+                        background: 'transparent',
+                        color: 'inherit',
                     }}
                 />
             </div>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '3rem' }}>
-                    <RefreshCw size={40} className="spin" style={{ color: 'var(--secondary-color)' }} />
-                    <p>Caricamento...</p>
+                    <RefreshCw size={40} className="spin" style={{ color: 'var(--primary-color)' }} />
+                    <p>{t('common.loading')}</p>
                 </div>
             ) : error ? (
                 <div
@@ -396,116 +474,70 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-                    {/* Sezione Attive */}
+                    {/* Active Installations */}
                     <div>
-                        <h4
-                            style={{
-                                marginBottom: '1rem',
-                                color: 'var(--primary-color)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                            }}
-                        >
-                            <Box size={20} /> Installazioni Attive ({activeInstallations.length})
+                        <h4 style={{ marginBottom: '1rem', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Box size={20} /> {t('inst.active')} ({activeInstallations.length})
                         </h4>
-                        <div
-                            style={
-                                (settings as any).installationsLayoutMode === 'list-2col'
-                                    ? {
-                                          display: 'grid',
-                                          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))',
-                                          gap: '0.75rem',
-                                      }
-                                    : (settings as any).installationsLayoutMode === 'list'
-                                      ? { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
-                                      : (settings as any).installationsLayoutMode === 'grid-compact'
-                                        ? {
-                                              display: 'grid',
-                                              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))',
-                                              gap: '0.75rem',
-                                          }
-                                        : {
-                                              display: 'grid',
-                                              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-                                              gap: '1.25rem',
-                                          }
-                            }
-                        >
-                            {activeInstallations.map((inst: Installation) => (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: settings.installationsLayoutMode === 'grid-compact' 
+                                ? 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))' 
+                                : settings.installationsLayoutMode?.includes('list')
+                                ? '1fr'
+                                : 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
+                            gap: '1.25rem'
+                        }}>
+                            {activeInstallations.map((inst) => (
                                 <InstallationCard
                                     key={generateSemanticId(inst)}
                                     inst={inst}
-                                    layoutMode={(settings as any).installationsLayoutMode}
+                                    layoutMode={settings.installationsLayoutMode || 'default'}
                                     getCardColor={getCardColor}
                                     getGlowType={getGlowType}
                                     generateSemanticId={generateSemanticId}
                                     handleOpenDetail={handleOpenDetail}
                                     setUsageModal={setUsageModal}
+                                    setCollaudoInst={setCollaudoInst}
+                                    setUnitaSkPickerInst={setUnitaSkPickerInst}
                                 />
                             ))}
                         </div>
                     </div>
 
-                    {/* Sezione Fatturate (Grigio) */}
+                    {/* Invoiced Section */}
                     {invoicedInstallations.length > 0 && (
                         <div>
-                            <h4
-                                style={{
-                                    marginBottom: '1rem',
-                                    color: '#64748b',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                }}
-                            >
-                                <CheckCircle2 size={20} /> Installazioni Fatturate ({invoicedInstallations.length})
+                            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Package size={20} /> {t('inst.invoiced')} ({invoicedInstallations.length})
                             </h4>
-                            <div
-                                style={
-                                    (settings as any).installationsLayoutMode === 'list-2col'
-                                        ? {
-                                              display: 'grid',
-                                              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))',
-                                              gap: '0.75rem',
-                                          }
-                                        : (settings as any).installationsLayoutMode === 'list'
-                                          ? { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
-                                          : (settings as any).installationsLayoutMode === 'grid-compact'
-                                            ? {
-                                                  display: 'grid',
-                                                  gridTemplateColumns:
-                                                      'repeat(auto-fill, minmax(min(100%, 160px), 1fr))',
-                                                  gap: '0.75rem',
-                                              }
-                                            : {
-                                                  display: 'grid',
-                                                  gridTemplateColumns:
-                                                      'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-                                                  gap: '1.25rem',
-                                              }
-                                }
-                            >
-                                {invoicedInstallations.map((inst: Installation) => (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
+                                gap: '1rem',
+                                opacity: 0.7
+                            }}>
+                                {invoicedInstallations.map((inst) => (
                                     <InstallationCard
                                         key={generateSemanticId(inst)}
                                         inst={inst}
-                                        layoutMode={(settings as any).installationsLayoutMode}
+                                        layoutMode={settings.installationsLayoutMode || 'default'}
                                         getCardColor={getCardColor}
                                         getGlowType={getGlowType}
                                         generateSemanticId={generateSemanticId}
                                         handleOpenDetail={handleOpenDetail}
                                         setUsageModal={setUsageModal}
+                                        setCollaudoInst={setCollaudoInst}
+                                        setUnitaSkPickerInst={setUnitaSkPickerInst}
                                     />
                                 ))}
-
                             </div>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Modal Professionale v1.9.6 */}
+            {/* Modal Professionale v1.9.6 - Detail Panel */}
             {selectedInst && (
                 <div
                     style={{
@@ -559,7 +591,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     <Truck size={24} />
                                 </div>
                                 <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Dettaglio Installazione</h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{t('inst.detailTitle')}</h3>
                                     <span
                                         style={{
                                             fontSize: '0.8rem',
@@ -601,7 +633,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                         display: 'block',
                                     }}
                                 >
-                                    Cliente / Ragione Sociale
+                                    {t('inst.field.client')}
                                 </label>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <User size={20} style={{ color: 'var(--primary-color)' }} />
@@ -609,9 +641,9 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                         type="text"
                                         value={editData.localOverrides?.client ?? selectedInst.client}
                                         onChange={(e) =>
-                                            setEditData((prev) => ({
+                                            setEditData((prev: any) => ({
                                                 ...prev,
-                                                localOverrides: { ...prev.localOverrides, client: e.target.value },
+                                                localOverrides: { ...(prev.localOverrides || {}), client: e.target.value },
                                             }))
                                         }
                                         style={{
@@ -654,23 +686,23 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             gap: '0.4rem',
                                         }}
                                     >
-                                        <Box size={14} /> DATI MACCHINA
+                                        <Box size={14} /> {t('inst.machineData')}
                                     </label>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         <input
-                                            placeholder="Nome Macchina"
+                                            placeholder={t('inst.field.machine')}
                                             className="form-control"
                                             value={editData.localOverrides?.machine ?? selectedInst.machine}
                                             onChange={(e) =>
-                                                setEditData((prev) => ({
+                                                setEditData((prev: any) => ({
                                                     ...prev,
-                                                    localOverrides: { ...prev.localOverrides, machine: e.target.value },
+                                                    localOverrides: { ...(prev.localOverrides || {}), machine: e.target.value },
                                                 }))
                                             }
                                             style={{ border: '1px solid var(--border-subtle)', padding: '0.6rem' }}
                                         />
                                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                            {fieldConfig.showModelSK !== false && (
+                                            {fieldConfig.showModelSK && (
                                                 <div style={{ flex: '1 1 100px' }}>
                                                     <label
                                                         style={{
@@ -680,17 +712,17 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                             display: 'block',
                                                         }}
                                                     >
-                                                        Modello SK
+                                                        {t('inst.field.model')}
                                                     </label>
                                                     <input
-                                                        placeholder="Modello SK"
+                                                        placeholder={t('inst.field.model')}
                                                         className="form-control"
                                                         value={editData.localOverrides?.modelSK ?? selectedInst.modelSK}
                                                         onChange={(e) =>
-                                                            setEditData((prev) => ({
+                                                            setEditData((prev: any) => ({
                                                                 ...prev,
                                                                 localOverrides: {
-                                                                    ...prev.localOverrides,
+                                                                    ...(prev.localOverrides || {}),
                                                                     modelSK: e.target.value,
                                                                 },
                                                             }))
@@ -698,7 +730,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                     />
                                                 </div>
                                             )}
-                                            {fieldConfig.showSerialSK !== false && (
+                                            {fieldConfig.showSerialSK && (
                                                 <div style={{ flex: '1 1 120px' }}>
                                                     <label
                                                         style={{
@@ -708,34 +740,33 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                             display: 'block',
                                                         }}
                                                     >
-                                                        Matricola
+                                                        {t('inst.field.serial')}
                                                     </label>
                                                     <input
-                                                        placeholder="Matricola"
+                                                        placeholder={t('inst.field.serial')}
                                                         className="form-control"
                                                         value={
                                                             editData.localOverrides?.serialSK ?? selectedInst.serialSK
                                                         }
                                                         onChange={(e) => {
                                                             const val = e.target.value;
-                                                            setEditData((prev) => ({
+                                                            setEditData((prev: any) => ({
                                                                 ...prev,
                                                                 localOverrides: {
-                                                                    ...prev.localOverrides,
+                                                                    ...(prev.localOverrides || {}),
                                                                     serialSK: val,
                                                                 },
                                                             }));
                                                         }}
                                                         onFocus={() => {
-                                                            // if empty and we have a prefix, populate and select
                                                             const currentVal =
                                                                 editData.localOverrides?.serialSK ??
                                                                 selectedInst.serialSK;
                                                             if (!currentVal && settings.serialPrefix) {
-                                                                setEditData((prev) => ({
+                                                                setEditData((prev: any) => ({
                                                                     ...prev,
                                                                     localOverrides: {
-                                                                        ...prev.localOverrides,
+                                                                        ...(prev.localOverrides || {}),
                                                                         serialSK: settings.serialPrefix,
                                                                     },
                                                                 }));
@@ -744,7 +775,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                     />
                                                 </div>
                                             )}
-                                            {fieldConfig.showOrderNumber !== false && (
+                                            {fieldConfig.showOrderNumber && (
                                                 <div style={{ flex: '1 1 100px' }}>
                                                     <label
                                                         style={{
@@ -754,10 +785,10 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                             display: 'block',
                                                         }}
                                                     >
-                                                        N. Ordine Principale
+                                                        {t('inst.field.orderNumber')}
                                                     </label>
                                                     <input
-                                                        placeholder="N. Ordine"
+                                                        placeholder={t('inst.field.orderNumber')}
                                                         className="form-control"
                                                         value={
                                                             editData.localOverrides?.orderNumber ??
@@ -765,10 +796,10 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                             ''
                                                         }
                                                         onChange={(e) =>
-                                                            setEditData((prev) => ({
+                                                            setEditData((prev: any) => ({
                                                                 ...prev,
                                                                 localOverrides: {
-                                                                    ...prev.localOverrides,
+                                                                    ...(prev.localOverrides || {}),
                                                                     orderNumber: e.target.value,
                                                                 },
                                                             }))
@@ -776,43 +807,57 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                     />
                                                 </div>
                                             )}
-                                            {fieldConfig.showOrderDfv !== false && (
-                                                <div style={{ flex: '1 1 100px' }}>
-                                                    <label
-                                                        style={{
-                                                            fontSize: '0.7rem',
-                                                            color: 'var(--text-secondary)',
-                                                            marginBottom: '0.2rem',
-                                                            display: 'block',
-                                                        }}
-                                                    >
-                                                        N. ordine DFV
-                                                    </label>
-                                                    <input
-                                                        placeholder="N. ordine DFV"
-                                                        className="form-control"
-                                                        value={
-                                                            editData.localOverrides?.orderDfv ??
-                                                            selectedInst.orderDfv ??
-                                                            ''
-                                                        }
-                                                        onChange={(e) =>
-                                                            setEditData((prev) => ({
-                                                                ...prev,
-                                                                localOverrides: {
-                                                                    ...prev.localOverrides,
-                                                                    orderDfv: e.target.value,
-                                                                },
-                                                            }))
-                                                        }
-                                                    />
+                                            {(editData.pairedUnit !== null && (editData.pairedUnit || selectedInst.pairedUnit)) && (
+                                                <div style={{ flex: '1 1 100%', marginTop: '0.5rem' }}>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        padding: '0.6rem 0.8rem',
+                                                        borderRadius: '8px',
+                                                        background: 'rgba(239, 68, 68, 0.08)',
+                                                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                                                        color: 'var(--text-primary)',
+                                                        fontSize: '0.85rem'
+                                                    }}>
+                                                        <span>🖥️ <strong>Unità SK Associata:</strong> {(editData.pairedUnit || selectedInst.pairedUnit).modello} - S/N: {(editData.pairedUnit || selectedInst.pairedUnit).seriale}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (window.confirm("Sei sicuro di voler rimuovere l'unità SK associata?")) {
+                                                                    setEditData((prev: any) => ({
+                                                                        ...prev,
+                                                                        localOverrides: {
+                                                                            ...(prev.localOverrides || {}),
+                                                                            serialSK: '',
+                                                                            modelSK: '',
+                                                                            Matricola: '',
+                                                                        },
+                                                                        pairedUnit: null
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                background: 'rgba(239, 68, 68, 0.1)',
+                                                                color: '#ef4444',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                padding: '0.2rem 0.5rem',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 600
+                                                            }}
+                                                        >
+                                                            Rimuovi
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                {fieldConfig.showPlanning !== false && (
+                                {fieldConfig.showPlanning && (
                                     <div
                                         className="glass-panel"
                                         style={{ padding: '1.25rem', background: 'rgba(255, 255, 255, 0.03)' }}
@@ -828,7 +873,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                 gap: '0.4rem',
                                             }}
                                         >
-                                            <Calendar size={14} /> PIANIFICAZIONE
+                                            <Calendar size={14} /> {t('inst.planning')}
                                         </label>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -841,7 +886,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                             display: 'block',
                                                         }}
                                                     >
-                                                        Programmazione (Data e Ora)
+                                                        {t('inst.field.scheduledDate')}
                                                     </label>
                                                     <input
                                                         type="datetime-local"
@@ -858,31 +903,20 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                         onChange={(e) => {
                                                             const val = e.target.value;
                                                             if (val.includes('T')) {
-                                                                const [, t] = val.split('T');
-                                                                setEditData((prev) => ({
+                                                                const [, tVal] = val.split('T');
+                                                                setEditData((prev: any) => ({
                                                                     ...prev,
                                                                     scheduledDate: val,
-                                                                    scheduledTime: t,
+                                                                    scheduledTime: tVal,
                                                                 }));
                                                             } else {
-                                                                setEditData((prev) => ({
+                                                                setEditData((prev: any) => ({
                                                                     ...prev,
                                                                     scheduledDate: val,
                                                                 }));
                                                             }
                                                         }}
                                                     />
-                                                    {selectedInst.deliveryDate && !editData.scheduledDate && (
-                                                        <div
-                                                            style={{
-                                                                fontSize: '0.65rem',
-                                                                color: 'var(--text-muted)',
-                                                                marginTop: '0.2rem',
-                                                            }}
-                                                        >
-                                                            📋 Foglio: {selectedInst.deliveryDate}
-                                                        </div>
-                                                    )}
                                                 </div>
                                                 <div
                                                     style={{
@@ -896,7 +930,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                setEditData((prev) => ({
+                                                                setEditData((prev: any) => ({
                                                                     ...prev,
                                                                     scheduledDate: '',
                                                                     scheduledTime: '',
@@ -913,17 +947,9 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                                 gap: '0.3rem',
                                                                 padding: '0.3rem 0.5rem',
                                                                 borderRadius: '4px',
-                                                                transition: 'background 0.2s',
                                                             }}
-                                                            onMouseOver={(e) =>
-                                                                (e.currentTarget.style.background =
-                                                                    'rgba(239, 68, 68, 0.1)')
-                                                            }
-                                                            onMouseOut={(e) =>
-                                                                (e.currentTarget.style.background = 'none')
-                                                            }
                                                         >
-                                                            <X size={14} /> Rimuovi Data
+                                                            <X size={14} /> {t('common.delete')}
                                                         </button>
                                                     )}
                                                 </div>
@@ -937,22 +963,22 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                         display: 'block',
                                                     }}
                                                 >
-                                                    Sito / Destinazione
+                                                    {t('inst.field.site')}
                                                 </label>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <MapPin size={18} style={{ color: 'var(--danger-color)' }} />
                                                     <input
-                                                        placeholder="Sito di installazione"
+                                                        placeholder={t('inst.field.site')}
                                                         className="form-control"
                                                         value={
                                                             editData.localOverrides?.installationSite ??
                                                             selectedInst.installationSite
                                                         }
                                                         onChange={(e) =>
-                                                            setEditData((prev) => ({
+                                                            setEditData((prev: any) => ({
                                                                 ...prev,
                                                                 localOverrides: {
-                                                                    ...prev.localOverrides,
+                                                                    ...(prev.localOverrides || {}),
                                                                     installationSite: e.target.value,
                                                                 },
                                                             }))
@@ -960,221 +986,188 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                     />
                                                 </div>
                                             </div>
-
-                                            {/* Google Calendar Sync Button */}
-                                            <div
-                                                style={{
-                                                    marginTop: '0.5rem',
-                                                    paddingTop: '1rem',
-                                                    borderTop: '1px solid #e2e8f0',
-                                                }}
-                                            >
-                                                <button
-                                                    onClick={() => handleAddEventToCalendar(connectGoogle)}
-                                                    disabled={isSyncingCalendar || !editData.scheduledDate}
-                                                    className="btn"
-                                                    style={{
-                                                        width: '100%',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        gap: '0.5rem',
-                                                        padding: '0.65rem',
-                                                        backgroundColor: googleToken
-                                                            ? editData.scheduledDate
-                                                                ? 'rgba(20, 184, 166, 0.1)'
-                                                                : 'rgba(255, 255, 255, 0.05)'
-                                                            : 'rgba(255, 255, 255, 0.02)',
-                                                        color: googleToken
-                                                            ? editData.scheduledDate
-                                                                ? 'var(--accent-teal)'
-                                                                : 'var(--text-secondary)'
-                                                            : 'var(--text-muted)',
-                                                        border: `1px solid ${googleToken ? (editData.scheduledDate ? 'var(--accent-teal)' : 'var(--border-subtle)') : 'var(--border-subtle)'}`,
-                                                        transition: 'all 0.2s',
-                                                        cursor:
-                                                            isSyncingCalendar ||
-                                                            (!editData.scheduledDate && googleToken)
-                                                                ? 'not-allowed'
-                                                                : 'pointer',
-                                                    }}
-                                                >
-                                                    {isSyncingCalendar ? (
-                                                        <>
-                                                            <RefreshCw className="spin" size={18} /> Sincronizzazione in
-                                                            corso...
-                                                        </>
-                                                    ) : googleToken ? (
-                                                        <>
-                                                            <Calendar size={18} />{' '}
-                                                            {editData.scheduledDate
-                                                                ? 'Aggiungi a Google Calendar'
-                                                                : 'Inserisci una data per sincronizzare'}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <LinkIcon size={18} /> Collega Google per sincronizzare
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Componenti Estratti (Al posto di Applicazioni) */}
-                            {fieldConfig.showExtractedNotes !== false && (
-                                <div
-                                    style={{
-                                        marginBottom: '2rem',
-                                        padding: '1.5rem',
-                                        backgroundColor: 'rgba(236, 72, 153, 0.05)',
-                                        borderRadius: '16px',
-                                        border: '1px solid rgba(236, 72, 153, 0.2)',
-                                    }}
-                                >
-                                    <label
-                                        style={{
-                                            fontSize: '0.9rem',
-                                            fontWeight: 700,
-                                            color: '#f472b6',
-                                            marginBottom: '1rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.5rem',
-                                        }}
-                                    >
-                                        <Truck size={20} /> COMPONENTI ESTRATTI (CODICI DALLE NOTE)
+                            {/* Nota dal Foglio (extractedNotes) — sempre visibile quando abilitato */}
+                            {fieldConfig.showExtractedNotes && (
+                                <div style={{
+                                    marginBottom: '2rem',
+                                    padding: '1rem 1.25rem',
+                                    borderRadius: '12px',
+                                    background: 'rgba(251, 191, 36, 0.06)',
+                                    border: '1px solid rgba(251, 191, 36, 0.3)',
+                                }}>
+                                    <label style={{
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        color: '#b45309',
+                                        marginBottom: '0.5rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.4rem',
+                                        textTransform: 'uppercase',
+                                    }}>
+                                        <AlertTriangle size={14} /> Nota dal Foglio
                                     </label>
-                                    <div
+                                    {/* Testo proveniente dal foglio sorgente (read-only) */}
+                                    {selectedInst.extractedNotes && (
+                                        <p style={{
+                                            margin: '0 0 0.75rem 0',
+                                            fontSize: '0.95rem',
+                                            color: '#000000',
+                                            lineHeight: '1.5',
+                                            whiteSpace: 'pre-wrap',
+                                            padding: '0.5rem 0.75rem',
+                                            background: '#ffffff',
+                                            borderRadius: '6px',
+                                            borderLeft: '3px solid #f59e0b',
+                                        }}>
+                                            {selectedInst.extractedNotes}
+                                        </p>
+                                    )}
+                                    {/* Campo editabile per nota manuale aggiuntiva */}
+                                    <textarea
+                                        className="form-control"
+                                        placeholder={selectedInst.extractedNotes
+                                            ? "Aggiungi una nota integrativa..."
+                                            : "Nota aggiuntiva (non presente nel foglio)..."}
+                                        value={editData.localOverrides?.extractedNotes || ''}
+                                        onChange={(e) =>
+                                            setEditData((prev: any) => ({
+                                                ...prev,
+                                                localOverrides: {
+                                                    ...(prev.localOverrides || {}),
+                                                    extractedNotes: e.target.value,
+                                                },
+                                            }))
+                                        }
                                         style={{
-                                            backgroundColor: 'rgba(0,0,0,0.2)',
-                                            padding: '1rem',
+                                            minHeight: '70px',
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            fontSize: '0.9rem',
                                             borderRadius: '8px',
-                                            border: '1px solid rgba(236, 72, 153, 0.1)',
-                                            minHeight: '120px',
+                                            border: '1px solid rgba(251, 191, 36, 0.4)',
+                                            backgroundColor: '#ffffff',
+                                            color: '#000000',
+                                            resize: 'vertical',
                                         }}
-                                    >
-                                        {selectedInst.extractedNotes ? (
-                                            <ul
-                                                style={{
-                                                    margin: 0,
-                                                    paddingLeft: '1.2rem',
-                                                    color: '#831843',
-                                                    fontSize: '0.95rem',
-                                                    lineHeight: '1.6',
-                                                }}
-                                            >
-                                                {selectedInst.extractedNotes
-                                                    .split('\n')
-                                                    .filter((line) => line.trim() !== '')
-                                                    .map((line, idx) => (
-                                                        <li key={idx} style={{ marginBottom: '0.4rem' }}>
-                                                            {line}
-                                                        </li>
-                                                    ))}
-                                            </ul>
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    height: '100%',
-                                                    color: '#f472b6',
-                                                    fontStyle: 'italic',
-                                                    fontSize: '0.95rem',
-                                                    marginTop: '1.5rem',
-                                                }}
-                                            >
-                                                Nessun componente aggiuntivo registrato nelle note del Foglio Google.
-                                            </div>
-                                        )}
-                                    </div>
+                                    />
                                 </div>
                             )}
 
-                            {/* Nuova Selezione Moduli / Opzioni */}
-                            {fieldConfig.showModules !== false && (
-                                <div
-                                    style={{
-                                        marginBottom: '2rem',
-                                        padding: '1.5rem',
-                                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
-                                        borderRadius: '16px',
-                                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                                    }}
-                                >
-                                    <label
-                                        style={{
-                                            fontSize: '0.9rem',
-                                            fontWeight: 700,
-                                            color: '#34d399',
-                                            marginBottom: '1rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.5rem',
-                                        }}
-                                    >
-                                        <ListChecks size={20} /> SELEZIONE MODULI DA ATTIVARE
+                            {/* Lista Moduli / Applicazioni (da installationModules del pannello admin) */}
+                            {fieldConfig.showModules && (settings.installationModules?.length ?? 0) > 0 && (
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <label style={{
+                                        fontSize: '0.85rem',
+                                        fontWeight: 700,
+                                        color: 'var(--text-secondary)',
+                                        marginBottom: '0.8rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                    }}>
+                                        <CheckCircle2 size={18} /> {t('inst.field.modules')}
                                     </label>
-                                    <div
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                                            gap: '0.6rem',
-                                        }}
-                                    >
-                                        {(settings.installationModules || []).map((feature: string, idx: number) => {
-                                            const selectedList = editData.localOverrides?.selectedFeatures || [];
-                                            const isSelected = selectedList.includes(feature);
-                                            const hasAnySelected = selectedList.length > 0;
-                                            const isFaint = hasAnySelected && !isSelected;
-
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))',
+                                        gap: '0.6rem',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-subtle)',
+                                        background: 'rgba(255,255,255,0.02)',
+                                    }}>
+                                        {(settings.installationModules || []).map((moduleName: string) => {
+                                            const existing = (editData.applications || []).find(
+                                                (a: { name: string; checked: boolean; qty?: string }) => a.name === moduleName
+                                            );
+                                            const isChecked = existing?.checked ?? false;
+                                            const qty = existing?.qty ?? '';
                                             return (
                                                 <label
-                                                    key={idx}
+                                                    key={moduleName}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '0.75rem',
+                                                        gap: '0.5rem',
                                                         cursor: 'pointer',
-                                                        opacity: isFaint ? 0.35 : 1,
-                                                        fontWeight: isSelected ? 700 : 500,
-                                                        backgroundColor: isSelected
-                                                            ? 'rgba(16, 185, 129, 0.1)'
+                                                        padding: '0.5rem 0.75rem',
+                                                        borderRadius: '8px',
+                                                        background: isChecked
+                                                            ? 'rgba(20, 184, 166, 0.1)'
                                                             : 'transparent',
+                                                        border: `1px solid ${isChecked ? 'rgba(20, 184, 166, 0.4)' : 'var(--border-subtle)'}`,
+                                                        transition: 'all 0.15s',
                                                     }}
                                                 >
                                                     <input
                                                         type="checkbox"
-                                                        checked={isSelected}
+                                                        checked={isChecked}
                                                         onChange={(e) => {
-                                                            const current =
-                                                                editData.localOverrides?.selectedFeatures || [];
-                                                            let next;
-                                                            if (e.target.checked) {
-                                                                next = [...current, feature];
-                                                            } else {
-                                                                next = current.filter((f: string) => f !== feature);
-                                                            }
-                                                            setEditData((prev) => ({
-                                                                ...prev,
-                                                                localOverrides: {
-                                                                    ...(prev.localOverrides || {}),
-                                                                    selectedFeatures: next,
-                                                                },
-                                                            }));
+                                                            const checked = e.target.checked;
+                                                            setEditData((prev: any) => {
+                                                                const prevApps: { name: string; checked: boolean; qty?: string }[] = prev.applications || [];
+                                                                const idx = prevApps.findIndex((a) => a.name === moduleName);
+                                                                let newApps;
+                                                                if (idx >= 0) {
+                                                                    newApps = prevApps.map((a, i) =>
+                                                                        i === idx ? { ...a, checked } : a
+                                                                    );
+                                                                } else {
+                                                                    newApps = [...prevApps, { name: moduleName, checked, qty: '' }];
+                                                                }
+                                                                return { ...prev, applications: newApps };
+                                                            });
                                                         }}
-                                                        style={{
-                                                            width: '18px',
-                                                            height: '18px',
-                                                            cursor: 'pointer',
-                                                            accentColor: '#16a34a',
-                                                        }}
+                                                        style={{ width: '18px', height: '18px', flexShrink: 0 }}
                                                     />
-                                                    <span style={{ lineHeight: '1.4' }}>{feature}</span>
+                                                    <span style={{
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: isChecked ? 600 : 400,
+                                                        color: isChecked ? 'var(--accent-teal, #14b8a6)' : 'var(--text-primary)',
+                                                        flex: 1,
+                                                    }}>
+                                                        {moduleName}
+                                                    </span>
+                                                    {isChecked && (
+                                                        <input
+                                                            type="text"
+                                                            placeholder="qty"
+                                                            value={qty}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                const newQty = e.target.value;
+                                                                setEditData((prev: any) => {
+                                                                    const prevApps: { name: string; checked: boolean; qty?: string }[] = prev.applications || [];
+                                                                    const idx = prevApps.findIndex((a) => a.name === moduleName);
+                                                                    let newApps;
+                                                                    if (idx >= 0) {
+                                                                        newApps = prevApps.map((a, i) =>
+                                                                            i === idx ? { ...a, qty: newQty } : a
+                                                                        );
+                                                                    } else {
+                                                                        newApps = [...prevApps, { name: moduleName, checked: true, qty: newQty }];
+                                                                    }
+                                                                    return { ...prev, applications: newApps };
+                                                                });
+                                                            }}
+                                                            style={{
+                                                                width: '45px',
+                                                                padding: '0.2rem 0.4rem',
+                                                                fontSize: '0.75rem',
+                                                                borderRadius: '4px',
+                                                                border: '1px solid var(--border-subtle)',
+                                                                background: 'var(--bg-elevated)',
+                                                                color: 'var(--text-primary)',
+                                                                textAlign: 'center',
+                                                            }}
+                                                        />
+                                                    )}
                                                 </label>
                                             );
                                         })}
@@ -1182,8 +1175,8 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 </div>
                             )}
 
-                            {/* Spazio Note Molto Ampio */}
-                            {fieldConfig.showTechnicalNotes !== false && (
+                            {/* Technical Notes Area */}
+                            {fieldConfig.showTechnicalNotes && (
                                 <div style={{ marginBottom: '2rem' }}>
                                     <label
                                         style={{
@@ -1196,13 +1189,13 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             gap: '0.5rem',
                                         }}
                                     >
-                                        <MessageSquare size={18} /> NOTE E OSSERVAZIONI TECNICHE
+                                        <MessageSquare size={18} /> {t('inst.technicalNotes')}
                                     </label>
                                     <textarea
                                         className="form-control"
-                                        placeholder="Inserisci qui i commenti originali o le nuove note dell'amministrazione..."
+                                        placeholder={t('inst.notesPlaceholder')}
                                         value={editData.comments || ''}
-                                        onChange={(e) => setEditData((prev) => ({ ...prev, comments: e.target.value }))}
+                                        onChange={(e) => setEditData((prev: any) => ({ ...prev, comments: e.target.value }))}
                                         style={{
                                             minHeight: '120px',
                                             width: '100%',
@@ -1213,14 +1206,13 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             border: '1px solid var(--border-subtle)',
                                             backgroundColor: 'var(--bg-elevated)',
                                             color: 'var(--text-primary)',
-                                            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.2)',
                                             resize: 'vertical',
                                         }}
                                     />
                                 </div>
                             )}
 
-                            {/* Stati (Fatturato, Da collaudare, Collaudata) - SPOSTATI IN BASSO */}
+                            {/* Test Status Indicators */}
                             <div
                                 style={{
                                     backgroundColor: 'rgba(255, 255, 255, 0.02)',
@@ -1230,133 +1222,116 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     marginBottom: '1rem',
                                 }}
                             >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: editData.toTest ? 1 : 0.5 }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={editData.toTest || false}
+                                            onChange={(e) => setEditData((prev: any) => ({
+                                                ...prev,
+                                                toTest: e.target.checked,
+                                                tested: e.target.checked ? prev.tested : false
+                                            }))}
+                                            style={{ width: '28px', height: '28px' }}
+                                        />
+                                        <span style={{ fontWeight: 800, color: '#b45309', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <AlertTriangle size={16} /> {t('instCard.toTest')}
+                                        </span>
+                                    </label>
+
+                                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: editData.tested ? 1 : 0.5 }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={editData.tested || false}
+                                            onChange={(e) => setEditData((prev: any) => ({
+                                                ...prev,
+                                                tested: e.target.checked,
+                                                toTest: e.target.checked ? true : prev.toTest
+                                            }))}
+                                            style={{ width: '28px', height: '28px' }}
+                                        />
+                                        <span style={{ fontWeight: 800, color: '#15803d', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <CheckCircle2 size={16} /> {t('instCard.tested')}
+                                        </span>
+                                    </label>
+                                </div>
+
+                                {/* Data Collaudo (Opzionale) - Mostrato solo se da collaudare */}
+                                {editData.toTest && (
                                     <div
                                         style={{
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            gap: '2rem',
-                                            flexWrap: 'wrap',
+                                            marginTop: '1.5rem',
+                                            padding: '1.25rem',
+                                            backgroundColor: 'rgba(234, 179, 8, 0.08)',
+                                            borderRadius: '12px',
+                                            border: '1px solid rgba(234, 179, 8, 0.2)',
+                                            animation: 'fadeInUp 0.3s ease forwards',
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <label
-                                                style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    cursor: 'pointer',
-                                                    opacity: editData.toTest ? 1 : 0.5,
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editData.toTest || false}
-                                                    onChange={(e) =>
-                                                        setEditData((prev) => ({
-                                                            ...prev,
-                                                            toTest: e.target.checked,
-                                                            tested: e.target.checked ? prev.tested : false,
-                                                        }))
-                                                    }
-                                                    style={{ width: '28px', height: '28px' }}
-                                                />
-                                                <span
-                                                    style={{
-                                                        fontWeight: 800,
-                                                        color: '#b45309',
-                                                        fontSize: '0.85rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '0.4rem',
-                                                    }}
-                                                >
-                                                    <AlertTriangle size={16} /> DA COLLAUDARE
-                                                </span>
-                                            </label>
-
-                                            {editData.toTest && (
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: '0.3rem',
-                                                        minWidth: '150px',
-                                                        padding: '0.5rem',
-                                                        background: 'rgba(234, 179, 8, 0.1)',
-                                                        borderRadius: '8px',
-                                                        border: '1px solid rgba(234, 179, 8, 0.3)',
-                                                    }}
-                                                >
-                                                    <label
-                                                        style={{
-                                                            fontSize: '0.7rem',
-                                                            fontWeight: 900,
-                                                            color: '#92400e',
-                                                            textTransform: 'uppercase',
-                                                        }}
-                                                    >
-                                                        Data Collaudo
-                                                    </label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        value={editData.testDate || ''}
-                                                        onChange={(e) =>
-                                                            setEditData((prev) => ({
-                                                                ...prev,
-                                                                testDate: e.target.value,
-                                                            }))
-                                                        }
-                                                        className="form-control"
-                                                        style={{
-                                                            padding: '0.4rem',
-                                                            fontSize: '0.9rem',
-                                                            border: '1px solid #d97706',
-                                                        }}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-
                                         <label
                                             style={{
+                                                fontSize: '0.85rem',
+                                                fontWeight: 700,
+                                                color: '#eab308',
+                                                marginBottom: '0.6rem',
                                                 display: 'flex',
-                                                flexDirection: 'column',
                                                 alignItems: 'center',
-                                                gap: '0.5rem',
-                                                cursor: 'pointer',
-                                                opacity: editData.tested ? 1 : 0.5,
+                                                gap: '0.4rem',
                                             }}
                                         >
-                                            <input
-                                                type="checkbox"
-                                                checked={editData.tested || false}
-                                                onChange={(e) =>
-                                                    setEditData((prev) => ({
-                                                        ...prev,
-                                                        tested: e.target.checked,
-                                                        toTest: e.target.checked ? true : prev.toTest,
-                                                    }))
-                                                }
-                                                style={{ width: '28px', height: '28px' }}
-                                            />
-                                            <span
-                                                style={{
-                                                    fontWeight: 800,
-                                                    color: '#15803d',
-                                                    fontSize: '0.85rem',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.4rem',
-                                                }}
-                                            >
-                                                <CheckCircle2 size={16} /> COLLAUDATA
-                                            </span>
+                                            <Calendar size={16} /> Data Collaudo (Opzionale)
                                         </label>
+                                        <div style={{ display: 'flex', gap: '0.8rem' }}>
+                                            <div style={{ flex: 2 }}>
+                                                <input
+                                                    type="date"
+                                                    value={editData.testDate?.split('T')[0] || ''}
+                                                    onChange={(e) => {
+                                                        const time = editData.testDate?.split('T')[1] || '12:00';
+                                                        setEditData((prev: any) => ({ ...prev, testDate: `${e.target.value}T${time}` }));
+                                                    }}
+                                                    style={{
+                                                        width: '100%',
+                                                        backgroundColor: 'rgba(0,0,0,0.15)',
+                                                        color: '#fff',
+                                                        border: '1px solid rgba(234, 179, 8, 0.4)',
+                                                        padding: '0.85rem 1rem',
+                                                        borderRadius: '10px',
+                                                        fontSize: '1rem',
+                                                        fontWeight: '600',
+                                                        outline: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <input
+                                                    type="time"
+                                                    value={editData.testDate?.split('T')[1] || '12:00'}
+                                                    onChange={(e) => {
+                                                        const date = editData.testDate?.split('T')[0] || formatToISODate(new Date());
+                                                        setEditData((prev: any) => ({ ...prev, testDate: `${date}T${e.target.value}` }));
+                                                    }}
+                                                    style={{
+                                                        width: '100%',
+                                                        backgroundColor: 'rgba(0,0,0,0.15)',
+                                                        color: '#fff',
+                                                        border: '1px solid rgba(234, 179, 8, 0.4)',
+                                                        padding: '0.85rem 1rem',
+                                                        borderRadius: '10px',
+                                                        fontSize: '1rem',
+                                                        fontWeight: '600',
+                                                        outline: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <p style={{ fontSize: '0.75rem', color: 'rgba(234,179,8,0.7)', marginTop: '0.6rem', marginBottom: 0 }}>
+                                            Imposta data e ora del collaudo per la visualizzazione in calendario.
+                                        </p>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
@@ -1383,40 +1358,34 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     padding: '0.5rem 1rem',
                                 }}
                             >
-                                <Trash2 size={18} /> {deleteConfirm ? 'Conferma eliminazione?' : 'Elimina scheda'}
+                                <Trash2 size={18} /> {deleteConfirm ? t('inst.deleteConfirm') : t('inst.delete')}
                             </button>
+
+                            {(editData.scheduledDate || editData.testDate || editData.toTest || editData.tested) && (
+                                <button
+                                    onClick={handleResetAssignment}
+                                    className="btn"
+                                    style={{
+                                        backgroundColor: 'transparent',
+                                        borderColor: '#f59e0b',
+                                        color: '#f59e0b',
+                                        padding: '0.5rem 1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                    }}
+                                >
+                                    <RefreshCw size={18} /> Rimuovi Assegnazione
+                                </button>
+                            )}
+
                             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                {selectedInst.isManual && googleToken && (
-                                    <label
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.5rem',
-                                            fontSize: '0.85rem',
-                                            cursor: 'pointer',
-                                            color: '#0f766e',
-                                            fontWeight: 600,
-                                            padding: '0.2rem 0.5rem',
-                                            borderRadius: '4px',
-                                            backgroundColor: '#f0fdfa',
-                                            border: '1px solid #ccfbf1',
-                                        }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={exportToSheet}
-                                            onChange={(e) => setExportToSheet(e.target.checked)}
-                                            style={{ width: '16px', height: '16px', accentColor: '#0d9488' }}
-                                        />
-                                        Esporta su Google Sheets
-                                    </label>
-                                )}
                                 <button
                                     onClick={() => setSelectedInst(null)}
                                     className="btn btn-secondary"
                                     style={{ padding: '0.5rem 1rem' }}
                                 >
-                                    Annulla
+                                    {t('common.cancel')}
                                 </button>
                                 <button
                                     onClick={handleSave}
@@ -1432,7 +1401,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     }}
                                 >
                                     {saving ? <RefreshCw className="spin" size={20} /> : <Save size={20} />}
-                                    Salva
+                                    {t('common.save')}
                                 </button>
                             </div>
                         </div>
@@ -1490,7 +1459,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                     gap: '0.5rem',
                                 }}
                             >
-                                <AlertTriangle size={24} /> Dati Scollegati (Camera di Sicurezza)
+                                <AlertTriangle size={24} /> {t('inst.orphanVaultTitle')}
                             </h3>
                             <button
                                 onClick={() => {
@@ -1519,13 +1488,10 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                 color: '#9a3412',
                             }}
                         >
-                            Qui trovi i dati inseriti dall'App (appunti, collaudi, pianificazioni) che{' '}
-                            <strong>non corrispondono pi� a nessuna riga sul foglio Google</strong> a causa di rinomine,
-                            cancellazioni o errori nel foglio. Puoi ricollegarli a un'installazione esistente per non
-                            perdere il lavoro fatto!
+                            {t('inst.orphanVaultDesc')}
                         </div>
 
-                        {orphanedData.map((orphan) => (
+                        {orphanedData.map((orphan: any) => (
                             <div
                                 key={orphan._firestoreId}
                                 style={{
@@ -1563,65 +1529,6 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                             <span>
                                                 {orphan.machine || '-'} / {orphan.serialSK || '-'}
                                             </span>
-                                            <strong>Dati App:</strong>{' '}
-                                            <span>
-                                                {orphan.comments ? (
-                                                    <span
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.2rem',
-                                                            padding: '0.1rem 0',
-                                                        }}
-                                                    >
-                                                        <MessageSquare size={14} /> Note presenti{' '}
-                                                    </span>
-                                                ) : (
-                                                    ''
-                                                )}
-                                                {orphan.tested ? (
-                                                    <span
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.2rem',
-                                                            padding: '0.1rem 0',
-                                                        }}
-                                                    >
-                                                        <CheckCircle2 size={14} color="#15803d" /> Collaudata{' '}
-                                                    </span>
-                                                ) : (
-                                                    ''
-                                                )}
-                                                {orphan.toTest ? (
-                                                    <span
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.2rem',
-                                                            padding: '0.1rem 0',
-                                                        }}
-                                                    >
-                                                        <AlertTriangle size={14} color="#b45309" /> Da Collaudare{' '}
-                                                    </span>
-                                                ) : (
-                                                    ''
-                                                )}
-                                                {orphan.scheduledDate ? (
-                                                    <span
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.2rem',
-                                                            padding: '0.1rem 0',
-                                                        }}
-                                                    >
-                                                        <Calendar size={14} /> Pianificata{' '}
-                                                    </span>
-                                                ) : (
-                                                    ''
-                                                )}
-                                            </span>
                                         </div>
                                     </div>
 
@@ -1640,7 +1547,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                 setRelinkTargetId('');
                                             }}
                                         >
-                                            <LinkIcon size={14} /> Ricollega Dati
+                                            <LinkIcon size={14} /> {t('inst.relink')}
                                         </button>
                                     ) : null}
                                 </div>
@@ -1664,7 +1571,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                 color: '#1d4ed8',
                                             }}
                                         >
-                                            Scegli l'installazione corrente a cui unire questi dati:
+                                            {t('inst.chooseRelinkTarget')}:
                                         </label>
                                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                             <select
@@ -1673,8 +1580,8 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                 value={relinkTargetId}
                                                 onChange={(e) => setRelinkTargetId(e.target.value)}
                                             >
-                                                <option value="">-- Seleziona Riga Target --</option>
-                                                {installations.map((i) => (
+                                                <option value="">-- {t('inst.chooseRelinkTarget')} --</option>
+                                                {activeInstallations.map((i) => (
                                                     <option key={i._firestoreId} value={i._firestoreId}>
                                                         {i.client} - {i.machine} (Ord: {i.orderNumber})
                                                     </option>
@@ -1688,13 +1595,13 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                                                 }
                                                 style={{ whiteSpace: 'nowrap' }}
                                             >
-                                                Conferma Fusione
+                                                {t('common.confirm')}
                                             </button>
                                             <button
                                                 className="btn btn-secondary"
                                                 onClick={() => setOrphanToRelink(null)}
                                             >
-                                                Annulla
+                                                {t('common.cancel')}
                                             </button>
                                         </div>
                                     </div>
@@ -1704,6 +1611,7 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                     </div>
                 </div>
             )}
+
             <InventoryUsageModal
                 isOpen={usageModal.isOpen}
                 onClose={() => setUsageModal({ isOpen: false, instId: '', clientName: '' })}
@@ -1711,6 +1619,53 @@ export const Installations: React.FC<InstallationsProps> = ({ section = 'sk' }) 
                 referenceType="installation"
                 referenceName={usageModal.clientName}
             />
+
+            {collaudoInst && (
+                <CollaudoChecklistModal
+                    installationId={collaudoInst._firestoreId || generateSemanticId(collaudoInst)}
+                    machineName={collaudoInst.machine || ''}
+                    clientName={collaudoInst.client || ''}
+                    scheduledDate={collaudoInst.scheduledDate}
+                    onClose={() => setCollaudoInst(null)}
+                />
+            )}
+
+            <UnitaSkPicker
+                isOpen={!!unitaSkPickerInst}
+                onClose={() => setUnitaSkPickerInst(null)}
+                onSelect={handlePairUnitSk}
+            />
+
+            {toast && (
+                <div className="toast-notification animate-toast" style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    right: '24px',
+                    backgroundColor: toast.type === 'success' ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    padding: '1rem 1.5rem',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    zIndex: 3000,
+                    fontWeight: 'bold',
+                    fontSize: '0.95rem'
+                }}>
+                    <span>{toast.message}</span>
+                </div>
+            )}
+            
+            <style>{`
+                @keyframes slideInUp {
+                    from { transform: translateY(100px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-toast {
+                    animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+            `}</style>
         </div>
     );
 };
