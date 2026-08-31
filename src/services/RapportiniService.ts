@@ -143,6 +143,7 @@ export function eliminaRapportino(id: string, fotoUrl?: string): Promise<void> {
 export function subscribeRapportini(
     limit: number,
     callback: (lista: Rapportino[]) => void,
+    onError?: (err: any) => void
 ): () => void {
     const limitVal = (limit && limit > 0) ? Math.floor(limit) : 50;
     const q = dbQuery(
@@ -153,12 +154,14 @@ export function subscribeRapportini(
 
     const handler = (snap: any) => {
         const lista: Rapportino[] = [];
-        snap.forEach((child: any) => {
-            const r = child.val();
-            r.id = child.key;
-            r.tecnicoDisp = r.tecnico || r.utente || 'N/A';
-            lista.push(r);
-        });
+        if (snap && snap.exists && snap.exists()) {
+            snap.forEach((child: any) => {
+                const r = child.val();
+                r.id = child.key;
+                r.tecnicoDisp = r.tecnico || r.utente || 'N/A';
+                lista.push(r);
+            });
+        }
         // Ordina: prima gli "in attesa", poi per timestamp desc
         lista.sort((a, b) => {
             if (a.attesa === b.attesa) return (b.timestamp || 0) - (a.timestamp || 0);
@@ -167,7 +170,13 @@ export function subscribeRapportini(
         callback(lista);
     };
 
-    onValue(q, handler);
+    const errorHandler = (err: any) => {
+        console.error('[RapportiniService] Errore sottoscrizione:', err);
+        if (onError) onError(err);
+        else callback([]);
+    };
+
+    onValue(q, handler, errorHandler);
     return () => off(q, 'value', handler);
 }
 
@@ -178,6 +187,7 @@ export function subscribeRapportiniByTecnico(
     nomeTecnico: string,
     limit: number,
     callback: (lista: Rapportino[]) => void,
+    onError?: (err: any) => void
 ): () => void {
     const limitVal = (limit && limit > 0) ? Math.floor(limit) : 30;
     const q = dbQuery(
@@ -188,17 +198,26 @@ export function subscribeRapportiniByTecnico(
 
     const handler = (snap: any) => {
         const lista: Rapportino[] = [];
-        snap.forEach((child: any) => {
-            const r = child.val();
-            if (r.tecnico === nomeTecnico) {
-                r.id = child.key;
-                lista.push(r);
-            }
-        });
+        if (snap && snap.exists && snap.exists()) {
+            snap.forEach((child: any) => {
+                const r = child.val();
+                if (r.tecnico === nomeTecnico) {
+                    r.id = child.key;
+                    lista.push(r);
+                }
+            });
+        }
         lista.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         callback(lista);
     };
 
-    onValue(q, handler);
+    const errorHandler = (err: any) => {
+        console.error('[RapportiniService] Errore sottoscrizione tecnico:', err);
+        if (onError) onError(err);
+        else callback([]);
+    };
+
+    onValue(q, handler, errorHandler);
     return () => off(q, 'value', handler);
 }
+

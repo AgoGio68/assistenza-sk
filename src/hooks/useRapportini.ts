@@ -23,25 +23,43 @@ export function useAllRapportini(limit = 500) {
 
     useEffect(() => {
         let unsub: (() => void) | undefined;
+        const safetyTimeout = setTimeout(() => {
+            setLoading(false);
+        }, 6000);
+
         try {
-            unsub = subscribeRapportini(limit, (data) => {
-                if (prevLengthRef.current !== null && data.length > prevLengthRef.current) {
-                    setHasNewItems(true);
-                    try {
-                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                        audio.play().catch(() => {});
-                    } catch {}
+            unsub = subscribeRapportini(
+                limit,
+                (data) => {
+                    clearTimeout(safetyTimeout);
+                    if (prevLengthRef.current !== null && data.length > prevLengthRef.current) {
+                        setHasNewItems(true);
+                        try {
+                            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                            audio.play().catch(() => {});
+                        } catch {}
+                    }
+                    prevLengthRef.current = data.length;
+                    setLista(data);
+                    setLoading(false);
+                },
+                (err) => {
+                    clearTimeout(safetyTimeout);
+                    console.error("Errore fetch useAllRapportini:", err);
+                    setLoading(false);
                 }
-                prevLengthRef.current = data.length;
-                setLista(data);
-                setLoading(false);
-            });
+            );
         } catch (err) {
+            clearTimeout(safetyTimeout);
             console.error("Crash protetto in useAllRapportini:", err);
             setLoading(false);
         }
-        return () => unsub?.();
+        return () => {
+            clearTimeout(safetyTimeout);
+            unsub?.();
+        };
     }, [limit]);
+
 
     const badgeCount = lista.filter((r) => (r.stato || 'nuovo') === 'nuovo').length;
 
