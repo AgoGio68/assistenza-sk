@@ -4,8 +4,11 @@ import App from './App.tsx';
 import './index.css';
 
 // --- TASK: VERSION TRACKING + FORCE RELOAD ---
-const CURRENT_VERSION = '27.2.0';
+const CURRENT_VERSION = '28.0.0';
 console.log("%c VERSIONE ATTUALE RILEVATA: " + CURRENT_VERSION + " ", "background: #6366f1; color: #fff; font-size: 14px; font-weight: bold; padding: 4px; border-radius: 4px;");
+
+
+
 
 // Iniezione versione per controllo cache
 (window as any).__APP_VERSION__ = CURRENT_VERSION;

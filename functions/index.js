@@ -78,4 +78,5 @@ exports.onInstallationCreated = onDocumentCreated("installation_data/{instId}", 
     await sendTelegramMessage(text);
 });
 
-// Ver 27.0.1 - TELEGRAM ENGINE
+// Ver 28.0.0 - TELEGRAM ENGINE
+

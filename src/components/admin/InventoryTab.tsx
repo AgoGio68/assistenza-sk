@@ -513,18 +513,35 @@ export const InventoryTab: React.FC = () => {
 
             {/* Modal: Aggiungi Articolo */}
             {isAddModalOpen && (
-                <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+                <div
+                    className="modal-overlay"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.75)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: '1rem',
+                    }}
+                >
                     <div
                         className="modal-content"
                         style={{
-                            maxWidth: 500,
+                            width: '100%',
+                            maxWidth: '520px',
+                            margin: 'auto',
                             padding: 0,
                             overflow: 'hidden',
+                            borderRadius: '16px',
                             background: 'var(--bg-surface)',
                             border: '1px solid var(--border-subtle)',
                             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                         }}
                     >
+
                         <div
                             style={{
                                 padding: '1.25rem',
@@ -754,17 +771,35 @@ export const InventoryTab: React.FC = () => {
 
             {/* Modal: Modifica Articolo */}
             {editingItem && (
-                <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+                <div
+                    className="modal-overlay"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.75)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: '1rem',
+                    }}
+                >
                     <div
                         className="modal-content"
                         style={{
-                            maxWidth: 500,
+                            width: '100%',
+                            maxWidth: '520px',
+                            margin: 'auto',
                             padding: 0,
+                            overflow: 'hidden',
+                            borderRadius: '16px',
                             background: 'var(--bg-surface)',
                             border: '1px solid var(--border-subtle)',
                             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                         }}
                     >
+
                         <div
                             style={{
                                 padding: '1.25rem',
@@ -971,17 +1006,35 @@ export const InventoryTab: React.FC = () => {
 
             {/* Modal: Carico Rapido */}
             {movementTarget && (
-                <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+                <div
+                    className="modal-overlay"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.75)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: '1rem',
+                    }}
+                >
                     <div
                         className="modal-content"
                         style={{
-                            maxWidth: 400,
+                            width: '100%',
+                            maxWidth: '420px',
+                            margin: 'auto',
                             padding: 0,
+                            overflow: 'hidden',
+                            borderRadius: '16px',
                             background: 'var(--bg-surface)',
                             border: '1px solid var(--border-subtle)',
                             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                         }}
                     >
+
                         <div
                             style={{
                                 padding: '1.25rem',
@@ -1005,19 +1058,22 @@ export const InventoryTab: React.FC = () => {
                                 <X size={20} />
                             </button>
                         </div>
-                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', boxSizing: 'border-box', width: '100%' }}>
                             <div
                                 style={{
                                     textAlign: 'center',
-                                    padding: '0.5rem',
+                                    padding: '0.75rem',
                                     background: 'var(--bg-elevated)',
-                                    borderRadius: 8,
+                                    borderRadius: 10,
+                                    border: '1px solid var(--border-subtle)',
+                                    boxSizing: 'border-box',
+                                    width: '100%',
                                 }}
                             >
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Articolo</div>
-                                <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{movementTarget.name}</div>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{movementTarget.name}</div>
                             </div>
-                            <div>
+                            <div style={{ width: '100%', boxSizing: 'border-box' }}>
                                 <label
                                     style={{
                                         display: 'block',
@@ -1025,17 +1081,31 @@ export const InventoryTab: React.FC = () => {
                                         fontSize: '0.85rem',
                                         fontWeight: 600,
                                         color: 'var(--text-secondary)',
+                                        textAlign: 'center',
                                     }}
                                 >
                                     Quantità da Aggiungere
                                 </label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.75rem',
+                                        width: '100%',
+                                        boxSizing: 'border-box',
+                                    }}
+                                >
                                     <button
+                                        type="button"
                                         onClick={() => setMovementQty(Math.max(1, movementQty - 1))}
                                         style={{
-                                            width: 50,
-                                            height: 50,
-                                            borderRadius: 14,
+                                            width: '50px',
+                                            height: '50px',
+                                            minWidth: '50px',
+                                            maxWidth: '50px',
+                                            flexShrink: 0,
+                                            borderRadius: '12px',
                                             border: 'none',
                                             background: '#10b98122',
                                             color: '#10b981',
@@ -1045,34 +1115,47 @@ export const InventoryTab: React.FC = () => {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            transition: 'all 0.2s'
+                                            transition: 'all 0.2s',
+                                            boxSizing: 'border-box',
+                                            padding: 0,
                                         }}
                                     >
                                         -
                                     </button>
                                     <input
                                         type="number"
+                                        min="1"
                                         value={movementQty}
                                         onChange={(e) => setMovementQty(parseInt(e.target.value) || 0)}
                                         style={{
-                                            flex: 1,
+                                            flex: '1 1 auto',
+                                            minWidth: '60px',
+                                            maxWidth: '160px',
+                                            width: '100%',
+                                            boxSizing: 'border-box',
                                             textAlign: 'center',
                                             fontSize: '1.8rem',
                                             fontWeight: 900,
-                                            height: 50,
+                                            height: '50px',
                                             background: 'var(--bg-deep)',
                                             border: '2px solid #10b98133',
                                             color: 'var(--text-primary)',
-                                            borderRadius: 14,
-                                            outline: 'none'
+                                            borderRadius: '12px',
+                                            outline: 'none',
+                                            padding: '0 0.5rem',
+                                            margin: 0,
                                         }}
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => setMovementQty(movementQty + 1)}
                                         style={{
-                                            width: 50,
-                                            height: 50,
-                                            borderRadius: 14,
+                                            width: '50px',
+                                            height: '50px',
+                                            minWidth: '50px',
+                                            maxWidth: '50px',
+                                            flexShrink: 0,
+                                            borderRadius: '12px',
                                             border: 'none',
                                             background: '#10b981',
                                             color: 'white',
@@ -1082,14 +1165,16 @@ export const InventoryTab: React.FC = () => {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            transition: 'all 0.2s'
+                                            transition: 'all 0.2s',
+                                            boxSizing: 'border-box',
+                                            padding: 0,
                                         }}
                                     >
                                         +
                                     </button>
                                 </div>
                             </div>
-                            <div>
+                            <div style={{ width: '100%', boxSizing: 'border-box' }}>
                                 <label
                                     style={{
                                         display: 'block',
@@ -1107,6 +1192,7 @@ export const InventoryTab: React.FC = () => {
                                     onChange={(e) => setMovementNote(e.target.value)}
                                     style={{
                                         width: '100%',
+                                        boxSizing: 'border-box',
                                         padding: '0.75rem',
                                         borderRadius: '8px',
                                         background: 'var(--bg-deep)',
@@ -1117,13 +1203,15 @@ export const InventoryTab: React.FC = () => {
                                 />
                             </div>
                             <button
+                                type="button"
                                 onClick={handleQuickMovement}
                                 className="btn btn-primary w-full"
-                                style={{ marginTop: '0.5rem', background: '#10b981' }}
+                                style={{ marginTop: '0.5rem', background: '#10b981', width: '100%', boxSizing: 'border-box' }}
                             >
                                 Conferma Carico
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}

@@ -273,5 +273,9 @@ export interface MaterialPurchase {
     confirmedBy?: string;
     createdAt: number;
     updatedAt: number;
+    loadedToInventory?: boolean;
+    loadedToInventoryAt?: number;
+    loadedToInventoryItemId?: string;
 }
+
 

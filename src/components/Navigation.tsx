@@ -138,8 +138,9 @@ export const Navigation: React.FC = () => {
                 <div className="nav-brand-desktop-info hide-mobile" style={{ marginLeft: '0.75rem' }}>
                     <span className="nav-brand-name">{userProfile?.displayName || userProfile?.email || appName}</span>
                     <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-                        V. 27.2.0 · {appName}
+                        V. 28.0.0 · {appName}
                     </span>
+
                 </div>
             </NavLink>
 

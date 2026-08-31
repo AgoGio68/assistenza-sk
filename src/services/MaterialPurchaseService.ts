@@ -112,6 +112,20 @@ export const MaterialPurchaseService = {
     },
 
     /**
+     * Segna un materiale come caricato a magazzino
+     */
+    async markAsLoadedToInventory(purchaseId: string, itemId: string): Promise<void> {
+        const docRef = doc(db, COLLECTION_NAME, purchaseId);
+        const now = Date.now();
+        await updateDoc(docRef, {
+            loadedToInventory: true,
+            loadedToInventoryAt: now,
+            loadedToInventoryItemId: itemId,
+            updatedAt: now,
+        });
+    },
+
+    /**
      * Elimina un singolo materiale
      */
     async deleteMaterial(id: string): Promise<void> {
@@ -132,3 +146,4 @@ export const MaterialPurchaseService = {
         await batch.commit();
     },
 };
+

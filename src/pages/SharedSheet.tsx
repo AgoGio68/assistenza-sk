@@ -66,7 +66,8 @@ export const SharedSheet: React.FC = () => {
     const [editingRow, setEditingRow] = useState<Ordine | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-    const VERSION = import.meta.env.VITE_APP_VERSION ? `${import.meta.env.VITE_APP_VERSION} - SYSTEM LOGIC LOCKDOWN` : "27.0 - SYSTEM LOGIC LOCKDOWN";
+    const VERSION = import.meta.env.VITE_APP_VERSION ? `${import.meta.env.VITE_APP_VERSION} - SYSTEM LOGIC LOCKDOWN` : "28.0.0 - SYSTEM LOGIC LOCKDOWN";
+
 
     // --- CLICK FUORI PER CHIUDERE DROPDOWN ---
     useEffect(() => {

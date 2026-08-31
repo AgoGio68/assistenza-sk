@@ -1,8 +1,11 @@
 {
   "name": "assistenza-sk",
   "private": true,
-  "version": "27.5.0",
+  "version": "28.0.0",
   "type": "module",
+
+
+
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

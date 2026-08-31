@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ManualeModal } from '../components/ManualeModal';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { auth } from '../firebase';
 import { LogIn, UserPlus, Mail, ArrowLeft, Globe, BookOpen } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const LANGS: { code: any; flag: string; label: string }[] = [
     { code: 'it', flag: '🇮🇹', label: 'IT' },
@@ -24,24 +25,34 @@ export const Login: React.FC = () => {
     const [showGuide, setShowGuide] = useState(false);
 
     const navigate = useNavigate();
+    const { currentUser, isApproved, loading: authLoading } = useAuth();
     const { settings } = useSettings();
     const { t, language, setLanguage } = useLanguage();
     const [langOpen, setLangOpen] = useState(false);
 
     const appName = import.meta.env.VITE_APP_NAME || 'ASSISTENZA SK';
 
+    // Se l'utente è già loggato e approvato, reindirizza subito alla dashboard evitando il flash del login
+    useEffect(() => {
+        if (!authLoading && currentUser && !currentUser.isAnonymous && isApproved) {
+            navigate('/', { replace: true });
+        }
+    }, [currentUser, isApproved, authLoading, navigate]);
+
     // Layout Reset on Mount
-    React.useEffect(() => {
-        // Rimuove eventuali classi o stili applicati al body dalla dashboard
+    useEffect(() => {
         document.body.className = '';
         document.body.style.margin = '';
         document.body.style.padding = '';
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
         
-        // Assicura che l'attributo data-theme sia coerente se necessario
-        // document.body.removeAttribute('data-theme'); 
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+        };
     }, []);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,8 +99,17 @@ export const Login: React.FC = () => {
         }
     };
 
+    if (authLoading) {
+        return (
+            <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+                <div className="spinner" style={{ width: 36, height: 36 }} />
+            </div>
+        );
+    }
+
     return (
         <div className="auth-wrapper">
+
             {/* INLINE LANGUAGE SWITCHER FOR LOGIN PAGE */}
             <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 50 }}>
                 <div style={{ position: 'relative' }}>

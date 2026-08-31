@@ -34,8 +34,8 @@ const baseDefaultSettings: Partial<GlobalSettings> = {
     adminCanCloseOthers: false,
     userCanAssignAtCreation: false,
     userCanCloseOwnTickets: true,
-    whatsappEnabled: false, // v3.3.1: disabilitato di default — richiede ok amministrazione
 };
+
 
 export const STANDARD_RP_CHECKLIST = [
     'PRIMA COSA ATTIVARE DMI IN VALORI DI MISURA E CARATTERE',
@@ -129,7 +129,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         setDoc(docRef, { version: bundleVersion }, { merge: true }).catch(console.error);
                     }
                 } else {
-                    setDoc(docRef, { ...defaultSettings, version: (window as any).__APP_VERSION__ || '27.0' }).catch(console.error);
+                    setDoc(docRef, { ...defaultSettings, version: (window as any).__APP_VERSION__ || '28.0.0' }).catch(console.error);
                 }
                 setLoading(false);
             },
@@ -145,7 +145,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updateSettings = async (newSettings: Partial<GlobalSettings>) => {
         try {
             const docRef = doc(db, 'settings', 'global');
-            const version = (window as any).__APP_VERSION__ || '27.0';
+            const version = (window as any).__APP_VERSION__ || '28.0.0';
+
             
             // Remove undefined values to prevent Firestore errors
             const sanitizedSettings = { ...newSettings };

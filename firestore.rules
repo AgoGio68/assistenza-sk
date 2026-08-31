@@ -54,17 +54,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Inventory: Items in warehouse
+    // Inventory: Items in warehouse (approved technicians can update stock on part usage)
     match /inventory/{itemId} {
-      allow read: if isApproved();
-      allow write: if isSuperadmin();
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
     }
     
     // Inventory Movements: In/Out logs
     match /inventory_movements/{moveId} {
-      allow read: if isApproved();
-      allow create, update, delete: if isSuperadmin();
+      allow read, create, update: if isApproved();
+      allow delete: if isAdmin();
     }
+
 
     // Unità SK: Serialized equipment
     match /unita_sk/{unitId} {

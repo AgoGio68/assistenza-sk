@@ -11,11 +11,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requireAdmin = f
 
     if (loading) {
         return (
-            <div className="flex-center" style={{ height: '100vh' }}>
-                <p>Caricamento in corso...</p>
+            <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+                <div className="spinner" style={{ width: 36, height: 36 }} />
             </div>
         );
     }
+
 
     if (!currentUser) {
         // Salva il percorso attuale per il redirect dopo il login

@@ -19,9 +19,9 @@ import { InventoryItem, InventoryMovement } from '../types';
 const INVENTORY_COLLECTION = 'inventory';
 const MOVEMENTS_COLLECTION = 'inventory_movements';
 const MAIL_COLLECTION = 'mail';
-const ALERT_RECIPIENT = 'l.fagetti@dfvautomazioni.it';
 // ROB-02: Cooldown minimo tra due alert email per lo stesso articolo (24 ore)
 const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 
 export const InventoryService = {
     /**
@@ -167,8 +167,22 @@ export const InventoryService = {
      */
     async sendLowStockEmail(item: InventoryItem): Promise<void> {
         try {
+            // Recupera l'email configurata nelle impostazioni globali
+            let recipient = 'l.fagetti@dfvautomazioni.it';
+            try {
+                const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
+                if (settingsSnap.exists()) {
+                    const sData = settingsSnap.data();
+                    if (sData.inventoryEmail && sData.inventoryEmail.trim()) {
+                        recipient = sData.inventoryEmail.trim();
+                    }
+                }
+            } catch (err) {
+                console.warn('[InventoryService] Impossibile recuperare email da settings, uso default:', err);
+            }
+
             await addDoc(collection(db, MAIL_COLLECTION), {
-                to: ALERT_RECIPIENT,
+                to: recipient,
                 message: {
                     subject: `⚠️ ALERT MAGAZZINO: ${item.name} Sottoscorta`,
                     text: `L'articolo ${item.name} (Cod: ${item.code}) è sceso sotto la soglia minima di ${item.minThreshold} pezzi. Giacenza attuale: ${item.stock}.`,
@@ -202,9 +216,103 @@ export const InventoryService = {
                 },
                 timestamp: Date.now(),
             });
-            console.log(`📧 Richiesta email inviata per ${item.name}`);
+            console.log(`📧 Richiesta email inviata a ${recipient} per ${item.name}`);
         } catch (error) {
             console.error('Errore durante la creazione del doc email:', error);
         }
     },
+
+
+    /**
+     * Cerca un articolo nel magazzino tramite codice o nome
+     */
+    async findItemByCodeOrName(code?: string, name?: string): Promise<InventoryItem | null> {
+        const items = await this.fetchItems();
+        const cleanCode = (code || '').trim().toLowerCase();
+        const cleanName = (name || '').trim().toLowerCase();
+
+        if (cleanCode) {
+            const matchByCode = items.find((i) => (i.code || '').trim().toLowerCase() === cleanCode);
+            if (matchByCode) return matchByCode;
+        }
+
+        if (cleanName) {
+            const matchByName = items.find((i) => (i.name || '').trim().toLowerCase() === cleanName);
+            if (matchByName) return matchByName;
+        }
+
+        return null;
+    },
+
+    /**
+     * Carica direttamente a magazzino un materiale acquistato/arrivato
+     */
+    async loadMaterialToInventory(params: {
+        code?: string;
+        description: string;
+        quantity: number | string;
+        client?: string;
+        userId: string;
+        userName: string;
+        targetItemId?: string;
+    }): Promise<{ itemId: string; itemName: string; newStock: number; isNew: boolean }> {
+        const qty = Math.max(1, Number(params.quantity) || 1);
+        let item: InventoryItem | null = null;
+
+        if (params.targetItemId) {
+            const itemDoc = await getDoc(doc(db, INVENTORY_COLLECTION, params.targetItemId));
+            if (itemDoc.exists()) {
+                item = { id: itemDoc.id, ...itemDoc.data() } as InventoryItem;
+            }
+        }
+
+        if (!item) {
+            item = await this.findItemByCodeOrName(params.code, params.description);
+        }
+
+        let isNew = false;
+        let itemId = '';
+        let itemName = '';
+
+        if (item && item.id) {
+            itemId = item.id;
+            itemName = item.name;
+        } else {
+            // Crea un nuovo articolo se non esistente
+            isNew = true;
+            itemName = params.description.trim();
+            const cleanCode = (params.code || '').trim() || `ART-${Date.now().toString().slice(-5)}`;
+            itemId = await this.addItem({
+                code: cleanCode,
+                name: itemName,
+                stock: 0,
+                minThreshold: 1,
+                unit: 'pz',
+            });
+        }
+
+        // Registra il movimento di carico 'in'
+        const noteDetail = params.client ? ` (Cliente: ${params.client.trim()})` : '';
+        await this.recordMovement({
+            itemId,
+            itemName,
+            type: 'in',
+            quantity: qty,
+            userId: params.userId,
+            userName: params.userName,
+            notes: `Carico da Acquisto Materiali: ${params.description.trim()}${noteDetail}`,
+        });
+
+        // Recupera la giacenza aggiornata
+        const updatedDoc = await getDoc(doc(db, INVENTORY_COLLECTION, itemId));
+        const currentStock = updatedDoc.exists() ? (updatedDoc.data().stock ?? qty) : qty;
+
+        return {
+            itemId,
+            itemName,
+            newStock: currentStock,
+            isNew,
+        };
+    },
 };
+

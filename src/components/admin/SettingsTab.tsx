@@ -3,29 +3,34 @@ import { Settings as SettingsIcon, Globe, Database, Download } from 'lucide-reac
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { StorageQuotaWidget } from './StorageQuotaWidget';
 
 interface SettingsTabProps {
     localSettings: any;
     setLocalSettings: React.Dispatch<React.SetStateAction<any>>;
     onSaveSettings: (e: React.FormEvent) => Promise<void>;
-    waStats: { count: number; lastMonth: string } | null;
+    waStats?: { count: number; lastMonth: string } | null;
 }
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
     localSettings,
     setLocalSettings,
     onSaveSettings,
-    waStats,
 }) => {
     const { t } = useLanguage();
 
+
     return (
-        <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Monitoraggio Spazio & Quota Piano Gratuito (Firebase Spark) */}
+            <StorageQuotaWidget />
+
             <form
                 onSubmit={onSaveSettings}
                 style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}
             >
                 {/* Backup di Emergenza (CSV) - SPOSTATO IN CIMA PER VISIBILITÀ */}
+
                 <div
                     style={{
                         background: 'rgba(245,158,11,0.08)',
@@ -486,256 +491,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </em>
                             </p>
                         </div>
-                    )}
-                </div>
-
-                <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '0' }} />
-
-                {/* 3 bis. Notifiche WhatsApp */}
-                <div>
-                    {/* Header sezione con master toggle */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'flex-start',
-                            marginBottom: '1rem',
-                            flexWrap: 'wrap',
-                            gap: '0.75rem',
-                        }}
-                    >
-                        <h4 style={{ margin: '0', color: '#25d366' }}>📱 Notifiche WhatsApp</h4>
-
-                        {/* Master toggle */}
-                        <label
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.6rem',
-                                background: localSettings.whatsappEnabled
-                                    ? 'rgba(37,211,102,0.12)'
-                                    : 'rgba(100,116,139,0.12)',
-                                border: `1px solid ${localSettings.whatsappEnabled ? 'rgba(37,211,102,0.4)' : 'rgba(100,116,139,0.3)'}`,
-                                borderRadius: '8px',
-                                padding: '0.5rem 0.9rem',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                id="whatsappEnabled"
-                                checked={localSettings.whatsappEnabled === true}
-                                onChange={(e) =>
-                                    setLocalSettings((prev: any) => ({ ...prev, whatsappEnabled: e.target.checked }))
-                                }
-                                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#25d366' }}
-                            />
-                            <span
-                                style={{
-                                    fontSize: '0.88rem',
-                                    fontWeight: 700,
-                                    color: localSettings.whatsappEnabled ? '#25d366' : 'var(--text-muted)',
-                                }}
-                            >
-                                {localSettings.whatsappEnabled ? '● ATTIVO' : '○ IN STANDBY'}
-                            </span>
-                        </label>
-                    </div>
-
-                    {/* Warning costi — sempre visibile */}
-                    <div
-                        style={{
-                            background: 'rgba(251,191,36,0.08)',
-                            border: '1px solid rgba(251,191,36,0.3)',
-                            borderLeft: '4px solid #f59e0b',
-                            borderRadius: '8px',
-                            padding: '1rem 1.1rem',
-                            marginBottom: '1rem',
-                            fontSize: '0.85rem',
-                            color: 'var(--text-secondary)',
-                        }}
-                    >
-                        <strong style={{ display: 'block', color: '#f59e0b', marginBottom: '0.4rem' }}>
-                            ⚠️ Servizio a pagamento — richiede approvazione amministrazione
-                        </strong>
-                        Le notifiche WhatsApp utilizzano le API Meta (WhatsApp Business). Il piano gratuito include un
-                        numero limitato di conversazioni/mese; successivamente si attivano i costi per messaggio.
-                        <br />
-                        <strong>Tieni questa opzione disattivata finché non hai ottenuto il via libera.</strong>
-                    </div>
-
-                    {/* Standby message — visibile quando disabilitato */}
-                    {!localSettings.whatsappEnabled && (
-                        <div
-                            style={{
-                                background: 'rgba(100,116,139,0.08)',
-                                border: '1px solid rgba(100,116,139,0.2)',
-                                borderRadius: '8px',
-                                padding: '1.1rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.75rem',
-                                color: 'var(--text-muted)',
-                                fontSize: '0.88rem',
-                            }}
-                        >
-                            <span style={{ fontSize: '1.5rem' }}>🔕</span>
-                            <div>
-                                <strong
-                                    style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}
-                                >
-                                    WhatsApp in standby
-                                </strong>
-                                Nessun messaggio verrà inviato. L'app utilizzerà i popup a schermo per le notifiche
-                                operative. Attiva il flag qui sopra (e salva) per riabilitare l'invio WhatsApp.
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Sub-opzioni e statistiche — solo se abilitato */}
-                    {localSettings.whatsappEnabled && (
-                        <>
-                            {/* Sub-toggles */}
-                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <input
-                                        type="checkbox"
-                                        id="waNotifyNewImport"
-                                        checked={localSettings.waNotifyNewImport !== false}
-                                        onChange={(e) =>
-                                            setLocalSettings((prev: any) => ({
-                                                ...prev,
-                                                waNotifyNewImport: e.target.checked,
-                                            }))
-                                        }
-                                        style={{
-                                            width: '16px',
-                                            height: '16px',
-                                            cursor: 'pointer',
-                                            accentColor: '#25d366',
-                                        }}
-                                    />
-                                    <label
-                                        htmlFor="waNotifyNewImport"
-                                        style={{
-                                            cursor: 'pointer',
-                                            fontSize: '0.85rem',
-                                            fontWeight: 600,
-                                            color: 'var(--text-secondary)',
-                                        }}
-                                    >
-                                        Notifica Importazioni foglio
-                                    </label>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <input
-                                        type="checkbox"
-                                        id="waNotifyCalendar"
-                                        checked={localSettings.waNotifyCalendar !== false}
-                                        onChange={(e) =>
-                                            setLocalSettings((prev: any) => ({
-                                                ...prev,
-                                                waNotifyCalendar: e.target.checked,
-                                            }))
-                                        }
-                                        style={{
-                                            width: '16px',
-                                            height: '16px',
-                                            cursor: 'pointer',
-                                            accentColor: '#25d366',
-                                        }}
-                                    />
-                                    <label
-                                        htmlFor="waNotifyCalendar"
-                                        style={{
-                                            cursor: 'pointer',
-                                            fontSize: '0.85rem',
-                                            fontWeight: 600,
-                                            color: 'var(--text-secondary)',
-                                        }}
-                                    >
-                                        Notifica Calendario
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* Statistiche */}
-                            <div
-                                style={{
-                                    background: 'rgba(37,211,102,0.06)',
-                                    padding: '1.25rem',
-                                    borderRadius: '10px',
-                                    border: '1px solid rgba(37,211,102,0.2)',
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        marginBottom: '1rem',
-                                    }}
-                                >
-                                    <div>
-                                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                            Messaggi inviati nel mese di: <strong>{waStats?.lastMonth || '-'}</strong>
-                                        </p>
-                                        <h2 style={{ margin: '0.5rem 0', color: '#25d366', fontSize: '2.2rem' }}>
-                                            {waStats?.count || 0}{' '}
-                                            <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/ 900</span>
-                                        </h2>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div
-                                            style={{
-                                                width: '100px',
-                                                height: '10px',
-                                                background: '#e2e8f0',
-                                                borderRadius: '5px',
-                                                overflow: 'hidden',
-                                                marginBottom: '0.5rem',
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    width: `${Math.min(((waStats?.count || 0) / 900) * 100, 100)}%`,
-                                                    height: '100%',
-                                                    background:
-                                                        (waStats?.count || 0) > 800 ? 'var(--danger-color)' : '#25d366',
-                                                }}
-                                            />
-                                        </div>
-                                        <span
-                                            style={{
-                                                fontSize: '0.8rem',
-                                                color:
-                                                    (waStats?.count || 0) > 800
-                                                        ? 'var(--danger-color)'
-                                                        : 'var(--text-muted)',
-                                            }}
-                                        >
-                                            {(waStats?.count || 0) >= 900
-                                                ? 'LIMITE RAGGIUNTO'
-                                                : (waStats?.count || 0) > 800
-                                                  ? 'QUASI AL LIMITE'
-                                                  : 'Utilizzo regolare'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <p
-                                    style={{
-                                        margin: 0,
-                                        fontSize: '0.8rem',
-                                        color: 'var(--text-secondary)',
-                                        fontStyle: 'italic',
-                                    }}
-                                >
-                                    * Il contatore si resetta automaticamente il primo giorno di ogni mese. Al
-                                    raggiungimento di 900 messaggi, l'invio automatico viene bloccato per sicurezza.
-                                </p>
-                            </div>
-                        </>
                     )}
                 </div>
 

@@ -98,17 +98,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 setUserProfile(null);
 
-                // LOGIN ANONIMO AUTOMATICO
-                // Se non c'è un utente loggato, attiviamo una sessione anonima
-                // per permettere la visione delle pagine pubbliche (es. /sheet/ordini)
-                try {
-                    console.log('[Auth] Avvio login anonimo...');
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error('[Auth] Errore login anonimo:', error);
+                // LOGIN ANONIMO AUTOMATICO (solo per percorsi pubblici /sheet/...)
+                const isPublicRoute = window.location.pathname.startsWith('/sheet/');
+                if (isPublicRoute) {
+                    try {
+                        console.log('[Auth] Avvio login anonimo per risorsa pubblica...');
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error('[Auth] Errore login anonimo:', error);
+                        setLoading(false);
+                    }
+                } else {
                     setLoading(false);
                 }
             }
+
         });
 
         // UX-02: Safety timeout — se dopo 8 secondi siamo ancora in loading,
@@ -137,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const isSuperadmin = userProfile?.role === 'superadmin';
     const isAdmin = userProfile?.role === 'admin' || isSuperadmin;
-    const isApproved = userProfile?.status === 'approved' || isSuperadmin;
+    const isApproved = userProfile?.status === 'approved' || userProfile?.role === 'admin' || isSuperadmin;
     const userSections: ('sk' | 's2')[] = isSuperadmin ? ['sk', 's2'] : userProfile?.sections || ['sk'];
 
     const updateDisplayName = async (newName: string) => {
@@ -164,8 +168,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateDisplayName,
         updatePhone,
         userSections,
-        canAccessInstallations: isAdmin,
+        canAccessInstallations: isAdmin || Boolean(userProfile?.canAccessInstallations),
     };
+
 
     return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };
