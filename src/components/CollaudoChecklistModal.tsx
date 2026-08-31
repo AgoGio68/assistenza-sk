@@ -118,11 +118,14 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
             completedItems.some((i) => !savedItems.includes(i)) ||
             savedItems.some((i) => !completedItems.includes(i)));
 
-    // ─── Chiusura sicura ──────────────────────────────────────────
-    const handleClose = () => {
+    // ─── Chiusura con salvataggio automatico ──────────────────────────
+    const handleClose = async () => {
         if (hasUnsaved) {
-            const ok = window.confirm('Hai modifiche non salvate nella checklist.\n\nVuoi uscire senza salvare?');
-            if (!ok) return;
+            try {
+                await saveProgress(false, completedItems);
+            } catch (err) {
+                console.error('Errore salvataggio automatico chiusura collaudo:', err);
+            }
         }
         onClose();
     };
@@ -134,7 +137,7 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
     };
 
     // ─── Salva progressione ───────────────────────────────────────
-    const saveProgress = async (markComplete = false) => {
+    const saveProgress = async (markComplete = false, itemsToSave = completedItems) => {
         if (!currentUser) return;
         setSaving(true);
         try {
@@ -147,7 +150,7 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
                 machineType,
                 clientName,
                 checklist: checklistItems,
-                completedItems,
+                completedItems: itemsToSave,
                 completedAt: markComplete ? now : (report?.completedAt ?? null),
                 technicianId: currentUser.uid,
                 technicianName: userProfile?.displayName || userProfile?.email || 'N/D',
@@ -158,7 +161,7 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
             await setDoc(ref, reportData, { merge: true });
             setReport({ ...reportData, id: reportId });
             setSaved(true);
-            setSavedItems([...completedItems]); // aggiorna snapshot
+            setSavedItems([...itemsToSave]); // aggiorna snapshot
 
             if (markComplete) {
                 // Aggiornamento stato Collaudo come Completato (Trigger Colore Verde in SharedSheet)
@@ -219,15 +222,16 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
                 // Se non è completo ma c'è progresso, impostiamo lo stato su 'in_corso' (Giallo)
                 const instRef = doc(db, 'installation_data', installationId);
                 await setDoc(instRef, {
-                    status: completedItems.length > 0 ? 'in_corso' : 'in_attesa'
+                    status: itemsToSave.length > 0 ? 'in_corso' : 'in_attesa'
                 }, { merge: true });
             }
         } catch (err) {
             console.error('Errore salvataggio report:', err);
-            alert('Errore durante il salvataggio. Riprova.');
+        } finally {
+            setSaving(false);
         }
-        setSaving(false);
     };
+
 
     const allComplete = checklistItems.length > 0 && completedItems.length >= checklistItems.length;
     const progress = checklistItems.length > 0 ? Math.round((completedItems.length / checklistItems.length) * 100) : 0;
@@ -344,7 +348,8 @@ export const CollaudoChecklistModal: React.FC<CollaudoChecklistModalProps> = ({
                             transition: 'all 0.2s',
                             flexShrink: 0,
                         }}
-                        title={hasUnsaved ? 'Modifiche non salvate — clicca per uscire' : 'Chiudi'}
+                        title="Salva e chiudi"
+
                         onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
