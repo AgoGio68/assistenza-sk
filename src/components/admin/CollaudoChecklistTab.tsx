@@ -5,13 +5,10 @@ import { db } from '../../firebase';
 import { useSettings } from '../../contexts/SettingsContext';
 import { STANDARD_RP_CHECKLIST } from '../../contexts/SettingsContext';
 
-interface CollaudoChecklistTabProps {
-    onUnsavedChange?: (hasUnsaved: boolean) => void;
-}
-
 type ChecklistKey = 'rp' | 'sp' | 'c1' | 'c2' | 'c3' | 'c4';
 
-export const CollaudoChecklistTab: React.FC<CollaudoChecklistTabProps> = ({ onUnsavedChange }) => {
+export const CollaudoChecklistTab: React.FC = () => {
+
     const { settings, updateSettings, loading: _settingsLoading } = useSettings();
 
     // ─── Stato dinamico per le liste ──────────────────────────────
@@ -113,22 +110,32 @@ export const CollaudoChecklistTab: React.FC<CollaudoChecklistTabProps> = ({ onUn
     const hasUnsavedChanges =
         !saved && JSON.stringify(getCurrentData()) !== JSON.stringify(settings.collaudoChecklists || {});
 
-    useEffect(() => {
-        if (onUnsavedChange) {
-            onUnsavedChange(hasUnsavedChanges);
-        }
-    }, [hasUnsavedChanges, onUnsavedChange]);
+    // ─── Auto-salvataggio all'uscita ─────────────────────────────
+    const currentDataRef = React.useRef(getCurrentData());
+    currentDataRef.current = getCurrentData();
+    const hasUnsavedRef = React.useRef(hasUnsavedChanges);
+    hasUnsavedRef.current = hasUnsavedChanges;
 
     useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = '';
+        return () => {
+            if (hasUnsavedRef.current) {
+                const batch = writeBatch(db);
+                const data = currentDataRef.current;
+                const categories: ChecklistKey[] = ['rp', 'sp', 'c1', 'c2', 'c3', 'c4'];
+                categories.forEach((key) => {
+                    const rowData = data[key];
+                    const docId = key;
+                    if (!docId) return;
+                    const docRef = doc(db, 'collaudo_checklists', docId);
+                    const payload = Array.isArray(rowData) ? { items: rowData } : rowData;
+                    batch.set(docRef, { ...payload, aggiornatoIl: new Date().toISOString() }, { merge: true });
+                });
+                batch.commit().catch(console.error);
+                updateSettings({ collaudoChecklists: data }).catch(console.error);
             }
         };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedChanges]);
+    }, []);
+
 
     // ─── Gestione liste ───────────────────────────────────────────
     const addItem = (key: ChecklistKey) => {

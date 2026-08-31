@@ -17,8 +17,8 @@ import {
     Truck,
 } from 'lucide-react';
 import { VoiceDictationModal } from '../components/VoiceDictationModal';
-import { ConfirmModal } from '../components/ConfirmModal';
 import { AuditLogService } from '../services/AuditLogService';
+
 
 // New Tab Components
 import { UserManagementTab } from '../components/admin/UserManagementTab';
@@ -40,12 +40,9 @@ export const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<
         'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini' | 'telegram' | 'unita_sk' | 'acquisto_materiale'
     >('tickets');
-    const [hasUnsavedChecklist, setHasUnsavedChecklist] = useState(false);
-    // UX-03: stato per il modal di conferma cambio tab (sostituisce window.confirm)
-    const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
-
     // Badge rapportini
     const { badgeCount: rapportiniBadge } = useAllRapportini(500);
+
 
     // SuperAdmin Global Settings
     const { settings, updateSettings } = useSettings();
@@ -123,13 +120,9 @@ export const AdminDashboard: React.FC = () => {
     const handleTabChange = (
         newTab: 'users' | 'companies' | 'tickets' | 'settings' | 'log' | 'checklist' | 'inventory' | 'rapportini' | 'telegram' | 'unita_sk' | 'acquisto_materiale',
     ) => {
-        if (activeTab === 'checklist' && hasUnsavedChecklist) {
-            // UX-03: mostra ConfirmModal invece di window.confirm()
-            setPendingTabChange(newTab);
-            return;
-        }
         setActiveTab(newTab);
     };
+
 
     const fetchUsers = async () => {
         setLoadingUsers(true);
@@ -843,7 +836,8 @@ export const AdminDashboard: React.FC = () => {
 
             {activeTab === 'log' && isSuperadmin && <GlobalAuditLog />}
 
-            {activeTab === 'checklist' && <CollaudoChecklistTab onUnsavedChange={setHasUnsavedChecklist} />}
+            {activeTab === 'checklist' && <CollaudoChecklistTab />}
+
 
             {activeTab === 'unita_sk' && <UnitaSkTab />}
 
@@ -896,22 +890,7 @@ export const AdminDashboard: React.FC = () => {
                     title="Modifica Descrizione Originale del Problema"
                 />
             )}
-
-            {/* UX-03: Confirm Modal per cambio tab con modifiche non salvate */}
-            {pendingTabChange && (
-                <ConfirmModal
-                    message={'Hai modifiche non salvate per la checklist.\n\nVuoi cambiare scheda senza salvare?'}
-                    confirmLabel="Cambia scheda"
-                    cancelLabel="Rimani qui"
-                    variant="warning"
-                    onConfirm={() => {
-                        setActiveTab(pendingTabChange as any);
-                        setHasUnsavedChecklist(false);
-                        setPendingTabChange(null);
-                    }}
-                    onCancel={() => setPendingTabChange(null)}
-                />
-            )}
         </div>
     );
 };
+
